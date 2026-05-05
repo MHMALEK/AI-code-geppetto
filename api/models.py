@@ -52,6 +52,34 @@ def init_db():
                 events     TEXT NOT NULL DEFAULT '[]'
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS telegram_processed (
+                chat_id    INTEGER NOT NULL,
+                message_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (chat_id, message_id)
+            )
+        """)
+
+
+def telegram_try_claim_message(chat_id: int, message_id: int) -> bool:
+    """
+    Return True if this chat/message should be handled exactly once.
+
+    Survives multiple uvicorn workers, webhook + long-poll overlap, and Telegram retries
+    (same message_id per chat).
+    """
+    now = datetime.utcnow().isoformat()
+    conn = _db()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO telegram_processed (chat_id, message_id, created_at) VALUES (?,?,?)",
+                (chat_id, message_id, now),
+            )
+        return True
+    except sqlite3.IntegrityError:
+        return False
 
 
 def _row_to_task(row) -> Task:

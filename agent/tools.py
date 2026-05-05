@@ -8,11 +8,9 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from pathlib import Path as _Path
-from config import SAMPLE_REPO_PATH
+from urllib.parse import urlparse
 
-SCREENSHOTS_DIR = _Path("./data/screenshots")
-SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+from config import SAMPLE_REPO_PATH, SCREENSHOT_APP_URL, SCREENSHOTS_DIR
 
 REPO = Path(SAMPLE_REPO_PATH)
 
@@ -176,14 +174,23 @@ def push_and_create_pr(branch_name: str, title: str, body: str) -> str:
 
 
 def take_screenshot(label: str = "screenshot") -> str:
-    """Capture the running app at localhost:5173 using Playwright."""
+    """Capture the running dev app (SCREENSHOT_APP_URL) using Playwright."""
     import socket
+
+    parsed = urlparse(SCREENSHOT_APP_URL)
+    host = parsed.hostname or "127.0.0.1"
+    scheme = (parsed.scheme or "http").lower()
+    port = parsed.port or (443 if scheme == "https" else 80)
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(1)
+        s.settimeout(2)
         try:
-            s.connect(("localhost", 5173))
+            s.connect((host, port))
         except OSError:
-            return "Screenshot skipped: no app running at localhost:5173 (not available in cloud deployment)."
+            return (
+                f"Screenshot skipped: nothing listening on {host}:{port} "
+                f"(set SCREENSHOT_APP_URL in .env and start the dev server)."
+            )
 
     try:
         from playwright.sync_api import sync_playwright
@@ -198,8 +205,25 @@ def take_screenshot(label: str = "screenshot") -> str:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1280, "height": 800})
-            page.goto("http://localhost:5173", wait_until="networkidle", timeout=15000)
-            page.screenshot(path=str(filepath))
+            # networkidle is often wrong for Vite/React: fires on empty shell or never settles.
+            page.goto(SCREENSHOT_APP_URL, wait_until="load", timeout=45000)
+            page.wait_for_timeout(2000)
+            try:
+                page.wait_for_function(
+                    """() => {
+                        const b = document.body;
+                        if (!b) return false;
+                        const t = (b.innerText || "").trim();
+                        const root = document.getElementById("root");
+                        const hasRoot = root && root.childElementCount > 0;
+                        return t.length > 3 || hasRoot || document.querySelector("main,canvas,svg,[role=main]");
+                    }""",
+                    timeout=15000,
+                )
+            except Exception:
+                pass
+            page.wait_for_timeout(400)
+            page.screenshot(path=str(filepath), animations="disabled")
             browser.close()
         return f"screenshot:/screenshots/{filename}"
     except Exception as e:
@@ -344,7 +368,8 @@ TOOL_DEFINITIONS = [
     {
         "name": "take_screenshot",
         "description": (
-            "Take a screenshot of the running app at localhost:5173. "
+            "Take a screenshot of the running dev app (SCREENSHOT_APP_URL in .env, default http://127.0.0.1:5173). "
+            "The Vite (or other) dev server must be up. "
             "Call once before edits (label='before') and once after (label='after') to show visual diff."
         ),
         "input_schema": {

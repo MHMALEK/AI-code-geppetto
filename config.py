@@ -28,6 +28,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 # If true, bot uses getUpdates long polling (works on localhost; no HTTPS). Do not use with setWebhook.
 TELEGRAM_POLLING = os.getenv("TELEGRAM_POLLING", "").lower() in ("1", "true", "yes")
+# Voice notes (Telegram) — transcribed with OpenAI Whisper; max duration cap (seconds).
+TELEGRAM_VOICE_MAX_SECONDS = int(os.getenv("TELEGRAM_VOICE_MAX_SECONDS", "300"))
 
 # ── Embeddings ────────────────────────────────────────────────────────────────
 EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
@@ -57,9 +59,17 @@ SAMPLE_REPO_PATH = Path(os.getenv(
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", "./data/chroma"))
 SQLITE_PATH = Path(os.getenv("SQLITE_PATH", "./data/tasks.db"))
 
+# Agent screenshots (take_screenshot) — must match FastAPI StaticFiles mount (not process cwd).
+REPO_ROOT = Path(__file__).resolve().parent
+SCREENSHOTS_DIR = REPO_ROOT / "data" / "screenshots"
+
 # Browser URL for the API + dashboard (Telegram links, webhooks). No trailing slash.
 # Local: http://127.0.0.1:8000  ·  Fly: https://your-app.fly.dev
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
+# App URL for take_screenshot (Playwright). Use the URL Vite prints (often :5173). Must match where the dev server listens.
+SCREENSHOT_APP_URL = os.getenv("SCREENSHOT_APP_URL", "http://127.0.0.1:5173").rstrip("/")
+
 CHROMA_PATH.mkdir(parents=True, exist_ok=True)
 SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)

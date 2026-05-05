@@ -4,6 +4,7 @@ import logging
 import re
 import threading
 import time
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -16,38 +17,15 @@ from api.models import (
     TaskCreate, JiraIssueCreate, init_db,
     create_task, get_task, list_tasks,
     update_status, append_event,
+    telegram_try_claim_message,
 )
 from agent.runner import run_agent
+from config import SCREENSHOTS_DIR
 
 app = FastAPI(title="Geppetto")
 log = logging.getLogger("geppetto.telegram")
 
-# Same Telegram update can be processed twice if webhook + long poll are both active,
-# or if multiple uvicorn workers each run a getUpdates loop — dedupe by update_id.
-_tg_seen_lock = threading.Lock()
-_tg_seen_order: list[int] = []
-_tg_seen_set: set[int] = set()
-_TG_SEEN_MAX = 3000
-
-
-def _telegram_should_process_update(update_id: int | None) -> bool:
-    if update_id is None:
-        return True
-    with _tg_seen_lock:
-        if update_id in _tg_seen_set:
-            log.debug("telegram duplicate update_id=%s skipped", update_id)
-            return False
-        _tg_seen_set.add(update_id)
-        _tg_seen_order.append(update_id)
-        while len(_tg_seen_order) > _TG_SEEN_MAX:
-            old = _tg_seen_order.pop(0)
-            _tg_seen_set.discard(old)
-        return True
-
-
-_screenshots = Path("data/screenshots")
-_screenshots.mkdir(parents=True, exist_ok=True)
-app.mount("/screenshots", StaticFiles(directory=str(_screenshots)), name="screenshots")
+app.mount("/screenshots", StaticFiles(directory=str(SCREENSHOTS_DIR)), name="screenshots")
 _assets = Path(__file__).parent.parent / "dashboard" / "assets"
 _assets.mkdir(parents=True, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(_assets)), name="assets")
@@ -462,6 +440,8 @@ TELEGRAM_HELP_TEXT = "\n".join([
     "/help - show command list",
     "",
     "Each run includes a dashboard link so you can watch the trace live (PR optional).",
+    "",
+    "Voice: send a voice note — same commands as text (needs OPENAI_API_KEY + Whisper). Speech without a leading / is treated as /task ….",
 ])
 
 TELEGRAM_START_TEXT = "\n".join([
@@ -499,6 +479,94 @@ def _telegram_send_message(chat_id: int | str, text: str) -> None:
 def _telegram_command(text: str) -> tuple[str, str]:
     command, _, rest = text.partition(" ")
     return command.split("@", 1)[0].lower(), rest.strip()
+
+
+def _telegram_voice_audio_meta(message: dict) -> tuple[str | None, str, int]:
+    """Telegram file_id, filename for Whisper, duration in seconds (0 if unknown)."""
+    v = message.get("voice")
+    if isinstance(v, dict) and v.get("file_id"):
+        return str(v["file_id"]), "voice.ogg", int(v.get("duration") or 0)
+    a = message.get("audio")
+    if isinstance(a, dict) and a.get("file_id"):
+        mime = (a.get("mime_type") or "").lower()
+        if "ogg" in mime:
+            name = "audio.ogg"
+        elif "mpeg" in mime or "mp3" in mime:
+            name = "audio.mp3"
+        elif "m4a" in mime or "mp4" in mime:
+            name = "audio.m4a"
+        else:
+            name = "audio.ogg"
+        return str(a["file_id"]), name, int(a.get("duration") or 0)
+    return None, "", 0
+
+
+def _telegram_download_tg_file(file_id: str) -> bytes:
+    from config import TELEGRAM_BOT_TOKEN
+
+    if not TELEGRAM_BOT_TOKEN:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN missing")
+    base = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+    r = httpx.get(f"{base}/getFile", params={"file_id": file_id}, timeout=25)
+    r.raise_for_status()
+    body = r.json()
+    if not body.get("ok"):
+        raise RuntimeError(str(body.get("description") or body))
+    path = body["result"]["file_path"]
+    url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{path}"
+    r2 = httpx.get(url, timeout=120)
+    r2.raise_for_status()
+    return r2.content
+
+
+def _telegram_transcribe_whisper(audio: bytes, filename: str) -> str:
+    from config import OPENAI_API_KEY
+
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not set")
+    from openai import OpenAI
+
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    buf = BytesIO(audio)
+    buf.name = filename
+    tr = client.audio.transcriptions.create(model="whisper-1", file=buf)
+    return (getattr(tr, "text", None) or "").strip()
+
+
+def _telegram_try_transcribe_voice(message: dict, chat_id: int | str) -> str | None:
+    """
+    If the message has voice/audio, return transcript.
+    None = nothing to transcribe (ignore silently).
+    '' = user was notified of an error / missing config.
+    """
+    file_id, filename, duration = _telegram_voice_audio_meta(message)
+    if not file_id:
+        return None
+    from config import OPENAI_API_KEY, TELEGRAM_VOICE_MAX_SECONDS
+
+    if not OPENAI_API_KEY:
+        _telegram_send_message(
+            chat_id,
+            "Voice notes need OPENAI_API_KEY in .env (OpenAI Whisper). Text commands still work.",
+        )
+        return ""
+    if duration and duration > TELEGRAM_VOICE_MAX_SECONDS:
+        _telegram_send_message(
+            chat_id,
+            f"Voice too long ({duration}s). Max is {TELEGRAM_VOICE_MAX_SECONDS}s.",
+        )
+        return ""
+    try:
+        audio = _telegram_download_tg_file(file_id)
+        text = _telegram_transcribe_whisper(audio, filename)
+        if not text:
+            _telegram_send_message(chat_id, "No speech recognized — try again or type the command.")
+            return ""
+        return text
+    except Exception as e:
+        log.warning("Telegram voice transcription failed: %s", e)
+        _telegram_send_message(chat_id, f"Voice transcription failed: {e}")
+        return ""
 
 
 def _status_emoji(status: str) -> str:
@@ -607,10 +675,31 @@ def process_telegram_message(message: dict) -> dict:
     """Handle one Telegram message (webhook or long-poll). Returns JSON-safe dict."""
     chat = message.get("chat") or {}
     chat_id = chat.get("id")
-    text = str(message.get("text") or "").strip()
-
-    if not chat_id or not text:
+    if not chat_id:
         return {"ok": True}
+
+    mid = message.get("message_id")
+    if mid is not None:
+        try:
+            cid = int(chat_id)
+            qmid = int(mid)
+        except (TypeError, ValueError):
+            log.warning("telegram non-integer chat_id or message_id: %r %r", chat_id, mid)
+        else:
+            if not telegram_try_claim_message(cid, qmid):
+                log.debug("telegram duplicate delivery chat=%s message_id=%s", cid, qmid)
+                return {"ok": True}
+
+    text = str(message.get("text") or "").strip()
+    if not text:
+        transcribed = _telegram_try_transcribe_voice(message, chat_id)
+        if transcribed is None:
+            return {"ok": True}
+        if transcribed == "":
+            return {"ok": True}
+        text = transcribed.strip()
+        if text and not text.lstrip().startswith("/"):
+            text = "/task " + text
 
     command, args = _telegram_command(text)
     user = message.get("from") or {}
@@ -756,8 +845,6 @@ def _telegram_poll_loop() -> None:
                 continue
             for upd in body.get("result", []):
                 offset = upd["update_id"] + 1
-                if not _telegram_should_process_update(upd.get("update_id")):
-                    continue
                 msg = upd.get("message") or upd.get("edited_message")
                 if isinstance(msg, dict):
                     process_telegram_message(msg)
@@ -777,8 +864,6 @@ def _start_telegram_long_poll() -> None:
 @app.post("/telegram")
 async def telegram_webhook(request: Request):
     payload = await request.json()
-    if not _telegram_should_process_update(payload.get("update_id")):
-        return {"ok": True}
     message = payload.get("message") or payload.get("edited_message") or {}
     return process_telegram_message(message)
 

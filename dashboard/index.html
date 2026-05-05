@@ -1424,6 +1424,14 @@ const EV_ICONS = { start:'▶', thinking:'···', tool_call:'⚙', tool_result:
 function renderEvents(evts) {
   pendingScreenshotLabels = [];
   evts.forEach(e => appendEvent(e, false));
+  const mined = collectScreenshots(evts);
+  if ((!screenshots.before || !screenshots.after) && mined.before && mined.after) {
+    screenshots.before = mined.before;
+    screenshots.after = mined.after;
+  } else {
+    if (mined.before && !screenshots.before) screenshots.before = mined.before;
+    if (mined.after && !screenshots.after) screenshots.after = mined.after;
+  }
 }
 function toolInputSummary(input) {
   if (!input || typeof input !== 'object') return 'No args';
@@ -1506,11 +1514,51 @@ function resultText(result) {
   if (result === undefined || result === null) return '';
   return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
 }
+/** Resolve screenshot:… or /screenshots/… to a full URL for <img> and canvas (same origin as dashboard). */
+function normalizeScreenshotSrc(raw) {
+  if (raw === undefined || raw === null || raw === '') return '';
+  let s = String(raw).trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))
+    s = s.slice(1, -1).trim();
+  if (/^https?:\/\//i.test(s)) {
+    try {
+      const u = new URL(s);
+      if (u.pathname.startsWith('/screenshots/')) return u.href;
+    } catch (e) {}
+    return s;
+  }
+  const scheme = s.match(/^screenshot:\s*\/?(.+)$/i);
+  if (scheme) s = scheme[1].trim();
+  if (s.startsWith('screenshots/')) s = '/' + s;
+  if (!s.startsWith('/')) s = '/' + s.replace(/^\/+/, '');
+  if (!s.startsWith('/screenshots/')) {
+    const m = s.match(/(\/screenshots\/.+)$/);
+    if (m) s = m[1];
+  }
+  if (!/^\/screenshots\/.+/.test(s)) return '';
+  try {
+    return new URL(s, window.location.origin).href;
+  } catch (e) {
+    return s;
+  }
+}
 function findScreenshotUrl(value) {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') {
-    const match = value.match(/screenshot:\s*([^\s"'<>)]*)/i);
-    return match ? match[1].replace(/[.,;]+$/, '') : '';
+    for (const line of value.split(/\r?\n/)) {
+      const m1 = line.match(/screenshot:\s*([^\s"'<>)\n\r]+)/i);
+      let raw = m1 ? m1[1].replace(/[.,;]+$/, '') : '';
+      if (!raw) {
+        const m2 = line.match(/(?:^|[\s"'])(\/screenshots\/[^\s"'<>)\n\r]+\.(?:png|webp|jpe?g))\b/i);
+        if (m2) raw = m2[1];
+      }
+      if (!raw) {
+        const m3 = line.match(/(\/screenshots\/[a-zA-Z0-9._-]+\.png)/i);
+        if (m3) raw = m3[1];
+      }
+      if (raw) return normalizeScreenshotSrc(raw);
+    }
+    return '';
   }
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -1540,14 +1588,23 @@ function classifyScreenshot(ev, url, fallbackLabel = '') {
   return screenshots.before ? 'after' : 'before';
 }
 function recordScreenshotResult(ev, animate) {
-  if (ev.tool && ev.tool !== 'take_screenshot') return false;
-  const queuedLabel = ev.tool === 'take_screenshot' ? (pendingScreenshotLabels.shift() || '') : '';
-  const url = findScreenshotUrl(ev.result);
-  if (!url) return false;
+  if (ev.type !== 'tool_result') return false;
+  const sniff = findScreenshotUrl(ev.result);
+  if (ev.tool && ev.tool !== 'take_screenshot' && !sniff) return false;
 
-  const slot = classifyScreenshot(ev, url, queuedLabel);
-  screenshots[slot] = url;
-  appendScreenshotEv(url, slot === 'before' ? 'Before' : 'After', animate);
+  let queuedLabel = '';
+  if (ev.tool === 'take_screenshot') {
+    queuedLabel = pendingScreenshotLabels.shift() || '';
+  }
+  if (!sniff) return false;
+  if (ev.tool && ev.tool !== 'take_screenshot') {
+    const r = resultText(ev.result);
+    if (!/screenshot:\s*\//i.test(r)) return false;
+  }
+
+  const slot = classifyScreenshot(ev, sniff, queuedLabel);
+  screenshots[slot] = sniff;
+  appendScreenshotEv(sniff, slot === 'before' ? 'Before' : 'After', animate);
   if ($('tab-review')?.classList.contains('active')) renderReviewPanel();
   return true;
 }
@@ -1574,6 +1631,12 @@ function toggleEvBody(hdr) {
   const open = body.classList.toggle('open');
   const chev = hdr.querySelector('.ev-chevron');
   if (chev) chev.classList.toggle('open', open);
+}
+function reviewShotImgOnError(el) {
+  const d = document.createElement('div');
+  d.className = 'review-empty';
+  d.textContent = 'Could not load screenshot (missing file or wrong server path).';
+  el.replaceWith(d);
 }
 
 /* ─── Diff renderer ─── */
@@ -1626,15 +1689,15 @@ function renderChangesPanel() {
 function renderReviewPanel() {
   const panel = $('trace-review');
   const eventScreenshots = collectScreenshots(selTask?.events || []);
-  const before = screenshots.before || eventScreenshots.before;
-  const after = screenshots.after || eventScreenshots.after;
+  const before = normalizeScreenshotSrc(screenshots.before || eventScreenshots.before || '');
+  const after = normalizeScreenshotSrc(screenshots.after || eventScreenshots.after || '');
   const files = changesData.filter(c => c.type==='edit'||c.type==='create');
   const events = selTask?.events || [];
   let html = renderReviewGate(events, files, before, after);
   html += `
     <div class="review-shots">
-      <div class="review-shot"><div class="review-shot-hdr before">Before</div>${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-empty">No screenshot</div>'}</div>
-      <div class="review-shot"><div class="review-shot-hdr after">After</div>${after ? `<img src="${esc(after)}" alt="after"/>` : '<div class="review-empty">Not yet</div>'}</div>
+      <div class="review-shot"><div class="review-shot-hdr before">Before</div>${before ? `<img class="review-shot-img" src="${esc(before)}" alt="before" onerror="reviewShotImgOnError(this)"/>` : '<div class="review-empty">No screenshot</div>'}</div>
+      <div class="review-shot"><div class="review-shot-hdr after">After</div>${after ? `<img class="review-shot-img" src="${esc(after)}" alt="after" onerror="reviewShotImgOnError(this)"/>` : '<div class="review-empty">Not yet</div>'}</div>
     </div>`;
   html += renderVisualRegression(before, after);
   if (files.length) {
@@ -1770,8 +1833,8 @@ function renderReviewGate(events, files, before, after) {
 }
 function updateReviewRisk(visualPct) {
   const eventScreenshots = collectScreenshots(selTask?.events || []);
-  const before = screenshots.before || eventScreenshots.before;
-  const after = screenshots.after || eventScreenshots.after;
+  const before = normalizeScreenshotSrc(screenshots.before || eventScreenshots.before || '');
+  const after = normalizeScreenshotSrc(screenshots.after || eventScreenshots.after || '');
   const files = changesData.filter(c => c.type==='edit'||c.type==='create');
   const risk = computeReviewRisk(reviewSignals(selTask?.events || [], files, before, after), visualPct);
   const score = $('review-risk-score');
@@ -1900,7 +1963,7 @@ async function drawVisualDiff(before, after) {
     updateReviewRisk(pct);
   } catch (e) {
     if (metric) metric.textContent = 'diff unavailable';
-    if (note) note.textContent = 'Could not read one of the screenshots for pixel comparison.';
+    if (note) note.textContent = `Could not read screenshots for comparison (${e && e.message ? e.message : 'load error'}). Check that PNGs exist under data/screenshots and the API serves /screenshots.`;
   }
 }
 function collectScreenshots(events) {
@@ -1911,10 +1974,20 @@ function collectScreenshots(events) {
       queuedLabels.push(ev.input?.label || '');
       continue;
     }
-    if (ev.type !== 'tool_result' || (ev.tool && ev.tool !== 'take_screenshot')) continue;
-    const queuedLabel = ev.tool === 'take_screenshot' ? (queuedLabels.shift() || '') : '';
+    if (ev.type !== 'tool_result') continue;
+
+    let queuedLabel = '';
+    if (ev.tool === 'take_screenshot') {
+      queuedLabel = queuedLabels.shift() || '';
+    }
+
     const url = findScreenshotUrl(ev.result);
     if (!url) continue;
+    if (ev.tool && ev.tool !== 'take_screenshot') {
+      const r = resultText(ev.result);
+      if (!/screenshot:\s*\//i.test(r)) continue;
+    }
+
     const previous = screenshots;
     screenshots = found;
     const slot = classifyScreenshot(ev, url, queuedLabel);
