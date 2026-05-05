@@ -148,10 +148,18 @@ def push_and_create_pr(branch_name: str, title: str, body: str) -> str:
 
 def take_screenshot(label: str = "screenshot") -> str:
     """Capture the running app at localhost:5173 using Playwright."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        try:
+            s.connect(("localhost", 5173))
+        except OSError:
+            return "Screenshot skipped: no app running at localhost:5173 (not available in cloud deployment)."
+
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        return "Error: playwright not installed. Run: pip install playwright && playwright install chromium"
+        return "Screenshot skipped: playwright not installed."
 
     slug = label.replace(" ", "_").replace("/", "-")[:40]
     filename = f"{slug}_{int(time.time())}.png"

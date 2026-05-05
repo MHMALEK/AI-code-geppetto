@@ -7,15 +7,20 @@ load_dotenv()
 # ── LLM backend ───────────────────────────────────────────────────────────────
 # Switch by changing LLM_MODEL in .env — no code changes needed.
 # Examples:
-#   vertex_ai/gemini-2.5-pro          ← GCP Vertex AI (default)
-#   vertex_ai/gemini-2.0-flash        ← cheaper/faster Gemini
+#   gemini/gemini-2.5-pro             ← Google AI Studio (API key, no JSON)
+#   vertex_ai/gemini-2.5-pro          ← GCP Vertex AI (service account JSON)
+#   vertex_ai/gemini-2.0-flash        ← cheaper/faster Gemini via Vertex AI
 #   anthropic/claude-sonnet-4-6       ← Anthropic API
 #   ollama/qwen2.5-coder:32b          ← local Ollama
-LLM_MODEL = os.getenv("LLM_MODEL", "vertex_ai/gemini-2.5-pro")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini/gemini-2.5-pro")
 
-# ── GCP / Vertex AI ───────────────────────────────────────────────────────────
+# ── Google AI Studio (simple API key — recommended for cloud deploys) ─────────
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+# ── GCP / Vertex AI (only needed if using vertex_ai/ models) ─────────────────
 VERTEXAI_PROJECT = os.getenv("VERTEXAI_PROJECT", "")
 VERTEXAI_LOCATION = os.getenv("VERTEXAI_LOCATION", "us-central1")
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
 # ── Other API keys (only needed for chosen backend) ───────────────────────────
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")

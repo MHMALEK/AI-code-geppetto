@@ -362,6 +362,63 @@ async def slack_slash_command(request: Request):
     })
 
 
+# ── Code Q&A ──────────────────────────────────────────────────────────────────
+
+@app.post("/ask")
+async def ask_code(request: Request):
+    """Answer a question about the codebase via RAG + LLM, streamed as SSE."""
+    data = await request.json()
+    question = (data.get("question") or "").strip()
+    if not question:
+        raise HTTPException(400, "question required")
+
+    from agent.tools import search_code
+    from config import LLM_MODEL, VERTEXAI_PROJECT, VERTEXAI_LOCATION
+    import litellm
+
+    context = search_code(question, n_results=6)
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a senior engineer who knows this codebase deeply. "
+                "Answer questions concisely and precisely. "
+                "When referencing code, quote the relevant lines. "
+                "If the context doesn't contain the answer, say so honestly."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"Codebase context:\n{context}\n\nQuestion: {question}",
+        },
+    ]
+
+    async def stream():
+        try:
+            response = litellm.completion(
+                model=LLM_MODEL,
+                messages=messages,
+                max_tokens=2048,
+                stream=True,
+                vertex_project=VERTEXAI_PROJECT or None,
+                vertex_location=VERTEXAI_LOCATION or None,
+            )
+            for chunk in response:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield f"data: {json.dumps({'text': delta})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 _dashboard = Path(__file__).parent.parent / "dashboard"

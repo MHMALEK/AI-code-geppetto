@@ -3,3 +3,5 @@ __pycache__
 *.pyc
 data/
 .env
+sample-geppetto-repo/
+fly.toml

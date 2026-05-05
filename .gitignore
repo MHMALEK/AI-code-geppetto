@@ -9,5 +9,8 @@ data/*.db
 data/screenshots/
 .DS_Store
 
+# local dev docker overrides (contain host paths, not for version control)
+docker-compose.override.yml
+
 # sample-geppetto-repo is a separate standalone git repo — not part of this project
 sample-geppetto-repo/

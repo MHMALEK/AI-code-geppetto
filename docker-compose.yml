@@ -36,6 +36,7 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_USER_MANAGEMENT_DISABLED=true
       - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_TRUST_PROXY=true
       - WEBHOOK_URL=http://localhost:5678
 
 volumes:
