@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geppetto — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #21262d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --purple: #bc8cff;
+      --red: #f85149;
+      --accent: #238636;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Slide engine ───────────────────────────────────────────── */
+    .deck { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: none;
+      pointer-events: all;
+    }
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Nav ────────────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 16px;
+    }
+    .nav button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav button:hover { color: var(--text); background: var(--border); }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .dot.active { background: var(--blue); transform: scale(1.4); }
+    .slide-counter { color: var(--muted); font-size: 12px; min-width: 40px; text-align: center; }
+
+    /* ── Slide number ───────────────────────────────────────────── */
+    .slide-num {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: 'SF Mono', monospace;
+      z-index: 100;
+    }
+
+    /* ── Typography ─────────────────────────────────────────────── */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 16px;
+    }
+    h1 { font-size: clamp(40px, 6vw, 72px); font-weight: 800; line-height: 1.1; color: var(--text); }
+    h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; color: var(--text); }
+    h3 { font-size: 20px; font-weight: 600; color: var(--text); }
+    .sub { font-size: clamp(16px, 2vw, 22px); color: var(--muted); line-height: 1.6; max-width: 640px; text-align: center; margin-top: 16px; }
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #1f6feb22;
+      color: var(--blue);
+      border: 1px solid #1f6feb44;
+    }
+
+    /* ── Code block ─────────────────────────────────────────────── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      text-align: left;
+      overflow-x: auto;
+    }
+    .kw { color: #ff7b72; }
+    .str { color: #a5d6ff; }
+    .fn { color: #d2a8ff; }
+    .cm { color: var(--muted); font-style: italic; }
+    .hl { background: #1f6feb22; border-left: 3px solid var(--blue); margin: 0 -24px; padding: 0 21px; display: block; }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: 960px;
+    }
+    .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+    /* ── Tech pill ──────────────────────────────────────────────── */
+    .tech { display: flex; align-items: center; gap: 10px; }
+    .tech-icon { font-size: 24px; }
+    .tech-name { font-weight: 600; font-size: 15px; }
+    .tech-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Flow diagram ───────────────────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: nowrap;
+      max-width: 900px;
+    }
+    .flow-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      text-align: center;
+      min-width: 110px;
+      flex-shrink: 0;
+    }
+    .flow-node .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .flow-node .label { font-size: 11px; font-weight: 600; color: var(--text); }
+    .flow-node .sub-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .flow-arrow {
+      color: var(--muted);
+      font-size: 20px;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+    .flow-node.highlight { border-color: var(--blue); background: #1f6feb11; }
+    .flow-node.green { border-color: var(--green); background: #23863611; }
+
+    /* ── Step list ──────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 12px; max-width: 640px; width: 100%; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #1f6feb22;
+      border: 1px solid var(--blue);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-title { font-weight: 600; font-size: 14px; }
+    .step-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Gradient text ──────────────────────────────────────────── */
+    .gradient {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Glow ───────────────────────────────────────────────────── */
+    .glow {
+      text-shadow: 0 0 40px rgba(88, 166, 255, 0.4);
+    }
+
+    /* ── Animated cursor ────────────────────────────────────────── */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor { display: inline-block; width: 2px; height: 1em; background: var(--blue); vertical-align: text-bottom; animation: blink 1s infinite; }
+
+    /* ── Tool chip ──────────────────────────────────────────────── */
+    .tool-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .divider { width: 60px; height: 3px; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 2px; margin: 20px auto; }
+
+    /* ── Fade in children ───────────────────────────────────────── */
+    .slide.active .fade-in { animation: fadeUp 0.5s ease both; }
+    .slide.active .fade-in:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .fade-in:nth-child(2) { animation-delay: 0.15s; }
+    .slide.active .fade-in:nth-child(3) { animation-delay: 0.25s; }
+    .slide.active .fade-in:nth-child(4) { animation-delay: 0.35s; }
+    .slide.active .fade-in:nth-child(5) { animation-delay: 0.45s; }
+    .slide.active .fade-in:nth-child(6) { animation-delay: 0.55s; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+
+<div class="slide-num" id="slideNum">1 / 7</div>
+
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 1: Hero ──────────────────────────────────────────────────── -->
+  <div class="slide active" id="slide-0">
+    <div class="fade-in" style="font-size:72px;margin-bottom:8px;">🪄</div>
+    <h1 class="fade-in glow" style="text-align:center">
+      <span class="gradient">Geppetto</span>
+    </h1>
+    <p class="sub fade-in">
+      An AI coding agent that reads your task, searches your codebase with RAG,<br>
+      writes the code, commits, and opens a PR — while you watch it think.
+    </p>
+    <div class="divider fade-in"></div>
+    <div class="fade-in" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
+      <span class="tag">Gemini 2.5 Pro</span>
+      <span class="tag">tree-sitter RAG</span>
+      <span class="tag">LiteLLM</span>
+      <span class="tag">Langfuse</span>
+      <span class="tag">FastAPI</span>
+    </div>
+    <p class="fade-in" style="color:var(--muted);font-size:12px;margin-top:32px;">
+      Press <kbd style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;">→</kbd>
+      to advance
+    </p>
+  </div>
+
+  <!-- ── SLIDE 2: Problem + Solution ───────────────────────────────────── -->
+  <div class="slide" id="slide-1">
+    <div class="eyebrow fade-in">The idea</div>
+    <h2 class="fade-in" style="text-align:center;max-width:700px;">
+      From Jira ticket to merged PR,<br>
+      <span class="gradient">no human in the loop</span>
+    </h2>
+    <div class="divider fade-in"></div>
+    <div class="steps fade-in">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">POST a task</div>
+          <div class="step-desc">curl with title + description + Jira ID. Simulates a webhook from any source.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Agent searches the codebase</div>
+          <div class="step-desc">RAG index returns the exact functions, components, and hooks that matter for this task.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Agent writes + commits code</div>
+          <div class="step-desc">Reads files, makes precise edits, creates a branch, commits with a conventional message.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">PR opened automatically</div>
+          <div class="step-desc">Pushes the branch and opens a pull request with a clear description of what changed.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: Architecture ──────────────────────────────────────────── -->
+  <div class="slide" id="slide-2">
+    <div class="eyebrow fade-in">Architecture</div>
+    <h2 class="fade-in" style="text-align:center;margin-bottom:32px;">How it fits together</h2>
+    <div class="flow fade-in">
+      <div class="flow-node">
+        <span class="icon">📋</span>
+        <div class="label">curl / UI</div>
+        <div class="sub-label">task input</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <span class="icon">⚡</span>
+        <div class="label">FastAPI</div>
+        <div class="sub-label">SQLite + SSE</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">
+        <span class="icon">🤖</span>
+        <div class="label">Agent Loop</div>
+        <div class="sub-label">LiteLLM</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">
+        <span class="icon">🔍</span>
+        <div class="label">RAG Index</div>
+        <div class="sub-label">ChromaDB</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <span class="icon">🛠️</span>
+        <div class="label">Tools</div>
+        <div class="sub-label">edit · git · PR</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green">
+        <span class="icon">🚀</span>
+        <div class="label">Pull Request</div>
+        <div class="sub-label">GitHub</div>
+      </div>
+    </div>
+    <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;" class="fade-in">
+      <div class="tool-chip">🔎 search_code</div>
+      <div class="tool-chip">📄 read_file</div>
+      <div class="tool-chip">✏️ edit_file</div>
+      <div class="tool-chip">🌿 create_branch</div>
+      <div class="tool-chip">💾 commit_changes</div>
+      <div class="tool-chip">📬 push_and_create_pr</div>
+    </div>
+    <p class="fade-in" style="color:var(--muted);font-size:13px;margin-top:20px;text-align:center;">
+      Every LLM call is traced in <strong style="color:var(--text)">Langfuse</strong> — token counts, tool usage, latency, cost per task
+    </p>
+  </div>
+
+  <!-- ── SLIDE 4: RAG Deep Dive ─────────────────────────────────────────── -->
+  <div class="slide" id="slide-3">
+    <div class="eyebrow fade-in">The secret sauce</div>
+    <h2 class="fade-in" style="text-align:center;margin-bottom:8px;">High-quality code indexing</h2>
+    <p class="fade-in" style="color:var(--muted);font-size:14px;text-align:center;margin-bottom:24px;">
+      Not chunks of 500 chars. AST-based semantic boundaries.
+    </p>
+    <div class="card-grid cols-2 fade-in" style="max-width:860px;">
+      <div class="card" style="border-color:#f8514944">
+        <div style="color:var(--red);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px;">❌ NAIVE CHUNKING</div>
+        <pre style="font-size:11px;background:transparent;border:none;padding:0;color:var(--muted)">...n error:\n  logger.error(
+  `Failed to ${action}`
+)\n  raise HTTPExce...</pre>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;">Broken mid-function. No context. Useless to the LLM.</p>
+      </div>
+      <div class="card" style="border-color:#3fb95044">
+        <div style="color:var(--green);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px;">✅ AST-BASED (tree-sitter)</div>
+        <pre style="font-size:11px;background:transparent;border:none;padding:0;"><span class="cm">// File: src/components/SupplierTable.tsx</span>
+<span class="cm">// Type: component | Name: SupplierTable</span>
+<span class="cm">// Imports: useQuery, Spinner, ...</span>
+
+<span class="kw">const</span> <span class="fn">SupplierTable</span> = ({ filters }) => {
+  <span class="kw">const</span> { data, isLoading } = useQuery(...)
+  <span class="kw">return</span> &lt;Table ... /&gt;
+}</pre>
+      </div>
+    </div>
+    <div class="card-grid cols-3 fade-in" style="max-width:860px;margin-top:16px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🌳</div>
+        <div class="tech-name">tree-sitter</div>
+        <div class="tech-desc">Parses TS/TSX/JS into AST. Extracts functions, hooks, components, classes at exact boundaries.</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🔢</div>
+        <div class="tech-name">Rich embeddings</div>
+        <div class="tech-desc">File path + type + name prepended before embedding. The model knows <em>what it's reading</em>.</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🎯</div>
+        <div class="tech-name">Two-tier retrieval</div>
+        <div class="tech-desc">Semantic search <strong>+</strong> exact symbol lookup. If task mentions SupplierTable, fetch it directly.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: Tech Stack ────────────────────────────────────────────── -->
+  <div class="slide" id="slide-4">
+    <div class="eyebrow fade-in">Tech stack</div>
+    <h2 class="fade-in" style="text-align:center;margin-bottom:28px;">Built on the best tools</h2>
+    <div class="card-grid cols-3 fade-in" style="max-width:900px;">
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">🔀</span>
+          <div>
+            <div class="tech-name">LiteLLM</div>
+            <div class="tech-desc">One interface for Gemini, Claude, Ollama. Switch via .env.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">💎</span>
+          <div>
+            <div class="tech-name">Gemini 2.5 Pro</div>
+            <div class="tech-desc">Vertex AI default. Top-tier code quality. GCP billing.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">🌳</span>
+          <div>
+            <div class="tech-name">tree-sitter</div>
+            <div class="tech-desc">AST parser. Powers VS Code, GitHub, Neovim.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">🗄️</span>
+          <div>
+            <div class="tech-name">ChromaDB</div>
+            <div class="tech-desc">Embedded vector DB. Zero infra. Fast cosine search.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">📡</span>
+          <div>
+            <div class="tech-name">Langfuse</div>
+            <div class="tech-desc">LLM observability. Traces, costs, latency. Free + open source.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tech">
+          <span class="tech-icon">⚡</span>
+          <div>
+            <div class="tech-name">FastAPI + SSE</div>
+            <div class="tech-desc">Real-time streaming. Task queue. Zero config.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fade-in" style="margin-top:20px;text-align:center;">
+      <p style="color:var(--muted);font-size:13px;">Backend flexibility via one env var:</p>
+      <pre style="display:inline-block;margin-top:8px;padding:10px 20px;font-size:12px;">LLM_MODEL=<span class="str">vertex_ai/gemini-2.5-pro</span>   <span class="cm"># ← change this only</span></pre>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: Observability ─────────────────────────────────────────── -->
+  <div class="slide" id="slide-5">
+    <div class="eyebrow fade-in">Observability</div>
+    <h2 class="fade-in" style="text-align:center;margin-bottom:8px;">See everything that happens</h2>
+    <p class="fade-in" style="color:var(--muted);font-size:14px;text-align:center;margin-bottom:28px;">Two views of every task run</p>
+    <div class="card-grid cols-2 fade-in" style="max-width:860px;">
+      <div class="card" style="border-color:#1f6feb55;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span style="font-size:20px;">🖥️</span>
+          <strong>Geppetto Dashboard</strong>
+          <span class="tag" style="font-size:10px;">localhost:8000</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;">
+            <span style="color:var(--blue);">💭 thinking</span>
+            <span style="color:var(--muted);margin-left:8px;">I should first search for the Spinner component...</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;">
+            <span style="color:var(--orange);">⚡ tool_call</span>
+            <span style="color:var(--muted);margin-left:8px;">search_code("loading spinner component")</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;">
+            <span style="color:var(--muted);">↩ tool_result</span>
+            <span style="color:var(--muted);margin-left:8px;">Spinner.tsx:12 (component: Spinner) score=0.94</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;">
+            <span style="color:var(--green);">✅ complete</span>
+            <span style="color:var(--muted);margin-left:8px;">Task completed — PR #42 opened</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="border-color:#bc8cff44;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span style="font-size:20px;">📡</span>
+          <strong>Langfuse Trace</strong>
+          <span class="tag" style="background:#bc8cff22;color:var(--purple);border-color:#bc8cff44;font-size:10px;">cloud.langfuse.com</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;display:flex;justify-content:space-between;">
+            <span style="color:var(--text);">Total tokens</span>
+            <span style="color:var(--purple);font-weight:600;">12,450</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;display:flex;justify-content:space-between;">
+            <span style="color:var(--text);">Tool calls</span>
+            <span style="color:var(--purple);font-weight:600;">14</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;display:flex;justify-content:space-between;">
+            <span style="color:var(--text);">Latency</span>
+            <span style="color:var(--purple);font-weight:600;">47s</span>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:12px;display:flex;justify-content:space-between;">
+            <span style="color:var(--text);">Cost</span>
+            <span style="color:var(--green);font-weight:600;">~$0.004</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: Quick Start ───────────────────────────────────────────── -->
+  <div class="slide" id="slide-6">
+    <div class="eyebrow fade-in">Quick start</div>
+    <h2 class="fade-in" style="text-align:center;margin-bottom:24px;">Up and running in 3 steps</h2>
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:640px;width:100%;">
+      <div class="fade-in">
+        <p style="color:var(--muted);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">1. Configure</p>
+        <pre><span class="cm"># fill in GCP project + OpenAI key</span>
+cp .env.template .env
+gcloud auth application-default login</pre>
+      </div>
+      <div class="fade-in">
+        <p style="color:var(--muted);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">2. Start</p>
+        <pre>./run.sh   <span class="cm"># indexes repo on first run, then serves at :8000</span></pre>
+      </div>
+      <div class="fade-in">
+        <p style="color:var(--muted);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">3. Fire a task</p>
+        <pre><span class="kw">curl</span> -X POST http://localhost:8000/tasks \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"jira_id":"DEV-1234",
+      "title":"Add loading spinner",
+      "description":"Show spinner while table loads"}'</span></pre>
+      </div>
+    </div>
+    <div class="fade-in" style="margin-top:24px;text-align:center;">
+      <a href="http://localhost:8000" target="_blank"
+        style="display:inline-block;background:var(--accent);color:white;padding:10px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+        Open Dashboard →
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Navigation ──────────────────────────────────────────────────────── -->
+<div class="nav">
+  <button id="prevBtn" onclick="go(-1)">←</button>
+  <div id="dots"></div>
+  <button id="nextBtn" onclick="go(1)">→</button>
+</div>
+
+<script>
+  const TOTAL = 7;
+  let current = 0;
+
+  const deck = document.getElementById('deck');
+  const slideNumEl = document.getElementById('slideNum');
+  const dotsEl = document.getElementById('dots');
+
+  // Build dots
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    if (n < 0 || n >= TOTAL) return;
+    const slides = deck.querySelectorAll('.slide');
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current - (n > current ? 0 : 0)].classList.remove('exit'), 400);
+
+    current = n;
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit');
+    });
+    slides[current].classList.add('active');
+
+    dotsEl.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    slideNumEl.textContent = `${current + 1} / ${TOTAL}`;
+  }
+
+  function go(dir) { goTo(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+</script>
+</body>
+</html>

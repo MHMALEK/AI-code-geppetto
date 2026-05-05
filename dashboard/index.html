@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geppetto</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0d1117; color: #e6edf3; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .scrollbar::-webkit-scrollbar { width: 6px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    .event-enter { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+    .pulse { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ── Sidebar ─────────────────────────────────────────────────────────────── -->
+<aside class="w-80 flex-shrink-0 border-r border-[#21262d] flex flex-col">
+
+  <!-- Header -->
+  <div class="p-4 border-b border-[#21262d]">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-2xl">🪄</span>
+      <span class="text-lg font-bold text-white">Geppetto</span>
+    </div>
+    <button id="newTaskBtn"
+      class="w-full bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors">
+      + New Task
+    </button>
+  </div>
+
+  <!-- Task list -->
+  <div id="taskList" class="flex-1 overflow-y-auto scrollbar p-2 space-y-1">
+    <p class="text-[#8b949e] text-xs px-2 py-4 text-center">No tasks yet</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="p-3 border-t border-[#21262d] text-[#8b949e] text-xs">
+    curl -X POST localhost:8000/tasks -H "Content-Type: application/json"
+  </div>
+</aside>
+
+<!-- ── Main area ────────────────────────────────────────────────────────────── -->
+<main class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- Task header -->
+  <div id="taskHeader" class="p-4 border-b border-[#21262d] hidden">
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span id="taskJira" class="text-xs bg-[#1f6feb22] text-[#58a6ff] px-2 py-0.5 rounded font-semibold hidden"></span>
+          <span id="taskStatus" class="text-xs px-2 py-0.5 rounded font-semibold"></span>
+        </div>
+        <h1 id="taskTitle" class="text-white text-lg font-semibold"></h1>
+        <p id="taskDesc" class="text-[#8b949e] text-sm mt-1"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome screen -->
+  <div id="welcome" class="flex-1 flex items-center justify-center">
+    <div class="text-center">
+      <div class="text-6xl mb-4">🪄</div>
+      <h2 class="text-white text-xl font-semibold mb-2">Geppetto is ready</h2>
+      <p class="text-[#8b949e] text-sm mb-6">Create a task to watch the agent work</p>
+      <code class="text-xs bg-[#161b22] border border-[#30363d] rounded px-3 py-2 text-[#79c0ff]">
+        curl -X POST localhost:8000/tasks \<br>
+        &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+        &nbsp;&nbsp;-d '{"title":"...","description":"...","jira_id":"DEV-123"}'
+      </code>
+    </div>
+  </div>
+
+  <!-- Agent trace -->
+  <div id="traceContainer" class="flex-1 overflow-y-auto scrollbar p-4 space-y-3 hidden">
+  </div>
+</main>
+
+<!-- ── New Task Modal ───────────────────────────────────────────────────────── -->
+<div id="modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-[#161b22] border border-[#30363d] rounded-lg w-[540px] p-6">
+    <h2 class="text-white font-semibold text-lg mb-4">New Task</h2>
+    <div class="space-y-3">
+      <div>
+        <label class="text-[#8b949e] text-xs mb-1 block">JIRA ID (optional)</label>
+        <input id="mJira" placeholder="DEV-1234"
+          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff]" />
+      </div>
+      <div>
+        <label class="text-[#8b949e] text-xs mb-1 block">TITLE *</label>
+        <input id="mTitle" placeholder="Add loading spinner to SupplierTable"
+          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff]" />
+      </div>
+      <div>
+        <label class="text-[#8b949e] text-xs mb-1 block">DESCRIPTION *</label>
+        <textarea id="mDesc" rows="4" placeholder="When the table is fetching data, show a loading spinner instead of an empty table. Use the existing Spinner component if available."
+          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff] resize-none"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4 justify-end">
+      <button id="modalCancel" class="text-[#8b949e] hover:text-white text-sm px-4 py-2 rounded transition-colors">Cancel</button>
+      <button id="modalSubmit" class="bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold px-4 py-2 rounded transition-colors">
+        Run Agent
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let selectedTask = null;
+let eventSource = null;
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+
+const STATUS_STYLES = {
+  pending:   'bg-[#6e768133] text-[#8b949e]',
+  running:   'bg-[#1f6feb33] text-[#58a6ff] pulse',
+  completed: 'bg-[#23863633] text-[#3fb950]',
+  failed:    'bg-[#da363333] text-[#f85149]',
+};
+
+function statusBadge(status) {
+  return `<span class="text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[status] || ''}">${status}</span>`;
+}
+
+// ── Task list ─────────────────────────────────────────────────────────────────
+
+async function loadTasks() {
+  const res = await fetch(`${API}/tasks`);
+  const tasks = await res.json();
+  renderTaskList(tasks);
+  if (selectedTask) {
+    const updated = tasks.find(t => t.id === selectedTask.id);
+    if (updated) updateTaskHeader(updated);
+  }
+}
+
+function renderTaskList(tasks) {
+  const el = document.getElementById('taskList');
+  if (!tasks.length) {
+    el.innerHTML = '<p class="text-[#8b949e] text-xs px-2 py-4 text-center">No tasks yet</p>';
+    return;
+  }
+  el.innerHTML = tasks.map(t => `
+    <div onclick="selectTask('${t.id}')"
+      class="task-item cursor-pointer rounded-md px-3 py-2 hover:bg-[#161b22] transition-colors ${selectedTask?.id === t.id ? 'bg-[#161b22] border border-[#30363d]' : ''}"
+      data-id="${t.id}">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[10px] ${STATUS_STYLES[t.status]} px-1.5 py-0.5 rounded ${t.status === 'running' ? 'pulse' : ''}">${t.status}</span>
+        ${t.jira_id ? `<span class="text-[10px] text-[#58a6ff]">${t.jira_id}</span>` : ''}
+      </div>
+      <p class="text-white text-xs font-medium truncate">${t.title}</p>
+      <p class="text-[#8b949e] text-[11px] mt-0.5">${new Date(t.created_at).toLocaleTimeString()}</p>
+    </div>
+  `).join('');
+}
+
+// ── Task detail ───────────────────────────────────────────────────────────────
+
+async function selectTask(taskId) {
+  const res = await fetch(`${API}/tasks/${taskId}`);
+  const task = await res.json();
+  selectedTask = task;
+
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('taskHeader').classList.remove('hidden');
+  document.getElementById('traceContainer').classList.remove('hidden');
+
+  updateTaskHeader(task);
+  renderTrace(task.events);
+  subscribeToTask(taskId);
+  loadTasks(); // refresh sidebar selection
+}
+
+function updateTaskHeader(task) {
+  document.getElementById('taskTitle').textContent = task.title;
+  document.getElementById('taskDesc').textContent = task.description;
+
+  const jiraEl = document.getElementById('taskJira');
+  if (task.jira_id) {
+    jiraEl.textContent = task.jira_id;
+    jiraEl.classList.remove('hidden');
+  }
+
+  const statusEl = document.getElementById('taskStatus');
+  statusEl.textContent = task.status;
+  statusEl.className = `text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[task.status] || ''} ${task.status === 'running' ? 'pulse' : ''}`;
+}
+
+// ── Trace rendering ───────────────────────────────────────────────────────────
+
+const EVENT_ICONS = {
+  start:       '▶',
+  thinking:    '💭',
+  tool_call:   '⚡',
+  tool_result: '↩',
+  complete:    '✅',
+  error:       '❌',
+  ping:        null,
+};
+
+const EVENT_COLORS = {
+  start:       'border-[#58a6ff] bg-[#1f6feb11]',
+  thinking:    'border-[#8b949e] bg-[#21262d]',
+  tool_call:   'border-[#d29922] bg-[#b7791033]',
+  tool_result: 'border-[#30363d] bg-[#161b22]',
+  complete:    'border-[#3fb950] bg-[#23863622]',
+  error:       'border-[#f85149] bg-[#da363322]',
+};
+
+function renderEvent(ev) {
+  if (ev.type === 'ping') return null;
+  const icon = EVENT_ICONS[ev.type] || '•';
+  const color = EVENT_COLORS[ev.type] || 'border-[#30363d] bg-[#161b22]';
+
+  let body = '';
+  if (ev.type === 'thinking') {
+    body = `<pre class="text-[#e6edf3] text-xs leading-relaxed">${escHtml(ev.text)}</pre>`;
+  } else if (ev.type === 'tool_call') {
+    body = `
+      <div class="text-[#d29922] text-xs font-semibold mb-1">${ev.tool}</div>
+      <pre class="text-[#8b949e] text-xs">${escHtml(JSON.stringify(ev.input, null, 2))}</pre>`;
+  } else if (ev.type === 'tool_result') {
+    const truncated = ev.result.length > 800 ? ev.result.slice(0, 800) + '\n…(truncated)' : ev.result;
+    body = `
+      <div class="text-[#8b949e] text-xs font-semibold mb-1">${ev.tool} result</div>
+      <pre class="text-[#adbac7] text-xs">${escHtml(truncated)}</pre>`;
+  } else if (ev.type === 'complete' || ev.type === 'start') {
+    body = `<p class="text-xs">${escHtml(ev.message || '')}</p>`;
+  } else if (ev.type === 'error') {
+    body = `<p class="text-[#f85149] text-xs">${escHtml(ev.message || '')}</p>`;
+  }
+
+  const el = document.createElement('div');
+  el.className = `event-enter border-l-2 ${color} rounded-r-md px-3 py-2`;
+  el.innerHTML = `
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-base">${icon}</span>
+      <span class="text-[#8b949e] text-xs uppercase tracking-wide">${ev.type}</span>
+    </div>
+    ${body}
+  `;
+  return el;
+}
+
+function renderTrace(events) {
+  const container = document.getElementById('traceContainer');
+  container.innerHTML = '';
+  events.forEach(ev => {
+    const el = renderEvent(ev);
+    if (el) container.appendChild(el);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendEvent(ev) {
+  const container = document.getElementById('traceContainer');
+  const el = renderEvent(ev);
+  if (el) {
+    container.appendChild(el);
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// ── SSE subscription ──────────────────────────────────────────────────────────
+
+function subscribeToTask(taskId) {
+  if (eventSource) eventSource.close();
+  eventSource = new EventSource(`${API}/tasks/${taskId}/stream`);
+
+  let replayDone = false;
+  const existingCount = selectedTask?.events?.length || 0;
+  let seen = 0;
+
+  eventSource.onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === 'ping') return;
+
+    seen++;
+    // Skip replayed events already rendered
+    if (seen <= existingCount) return;
+
+    appendEvent(ev);
+
+    if (ev.type === 'complete' || ev.type === 'error') {
+      eventSource.close();
+      loadTasks();
+      const statusEl = document.getElementById('taskStatus');
+      const status = ev.type === 'complete' ? 'completed' : 'failed';
+      statusEl.textContent = status;
+      statusEl.className = `text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[status]}`;
+    }
+  };
+
+  eventSource.onerror = () => eventSource.close();
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+document.getElementById('newTaskBtn').onclick = () => {
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('mTitle').focus();
+};
+document.getElementById('modalCancel').onclick = () => {
+  document.getElementById('modal').classList.add('hidden');
+};
+
+document.getElementById('modalSubmit').onclick = async () => {
+  const title = document.getElementById('mTitle').value.trim();
+  const description = document.getElementById('mDesc').value.trim();
+  const jira_id = document.getElementById('mJira').value.trim() || null;
+
+  if (!title || !description) return;
+
+  document.getElementById('modal').classList.add('hidden');
+
+  const res = await fetch(`${API}/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description, jira_id }),
+  });
+  const task = await res.json();
+
+  document.getElementById('mTitle').value = '';
+  document.getElementById('mDesc').value = '';
+  document.getElementById('mJira').value = '';
+
+  await loadTasks();
+  selectTask(task.id);
+};
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+loadTasks();
+setInterval(loadTasks, 3000);
+</script>
+</body>
+</html>
