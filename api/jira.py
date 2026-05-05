@@ -62,6 +62,34 @@ def get_issue(key: str) -> dict:
     return _format_issue(r.json())
 
 
+def create_issue(summary: str, description: str = "", issue_type: str = "Task") -> dict:
+    payload = {
+        "fields": {
+            "project": {"key": JIRA_PROJECT_KEY},
+            "summary": summary,
+            "issuetype": {"name": issue_type},
+        }
+    }
+    if description:
+        payload["fields"]["description"] = {
+            "type": "doc",
+            "version": 1,
+            "content": [{
+                "type": "paragraph",
+                "content": [{"type": "text", "text": description}],
+            }],
+        }
+
+    r = requests.post(
+        f"{JIRA_BASE_URL}/rest/api/3/issue",
+        headers=_headers(),
+        json=payload,
+        timeout=10,
+    )
+    r.raise_for_status()
+    return get_issue(r.json()["key"])
+
+
 def transition_issue(key: str, transition_id: str) -> None:
     r = requests.post(
         f"{JIRA_BASE_URL}/rest/api/3/issue/{key}/transitions",

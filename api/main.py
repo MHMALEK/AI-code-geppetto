@@ -362,6 +362,178 @@ async def slack_slash_command(request: Request):
     })
 
 
+# ── Telegram bot webhook ──────────────────────────────────────────────────────
+
+TELEGRAM_HELP_TEXT = "\n".join([
+    "codeGeppetto commands:",
+    "/task <description> - create and run a task",
+    "/jira <summary> - create a Jira issue and run it",
+    "/status - show the last 5 tasks",
+    "/help - show this command list",
+])
+
+
+def _telegram_send_message(chat_id: int | str, text: str) -> None:
+    from config import TELEGRAM_BOT_TOKEN
+
+    if not TELEGRAM_BOT_TOKEN:
+        return
+
+    try:
+        httpx.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": text},
+            timeout=10,
+        )
+    except Exception:
+        pass
+
+
+def _telegram_command(text: str) -> tuple[str, str]:
+    command, _, rest = text.partition(" ")
+    return command.split("@", 1)[0].lower(), rest.strip()
+
+
+def _status_emoji(status: str) -> str:
+    return {
+        "pending": "⏳",
+        "running": "🏃",
+        "completed": "✅",
+        "failed": "❌",
+    }.get(status, "•")
+
+
+def _telegram_status_text() -> str:
+    tasks = list_tasks()[:5]
+    if not tasks:
+        return "No tasks yet."
+
+    lines = ["Last 5 tasks:"]
+    for task in tasks:
+        jira = f" [{task.jira_id}]" if task.jira_id else ""
+        lines.append(f"{_status_emoji(task.status)}{jira} {task.title} — {task.status}")
+    return "\n".join(lines)
+
+
+def _telegram_task_result(task_id: str, title: str) -> str:
+    task = get_task(task_id)
+    if not task:
+        return f"❌ Task disappeared: {title}"
+
+    if task.status != "completed":
+        return f"❌ Geppetto hit an error on: {title}\nCheck the dashboard for details."
+
+    pr_url = None
+    cost_usd = duration_s = tool_calls = 0
+    for ev in task.events:
+        if ev.get("type") == "tool_result" and ev.get("tool") == "push_and_create_pr":
+            m = re.search(r"https?://\S+", ev.get("result", ""))
+            if m:
+                pr_url = m.group(0).rstrip(".")
+        if ev.get("type") == "stats":
+            cost_usd = ev.get("cost_usd", 0.0)
+            duration_s = int(ev.get("duration_s", 0))
+            tool_calls = ev.get("tool_calls", 0)
+
+    lines = [
+        f"✅ Done: {title}",
+        f"⏱ {duration_s}s · 💰 ${cost_usd} · 🔧 {tool_calls} tool calls",
+    ]
+    if task.jira_id:
+        lines.append(f"Jira: {task.jira_id}")
+    if pr_url:
+        lines.append(f"PR: {pr_url}")
+    return "\n".join(lines)
+
+
+def _run_and_notify_telegram(
+    task_id: str,
+    description: str,
+    jira_key: str | None,
+    chat_id: int | str,
+    title: str,
+) -> None:
+    _run_task(task_id, description, jira_key)
+    _telegram_send_message(chat_id, _telegram_task_result(task_id, title))
+
+
+@app.post("/telegram")
+async def telegram_webhook(request: Request):
+    payload = await request.json()
+    message = payload.get("message") or payload.get("edited_message") or {}
+    chat = message.get("chat") or {}
+    chat_id = chat.get("id")
+    text = str(message.get("text") or "").strip()
+
+    if not chat_id or not text:
+        return {"ok": True}
+
+    command, args = _telegram_command(text)
+    user = message.get("from") or {}
+    username = user.get("username") or user.get("first_name") or "unknown"
+
+    if command == "/help":
+        _telegram_send_message(chat_id, TELEGRAM_HELP_TEXT)
+        return {"ok": True}
+
+    if command == "/status":
+        _telegram_send_message(chat_id, _telegram_status_text())
+        return {"ok": True}
+
+    if command == "/task":
+        if not args:
+            _telegram_send_message(chat_id, "Usage: /task <description>")
+            return {"ok": True}
+
+        data = TaskCreate(
+            title=args,
+            description=f"Telegram task requested by @{username}",
+        )
+        task = create_task(data)
+        full_desc = f"Task: {data.title}\n\n{data.description}"
+        threading.Thread(
+            target=_run_and_notify_telegram,
+            args=(task.id, full_desc, None, chat_id, data.title),
+            daemon=True,
+        ).start()
+        _telegram_send_message(chat_id, f"⏳ On it! Running Geppetto on: {data.title}")
+        return {"ok": True, "task_id": task.id}
+
+    if command == "/jira":
+        if not args:
+            _telegram_send_message(chat_id, "Usage: /jira <summary>")
+            return {"ok": True}
+
+        try:
+            from api.jira import create_issue
+
+            issue = create_issue(
+                args,
+                description=f"Created from Telegram by @{username}. Geppetto will run this task.",
+            )
+        except Exception as e:
+            _telegram_send_message(chat_id, f"❌ Could not create Jira issue: {e}")
+            return {"ok": False}
+
+        data = TaskCreate(
+            title=args,
+            description=f"Telegram task for Jira issue {issue['key']} requested by @{username}",
+            jira_id=issue["key"],
+        )
+        task = create_task(data)
+        full_desc = f"[{data.jira_id}] Task: {data.title}\n\n{data.description}"
+        threading.Thread(
+            target=_run_and_notify_telegram,
+            args=(task.id, full_desc, data.jira_id, chat_id, data.title),
+            daemon=True,
+        ).start()
+        _telegram_send_message(chat_id, f"⏳ Created {issue['key']} and started Geppetto: {data.title}")
+        return {"ok": True, "task_id": task.id, "jira_id": issue["key"]}
+
+    _telegram_send_message(chat_id, TELEGRAM_HELP_TEXT)
+    return {"ok": True}
+
+
 # ── Code Q&A ──────────────────────────────────────────────────────────────────
 
 @app.post("/ask")
@@ -372,11 +544,11 @@ async def ask_code(request: Request):
     if not question:
         raise HTTPException(400, "question required")
 
-    from agent.tools import search_code
+    from agent.tools import retrieve_for_ask
     from config import LLM_MODEL, VERTEXAI_PROJECT, VERTEXAI_LOCATION
     import litellm
 
-    context = search_code(question, n_results=6)
+    context, sources = retrieve_for_ask(question, n_results=6)
 
     messages = [
         {
@@ -396,6 +568,7 @@ async def ask_code(request: Request):
 
     async def stream():
         try:
+            yield f"data: {json.dumps({'type': 'meta', 'model': LLM_MODEL, 'sources': sources})}\n\n"
             response = litellm.completion(
                 model=LLM_MODEL,
                 messages=messages,
@@ -407,9 +580,9 @@ async def ask_code(request: Request):
             for chunk in response:
                 delta = chunk.choices[0].delta.content
                 if delta:
-                    yield f"data: {json.dumps({'text': delta})}\n\n"
+                    yield f"data: {json.dumps({'type': 'chunk', 'text': delta})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(

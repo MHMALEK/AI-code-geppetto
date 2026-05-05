@@ -493,6 +493,47 @@
     .review-shot-hdr.after  { background: var(--green-bg); color: var(--green); border-bottom: 1px solid color-mix(in srgb, var(--green) 20%, transparent); }
     .review-shot img { width: 100%; display: block; }
     .review-empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 12px; background: var(--surface); }
+    .review-gate {
+      display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr);
+      gap: 12px; margin-bottom: 18px;
+    }
+    .review-risk {
+      position: relative; overflow: hidden; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow);
+    }
+    .review-risk::before {
+      content: ""; position: absolute; inset: 0 0 auto; height: 3px;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+    }
+    .risk-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted2); margin-bottom: 8px; }
+    .risk-score-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+    .risk-score { font-size: 38px; line-height: 1; font-family: 'DM Mono', monospace; font-weight: 700; letter-spacing: -1.8px; }
+    .risk-level { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; padding: 3px 8px; border-radius: 999px; }
+    .risk-low { color: var(--green); background: var(--green-bg); }
+    .risk-medium { color: var(--amber); background: var(--amber-bg); }
+    .risk-high { color: var(--red); background: var(--red-bg); }
+    .risk-copy { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .review-checklist {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow);
+    }
+    .checklist-hdr {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface2);
+    }
+    .checklist-title { font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+    .checklist-count { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent); }
+    .checklist-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--border); }
+    .check-item { display: flex; gap: 9px; align-items: flex-start; padding: 12px; background: var(--surface); min-height: 68px; }
+    .check-mark {
+      display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+      border-radius: 50%; flex-shrink: 0; font-size: 11px; font-weight: 700; font-family: 'DM Mono', monospace;
+    }
+    .check-pass .check-mark { color: var(--green); background: var(--green-bg); }
+    .check-warn .check-mark { color: var(--amber); background: var(--amber-bg); }
+    .check-fail .check-mark { color: var(--red); background: var(--red-bg); }
+    .check-label { font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 2px; }
+    .check-detail { font-size: 11px; color: var(--muted2); line-height: 1.4; }
     .review-regression {
       display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(220px, .85fr);
       gap: 12px; margin-bottom: 22px;
@@ -545,9 +586,28 @@
 
     /* ── Ask Code View ── */
     #view-ask { flex: 1; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
-    .ask-header { padding: 20px 32px 0; flex-shrink: 0; }
+    .ask-header { padding: 20px 32px 0; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .ask-header-text { flex: 1; min-width: 0; }
     .ask-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 4px; }
     .ask-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .ask-header-actions { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .ask-history-hint { font-size: 10px; color: var(--muted2); max-width: 200px; text-align: right; line-height: 1.35; }
+    .ask-clear { padding: 6px 12px; font-size: 12px; }
+    .ask-trace {
+      font-size: 11px; color: var(--muted2); margin-bottom: 10px; padding: 10px 12px;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      line-height: 1.45;
+    }
+    .ask-trace-title { font-size: 10px; font-weight: 700; letter-spacing: .55px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .ask-trace-step { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; }
+    .ask-trace-step:last-child { margin-bottom: 0; }
+    .ask-trace-step .step-ico { flex-shrink: 0; width: 16px; text-align: center; opacity: .85; }
+    .ask-source-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .ask-source-chip {
+      font-size: 10px; font-family: 'DM Mono', monospace; padding: 3px 7px; border-radius: 4px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--accent); max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .ask-messages { flex: 1; overflow-y: auto; padding: 0 32px 16px; min-height: 0; }
     .ask-messages::-webkit-scrollbar { width: 3px; }
     .ask-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -684,11 +744,16 @@
       #view-ask .ask-header,
       #view-ask .ask-input-wrap,
       #view-ask .ask-messages { padding-left: 16px; padding-right: 16px; }
+      .ask-header { flex-direction: column; align-items: stretch; }
+      .ask-header-actions { align-items: flex-start; }
+      .ask-history-hint { text-align: left; max-width: none; }
       #view-detail { padding: 20px 16px; }
       #trace-log, #trace-changes, #trace-review { padding: 12px 16px; }
       .trace-header { padding: 12px 16px; }
       .stat-strip { overflow-x: auto; }
       .review-shots { grid-template-columns: 1fr; }
+      .review-gate { grid-template-columns: 1fr; }
+      .checklist-grid { grid-template-columns: 1fr; }
       .review-regression { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       #view-stats { padding: 16px; }
@@ -880,8 +945,14 @@
     <!-- Ask Code -->
     <div id="view-ask">
       <div class="ask-header">
-        <div class="ask-title">Ask about the codebase</div>
-        <div class="ask-sub">Search semantically and get an LLM-powered answer with relevant code context.</div>
+        <div class="ask-header-text">
+          <div class="ask-title">Ask about the codebase</div>
+          <div class="ask-sub">Vector search over indexed code chunks (Chroma), then streamed LLM answer. History is saved in this browser.</div>
+        </div>
+        <div class="ask-header-actions">
+          <button type="button" class="btn-ghost ask-clear" onclick="clearAskHistory()">Clear chat history</button>
+          <span class="ask-history-hint">Stored locally — survives refresh, not other devices</span>
+        </div>
       </div>
       <div class="ask-messages" id="ask-messages">
         <div class="ask-empty" id="ask-empty">
@@ -943,7 +1014,27 @@
 /* ─── State ─── */
 let selTicket = null, selTask = null, es = null;
 let prog = 0, ptimer = null, changesData = [], screenshots = {}, pendingScreenshotLabels = [];
-let chatHistory = [];
+const ASK_HISTORY_KEY = 'geppetto-ask-history-v1';
+const ASK_HISTORY_MAX = 80;
+
+function loadAskHistory() {
+  try {
+    const raw = localStorage.getItem(ASK_HISTORY_KEY);
+    if (!raw) return [];
+    const a = JSON.parse(raw);
+    return Array.isArray(a) ? a.slice(-ASK_HISTORY_MAX) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveAskHistory() {
+  try {
+    localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(chatHistory.slice(-ASK_HISTORY_MAX)));
+  } catch(e) {}
+}
+
+let chatHistory = loadAskHistory();
 let askAbort = null;
 let currentView = 'home';
 
@@ -1472,7 +1563,9 @@ function renderReviewPanel() {
   const before = screenshots.before || eventScreenshots.before;
   const after = screenshots.after || eventScreenshots.after;
   const files = changesData.filter(c => c.type==='edit'||c.type==='create');
-  let html = `
+  const events = selTask?.events || [];
+  let html = renderReviewGate(events, files, before, after);
+  html += `
     <div class="review-shots">
       <div class="review-shot"><div class="review-shot-hdr before">Before</div>${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-empty">No screenshot</div>'}</div>
       <div class="review-shot"><div class="review-shot-hdr after">After</div>${after ? `<img src="${esc(after)}" alt="after"/>` : '<div class="review-empty">Not yet</div>'}</div>
@@ -1489,6 +1582,141 @@ function renderReviewPanel() {
   }
   panel.innerHTML = html || '<div class="review-empty" style="padding:40px;text-align:center;color:var(--muted2);">Nothing to review yet</div>';
   initVisualRegression(before, after);
+}
+function hasSuccessfulTest(events) {
+  return events.some(ev => {
+    if (ev.type !== 'tool_result' || ev.tool !== 'run_tests') return false;
+    const text = resultText(ev.result).toLowerCase();
+    return text && !/(failed|error|traceback|tool error|exited with|npm error)/.test(text);
+  });
+}
+function hasFailedTest(events) {
+  return events.some(ev => {
+    if (ev.type !== 'tool_result' || ev.tool !== 'run_tests') return false;
+    return /(failed|error|traceback|tool error|exited with|npm error)/i.test(resultText(ev.result));
+  });
+}
+function hasTool(events, tool) {
+  return events.some(ev => ev.tool === tool);
+}
+function hasPr(events) {
+  return events.some(ev => ev.type === 'tool_result' && ev.tool === 'push_and_create_pr' && /https?:\/\/\S+|pr created/i.test(resultText(ev.result)));
+}
+function reviewSignals(events, files, before, after) {
+  return {
+    screenshotPair: Boolean(before && after),
+    testsPassed: hasSuccessfulTest(events),
+    testsFailed: hasFailedTest(events),
+    diffReviewed: hasTool(events, 'git_diff'),
+    committed: hasTool(events, 'commit_changes'),
+    prCreated: hasPr(events),
+    taskFailed: events.some(ev => ev.type === 'error'),
+    fileCount: files.length,
+    sharedTouch: files.some(c => /(^|\/)(api|agent|config|components|common|utils|lib)\b/.test(c.path || '')),
+  };
+}
+function checklistItems(signals) {
+  return [
+    {
+      label: 'Screenshots captured',
+      ok: signals.screenshotPair,
+      detail: signals.screenshotPair ? 'Before and after are ready for visual review.' : 'Need both before and after screenshots.',
+    },
+    {
+      label: 'Tests passed',
+      ok: signals.testsPassed && !signals.testsFailed,
+      warn: !signals.testsPassed && !signals.testsFailed,
+      detail: signals.testsFailed ? 'A test run reported failures.' : signals.testsPassed ? 'Latest test signal looks clean.' : 'No test result found in this run.',
+    },
+    {
+      label: 'Diff reviewed',
+      ok: signals.diffReviewed,
+      detail: signals.diffReviewed ? 'Agent requested a git diff before finishing.' : 'No git diff review signal yet.',
+    },
+    {
+      label: 'PR path ready',
+      ok: signals.prCreated || signals.committed,
+      warn: signals.committed && !signals.prCreated,
+      detail: signals.prCreated ? 'PR was created for review.' : signals.committed ? 'Committed locally; PR not detected.' : 'No commit or PR signal detected.',
+    },
+  ];
+}
+function computeReviewRisk(signals, visualPct = null) {
+  let score = 12;
+  score += Math.min(signals.fileCount * 8, 32);
+  if (signals.sharedTouch) score += 14;
+  if (!signals.screenshotPair) score += 14;
+  if (signals.testsFailed) score += 24;
+  else if (!signals.testsPassed) score += 12;
+  if (signals.taskFailed) score += 18;
+  if (visualPct !== null) {
+    if (visualPct >= 10) score += 20;
+    else if (visualPct >= 2) score += 10;
+    else if (visualPct >= .5) score += 5;
+  }
+  if (signals.testsPassed && !signals.testsFailed) score -= 10;
+  if (signals.screenshotPair) score -= 6;
+  if (signals.prCreated) score -= 4;
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const level = score > 60 ? 'high' : score > 30 ? 'medium' : 'low';
+  const copy = level === 'high'
+    ? 'Needs a careful human pass before review handoff.'
+    : level === 'medium'
+      ? 'Reviewable, but check the highlighted gaps first.'
+      : 'Low risk based on the available run signals.';
+  return { score, level, copy };
+}
+function renderReviewGate(events, files, before, after) {
+  const signals = reviewSignals(events, files, before, after);
+  const risk = computeReviewRisk(signals);
+  const items = checklistItems(signals);
+  const passed = items.filter(item => item.ok).length;
+  const checks = items.map(item => {
+    const state = item.ok ? 'pass' : item.warn ? 'warn' : 'fail';
+    const mark = item.ok ? '✓' : item.warn ? '!' : '×';
+    return `
+      <div class="check-item check-${state}">
+        <span class="check-mark">${mark}</span>
+        <div>
+          <div class="check-label">${esc(item.label)}</div>
+          <div class="check-detail">${esc(item.detail)}</div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="review-gate">
+      <div class="review-risk">
+        <div class="risk-eyebrow">Run Risk</div>
+        <div class="risk-score-row">
+          <div class="risk-score" id="review-risk-score">${risk.score}</div>
+          <div class="risk-level risk-${risk.level}" id="review-risk-level">${esc(risk.level)}</div>
+        </div>
+        <div class="risk-copy" id="review-risk-copy">${esc(risk.copy)}</div>
+      </div>
+      <div class="review-checklist">
+        <div class="checklist-hdr">
+          <div class="checklist-title">PR-ready Checklist</div>
+          <div class="checklist-count">${passed}/${items.length} clear</div>
+        </div>
+        <div class="checklist-grid">${checks}</div>
+      </div>
+    </div>`;
+}
+function updateReviewRisk(visualPct) {
+  const eventScreenshots = collectScreenshots(selTask?.events || []);
+  const before = screenshots.before || eventScreenshots.before;
+  const after = screenshots.after || eventScreenshots.after;
+  const files = changesData.filter(c => c.type==='edit'||c.type==='create');
+  const risk = computeReviewRisk(reviewSignals(selTask?.events || [], files, before, after), visualPct);
+  const score = $('review-risk-score');
+  const level = $('review-risk-level');
+  const copy = $('review-risk-copy');
+  if (score) score.textContent = String(risk.score);
+  if (level) {
+    level.className = `risk-level risk-${risk.level}`;
+    level.textContent = risk.level;
+  }
+  if (copy) copy.textContent = risk.copy;
 }
 function renderVisualRegression(before, after) {
   if (!before || !after) {
@@ -1603,6 +1831,7 @@ async function drawVisualDiff(before, after) {
     const pct = changed / (width * height) * 100;
     if (metric) metric.textContent = `${pct.toFixed(pct < 1 ? 2 : 1)}% changed`;
     if (note) note.textContent = `${changed.toLocaleString()} of ${(width * height).toLocaleString()} sampled pixels changed.`;
+    updateReviewRisk(pct);
   } catch (e) {
     if (metric) metric.textContent = 'diff unavailable';
     if (note) note.textContent = 'Could not read one of the screenshots for pixel comparison.';
@@ -1680,6 +1909,25 @@ function initAskInput() {
   });
 }
 
+function formatAskSourcesHtml(model, sources) {
+  const src = sources || [];
+  const chips = src.length
+    ? `<div class="ask-source-bar">${src.map(s => {
+        const path = s.file_path || '';
+        const line = s.start_line != null ? s.start_line : '';
+        const name = s.name || s.chunk_type || '';
+        const title = `${path}:${line} ${name}`.trim();
+        return `<span class="ask-source-chip" title="${esc(title)}">${esc(path)}${line !== '' ? ':' + line : ''}</span>`;
+      }).join('')}</div>`
+    : '<div class="ask-source-bar"><span class="ask-source-chip">No chunks retrieved — empty index?</span></div>';
+  return `
+    <div class="ask-trace-title">Retrieval & model</div>
+    <div class="ask-trace-step"><span class="step-ico">◇</span><span><strong>Vector DB:</strong> Chroma — ${src.length} chunk(s) matched your question (same indexer as the coding agent).</span></div>
+    <div class="ask-trace-step"><span class="step-ico">▸</span><span><strong>LLM:</strong> ${esc(model || 'configured model')}</span></div>
+    <div class="ask-trace-step"><span class="step-ico">📎</span><span><strong>Sources:</strong></span></div>
+    ${chips}`;
+}
+
 async function submitAsk() {
   const input = $('ask-input');
   const question = input.value.trim();
@@ -1690,15 +1938,22 @@ async function submitAsk() {
   input.value = '';
   input.style.height = 'auto';
 
-  // User message
+  chatHistory.push({ role: 'user', content: question, ts: Date.now() });
+  saveAskHistory();
+
   appendUserMsg(question);
 
-  // Assistant placeholder
   const msgEl = appendAssistantMsg('');
+  const trace = msgEl.querySelector('.ask-trace');
   const bubble = msgEl.querySelector('.msg-bubble-assistant');
-  bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Searching codebase…</div>`;
+  trace.innerHTML = `
+    <div class="ask-trace-title">In progress</div>
+    <div class="ask-trace-step"><span class="step-ico">…</span><span>Embedding query and searching indexed code chunks…</span></div>`;
+  bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Waiting for retrieval + model…</div>`;
 
   let fullText = '';
+  let lastModel = '';
+  let lastSources = [];
   try {
     const res = await fetch('/ask', {
       method: 'POST',
@@ -1710,6 +1965,7 @@ async function submitAsk() {
     const dec = new TextDecoder();
     let buf = '';
     let started = false;
+    let streamDone = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -1719,23 +1975,54 @@ async function submitAsk() {
       buf = lines.pop();
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        const payload = line.slice(6);
-        if (payload === '[DONE]') break;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') { streamDone = true; break; }
         try {
           const d = JSON.parse(payload);
-          if (d.error) { bubble.innerHTML = `<span style="color:var(--red)">${esc(d.error)}</span>`; break; }
-          if (d.text) {
+          const err = d.error || (d.type === 'error' ? d.error : null);
+          if (err) {
+            trace.innerHTML = `<div class="ask-trace-title">Error</div><div class="ask-trace-step">${esc(err)}</div>`;
+            fullText = `Error: ${err}`;
+            bubble.innerHTML = `<span style="color:var(--red)">${esc(err)}</span>`;
+            started = true;
+            streamDone = true;
+            break;
+          }
+          if (d.type === 'meta') {
+            lastModel = d.model || lastModel;
+            lastSources = d.sources || [];
+            trace.innerHTML = formatAskSourcesHtml(lastModel, lastSources);
+            bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Streaming LLM answer…</div>`;
+            continue;
+          }
+          const piece = d.text || '';
+          if (piece) {
             if (!started) { bubble.innerHTML = ''; started = true; }
-            fullText += d.text;
+            fullText += piece;
             bubble.innerHTML = renderMarkdown(fullText);
           }
         } catch(e) {}
       }
+      if (streamDone) break;
     }
-    if (!started) bubble.innerHTML = '<span style="color:var(--muted)">No response</span>';
+    if (!started && !fullText) {
+      bubble.innerHTML = '<span style="color:var(--muted)">No response</span>';
+      fullText = 'No response';
+    }
   } catch(e) {
+    fullText = `Error: ${e.message}`;
     bubble.innerHTML = `<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
+    trace.innerHTML = `<div class="ask-trace-title">Error</div><div class="ask-trace-step">${esc(e.message)}</div>`;
   }
+
+  chatHistory.push({
+    role: 'assistant',
+    content: fullText,
+    model: lastModel,
+    sources: lastSources,
+    ts: Date.now(),
+  });
+  saveAskHistory();
 
   $('ask-send').disabled = false;
   $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
@@ -1754,10 +2041,46 @@ function appendAssistantMsg(text) {
   el.className = 'msg msg-assistant';
   el.innerHTML = `
     <div class="msg-avatar">cG</div>
-    <div class="msg-content"><div class="msg-bubble-assistant">${text ? renderMarkdown(text) : ''}</div></div>`;
+    <div class="msg-content">
+      <div class="ask-trace" aria-live="polite"></div>
+      <div class="msg-bubble-assistant">${text ? renderMarkdown(text) : ''}</div>
+    </div>`;
   $('ask-messages').appendChild(el);
   $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
   return el;
+}
+
+function renderAssistantFromHistory(entry) {
+  const msgEl = appendAssistantMsg('');
+  const trace = msgEl.querySelector('.ask-trace');
+  const bubble = msgEl.querySelector('.msg-bubble-assistant');
+  if (entry.model || (entry.sources && entry.sources.length)) {
+    trace.innerHTML = formatAskSourcesHtml(entry.model, entry.sources);
+  } else {
+    trace.innerHTML = '<div class="ask-trace-title">Saved message</div><div class="ask-trace-step">Sources were not stored for this reply.</div>';
+  }
+  bubble.innerHTML = entry.content ? renderMarkdown(entry.content) : '<span style="color:var(--muted)">(empty)</span>';
+}
+
+function clearAskHistory() {
+  chatHistory = [];
+  saveAskHistory();
+  const wrap = $('ask-messages');
+  wrap.innerHTML = `
+    <div class="ask-empty" id="ask-empty">
+      <div class="ask-empty-icon">💬</div>
+      <div class="ask-empty-text">Ask anything about the codebase</div>
+    </div>`;
+}
+
+function initAskHistory() {
+  if (!chatHistory.length) return;
+  $('ask-empty')?.remove();
+  for (const entry of chatHistory) {
+    if (entry.role === 'user') appendUserMsg(entry.content);
+    else renderAssistantFromHistory(entry);
+  }
+  $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
 }
 
 function renderMarkdown(text) {
@@ -1798,6 +2121,7 @@ loadJira();
 loadTasks();
 setInterval(loadTasks, 5000);
 initAskInput();
+initAskHistory();
 updateThemeBtn();
 </script>
 </body>

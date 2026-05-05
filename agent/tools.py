@@ -26,12 +26,16 @@ def _git(args: list[str]) -> tuple[bool, str]:
 # ── Tool implementations ──────────────────────────────────────────────────────
 
 def search_code(query: str, n_results: int = 8) -> str:
+    context, _sources = retrieve_for_ask(query, n_results=n_results)
+    return context
+
+
+def retrieve_for_ask(query: str, n_results: int = 8) -> tuple[str, list[dict]]:
+    """Semantic retrieval for Q&A: prompt string + structured sources for the UI."""
     from indexer.store import search, lookup_symbol
 
-    # Two-tier: semantic search + exact symbol lookup for any capitalised words
     hits = search(query, n_results=n_results)
 
-    # Also try to find exact symbols mentioned in the query
     words = [w.strip(".,;:") for w in query.split() if w[0:1].isupper()]
     for word in words[:2]:
         exact = lookup_symbol(word)
@@ -40,18 +44,28 @@ def search_code(query: str, n_results: int = 8) -> str:
                 hits.insert(0, h)
 
     if not hits:
-        return "No results found."
+        return "No results found.", []
 
-    lines = []
+    sources: list[dict] = []
+    lines: list[str] = []
     for i, h in enumerate(hits[:10], 1):
         m = h["metadata"]
+        sources.append(
+            {
+                "file_path": m.get("file_path", ""),
+                "start_line": m.get("start_line", 0),
+                "chunk_type": m.get("chunk_type", ""),
+                "name": m.get("name", ""),
+                "score": h.get("score", 0.0),
+            }
+        )
         lines.append(
             f"[{i}] {m['file_path']}:{m['start_line']}  "
             f"({m['chunk_type']}: {m['name']})  score={h['score']}"
         )
         lines.append(h["content"][:600])
         lines.append("─" * 60)
-    return "\n".join(lines)
+    return "\n".join(lines), sources
 
 
 def read_file(path: str) -> str:

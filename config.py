@@ -25,6 +25,7 @@ GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 # ── Other API keys (only needed for chosen backend) ───────────────────────────
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
 # ── Embeddings ────────────────────────────────────────────────────────────────
 EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
