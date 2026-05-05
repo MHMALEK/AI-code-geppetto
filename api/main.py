@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import threading
 from pathlib import Path
 from typing import Any
@@ -175,6 +176,61 @@ def get_stats() -> dict[str, Any]:
             }
             for t in tasks[:20]
         ],
+    }
+
+
+# ── Task summary (for n8n / external pollers) ─────────────────────────────────
+
+@app.get("/tasks/{task_id}/summary")
+def task_summary(task_id: str) -> dict:
+    """
+    Lightweight summary of a task — designed for n8n polling nodes.
+    Extracts PR URL, branch, cost, and duration from the event log so the
+    caller doesn't have to parse raw events.
+    """
+    task = get_task(task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+
+    pr_url = None
+    branch = None
+    cost_usd = 0.0
+    duration_s = 0
+    total_tokens = 0
+    tool_calls = 0
+    complete_message = ""
+
+    for ev in task.events:
+        t = ev.get("type")
+        if t == "tool_result" and ev.get("tool") == "push_and_create_pr":
+            m = re.search(r"https?://\S+", ev.get("result", ""))
+            if m:
+                pr_url = m.group(0).rstrip(".")
+        if t == "tool_call" and ev.get("tool") == "create_branch":
+            branch = ev.get("input", {}).get("branch_name")
+        if t == "stats":
+            cost_usd      = ev.get("cost_usd", 0.0)
+            duration_s    = int(ev.get("duration_s", 0))
+            total_tokens  = ev.get("total_tokens", 0)
+            tool_calls    = ev.get("tool_calls", 0)
+        if t == "complete":
+            complete_message = ev.get("message", "")
+
+    return {
+        "id":            task.id,
+        "title":         task.title,
+        "status":        task.status,
+        "jira_id":       task.jira_id,
+        "pr_url":        pr_url,
+        "branch":        branch,
+        "cost_usd":      cost_usd,
+        "duration_s":    duration_s,
+        "total_tokens":  total_tokens,
+        "tool_calls":    tool_calls,
+        "message":       complete_message,
+        "dashboard_url": "http://localhost:8000",
+        "created_at":    task.created_at,
+        "updated_at":    task.updated_at,
     }
 
 

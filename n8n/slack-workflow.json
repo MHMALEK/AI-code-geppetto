@@ -1,0 +1,220 @@
+{
+  "name": "Geppetto — Slack Slash Command",
+  "nodes": [
+    {
+      "id": "sl-1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "geppetto-slack",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "notes": "Point your Slack slash command here:\nPOST http://<your-n8n-host>:5678/webhook/geppetto-slack\n\nSlack sends form-encoded body with: text, response_url, user_name, channel_name"
+    },
+    {
+      "id": "sl-2",
+      "name": "Send Ack to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.body.response_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ response_type: 'in_channel', text: '⏳ On it! Running Geppetto on: *' + $json.body.text + '*' }) }}"
+      },
+      "notes": "Acknowledges Slack within 3s. Slack requires this to avoid the 'failed with the error: operation_timeout' error."
+    },
+    {
+      "id": "sl-3",
+      "name": "Create Geppetto Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://geppetto:8000/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ title: $('Webhook Trigger').item.json.body.text, description: 'Slack task requested by @' + $('Webhook Trigger').item.json.body.user_name + ' in #' + $('Webhook Trigger').item.json.body.channel_name }) }}"
+      },
+      "notes": "Uses docker service name 'geppetto'. Change to 'localhost' if running without Docker."
+    },
+    {
+      "id": "sl-4",
+      "name": "Store Values",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [900, 300],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "sv-1", "name": "task_id",      "value": "={{ $json.task_id }}",                                              "type": "string" },
+            { "id": "sv-2", "name": "response_url",  "value": "={{ $('Webhook Trigger').item.json.body.response_url }}",           "type": "string" },
+            { "id": "sv-3", "name": "user_name",     "value": "={{ $('Webhook Trigger').item.json.body.user_name }}",              "type": "string" },
+            { "id": "sv-4", "name": "task_title",    "value": "={{ $('Webhook Trigger').item.json.body.text }}",                   "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sl-5",
+      "name": "Wait 12s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "parameters": { "amount": 12, "unit": "seconds" },
+      "notes": "Poll every 12s. Geppetto tasks typically take 45–120s."
+    },
+    {
+      "id": "sl-6",
+      "name": "Poll Task Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=http://geppetto:8000/tasks/{{ $('Store Values').item.json.task_id }}/summary",
+        "options": {}
+      }
+    },
+    {
+      "id": "sl-7",
+      "name": "Still Running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            { "id": "sr-1", "leftValue": "={{ $json.status }}", "rightValue": "running", "operator": { "type": "string", "operation": "equals" } },
+            { "id": "sr-2", "leftValue": "={{ $json.status }}", "rightValue": "pending",  "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "notes": "true → loop back to Wait\nfalse → check completed vs failed"
+    },
+    {
+      "id": "sl-8",
+      "name": "Completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 420],
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            { "id": "cp-1", "leftValue": "={{ $json.status }}", "rightValue": "completed", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sl-9",
+      "name": "Notify Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Store Values').item.json.response_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ response_type: 'in_channel', text: '✅ *Done!* — ' + $json.title + '\\n> ⏱ ' + $json.duration_s + 's  ·  💰 $' + $json.cost_usd + '  ·  🔧 ' + $json.tool_calls + ' tool calls' + ($json.pr_url ? '\\n> 🔗 <' + $json.pr_url + '|View Pull Request>' : '') + '\\n> 📊 <' + $json.dashboard_url + '|Dashboard>' }) }}"
+      }
+    },
+    {
+      "id": "sl-10",
+      "name": "Notify Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 540],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Store Values').item.json.response_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ response_type: 'in_channel', text: '❌ *Geppetto hit an error* on: ' + $json.title + '\\n> Check the <' + $json.dashboard_url + '|Dashboard> for details.' }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Send Ack to Slack", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Ack to Slack": {
+      "main": [
+        [{ "node": "Create Geppetto Task", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Geppetto Task": {
+      "main": [
+        [{ "node": "Store Values", "type": "main", "index": 0 }]
+      ]
+    },
+    "Store Values": {
+      "main": [
+        [{ "node": "Wait 12s", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 12s": {
+      "main": [
+        [{ "node": "Poll Task Summary", "type": "main", "index": 0 }]
+      ]
+    },
+    "Poll Task Summary": {
+      "main": [
+        [{ "node": "Still Running?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Still Running?": {
+      "main": [
+        [{ "node": "Wait 12s",   "type": "main", "index": 0 }],
+        [{ "node": "Completed?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Completed?": {
+      "main": [
+        [{ "node": "Notify Success", "type": "main", "index": 0 }],
+        [{ "node": "Notify Failure", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": true, "instanceId": "geppetto-demo" },
+  "id": "geppetto-slack-workflow-v1",
+  "tags": [{ "id": "1", "name": "geppetto" }],
+  "active": false,
+  "versionId": "1"
+}

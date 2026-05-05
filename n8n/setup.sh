@@ -26,25 +26,35 @@ until curl -sf "$N8N_URL/healthz" >/dev/null 2>&1; do
 done
 echo " ready."
 
-# ── 2. Import workflow via n8n CLI ────────────────────────────────────────────
-echo "Importing workflow..."
-docker compose exec -T n8n \
-  n8n import:workflow --input=/home/node/.n8n/workflows/geppetto-workflow.json
+# ── 2. Import workflows via n8n CLI ──────────────────────────────────────────
+import_workflow() {
+  local file="$1" label="$2"
+  echo "Importing $label..."
+  docker compose exec -T n8n \
+    n8n import:workflow --input="/home/node/.n8n/workflows/$file" 2>/dev/null \
+    && echo "  ✓ $label" || echo "  ✗ $label (may already exist — continuing)"
+}
 
-# ── 3. Activate via REST API ──────────────────────────────────────────────────
-echo "Activating workflow..."
-WORKFLOW_ID=$(curl -sf "$N8N_URL/api/v1/workflows" \
-  -H "Accept: application/json" | jq -r '.data[0].id // empty' 2>/dev/null || true)
+import_workflow "geppetto-workflow.json"    "Webhook workflow"
+import_workflow "slack-workflow.json"       "Slack slash command workflow"
 
-if [[ -z "$WORKFLOW_ID" ]]; then
+# ── 3. Activate workflows via REST API ───────────────────────────────────────
+echo "Activating workflows..."
+WORKFLOW_IDS=$(curl -sf "$N8N_URL/api/v1/workflows" \
+  -H "Accept: application/json" | jq -r '.data[].id // empty' 2>/dev/null || true)
+
+if [[ -z "$WORKFLOW_IDS" ]]; then
   echo ""
-  echo "  Could not read workflow ID from REST API."
-  echo "  Open $N8N_URL, find the workflow, and activate it manually."
+  echo "  Could not read workflow IDs from REST API."
+  echo "  Open $N8N_URL and activate each workflow manually."
 else
-  curl -sf -X PATCH "$N8N_URL/api/v1/workflows/$WORKFLOW_ID" \
-    -H "Content-Type: application/json" \
-    -d '{"active":true}' >/dev/null
-  echo "  Activated (id: $WORKFLOW_ID)"
+  while IFS= read -r wid; do
+    [[ -z "$wid" ]] && continue
+    curl -sf -X PATCH "$N8N_URL/api/v1/workflows/$wid" \
+      -H "Content-Type: application/json" \
+      -d '{"active":true}' >/dev/null
+    echo "  Activated workflow: $wid"
+  done <<< "$WORKFLOW_IDS"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -52,8 +62,12 @@ echo ""
 echo "  n8n:        $N8N_URL"
 echo "  Geppetto:   http://localhost:8000"
 echo ""
-echo "  Test trigger:"
+echo "  Webhook trigger test:"
 echo "    curl -X POST $N8N_URL/webhook/geppetto \\"
 echo "      -H 'Content-Type: application/json' \\"
-echo "      -d '{\"title\":\"Add dark-mode toggle\",\"description\":\"Add a theme toggle to the nav bar\",\"jira_id\":\"SCRUM-1\"}'"
+echo "      -d '{\"title\":\"Add dark-mode toggle\",\"description\":\"Add a theme toggle\",\"jira_id\":\"SCRUM-1\"}'"
+echo ""
+echo "  Slack slash command endpoint:"
+echo "    POST $N8N_URL/webhook/geppetto-slack"
+echo "  → Set this URL in your Slack app's slash command config"
 echo ""
