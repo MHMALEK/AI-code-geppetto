@@ -6,6 +6,7 @@ venv/
 data/chroma/
 data/tasks.db
 data/*.db
+data/screenshots/
 .DS_Store
 
 # sample-geppetto-repo is a separate standalone git repo — not part of this project

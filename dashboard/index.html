@@ -1,1248 +1,736 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Geppetto · AI Coding Agent</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>codeGeppetto · AI Coding Agent</title>
+  <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    /* ── colour tokens — light default, dark override ── */
+
     :root {
-      --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --red: #f85149;
-      --bg: #f4f6fb; --bg2: #ffffff; --surface: #ffffff; --surface2: #f0f2f7; --surface3: #e5e8ef;
-      --border: #dde1ea; --border2: #c8cdd8;
-      --text: #111827; --muted: #6b7280; --muted2: #9ca3af;
+      --bg:       #F7F7F9;
+      --surface:  #FFFFFF;
+      --surface2: #F0F0F4;
+      --surface3: #E8E8EE;
+      --border:   #E2E2EA;
+      --border2:  #D0D0DC;
+      --text:     #111118;
+      --muted:    #6C6C82;
+      --muted2:   #9898B0;
+      --accent:   #4F46E5;
+      --accent-bg:#EEF2FF;
+      --accent-dim:#6366F1;
+      --green:    #10B981;
+      --green-bg: #ECFDF5;
+      --red:      #EF4444;
+      --red-bg:   #FEF2F2;
+      --amber:    #F59E0B;
+      --amber-bg: #FFFBEB;
+      --shadow:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+      --radius:   8px;
+      --radius-lg:12px;
     }
+
     [data-theme="dark"] {
-      --bg: #080c14; --bg2: #0d1117; --surface: #161b22; --surface2: #1c2128; --surface3: #21262d;
-      --border: #21262d; --border2: #30363d;
-      --text: #e6edf3; --muted: #8b949e; --muted2: #6e7681;
-    }
-    body::before { background-image: radial-gradient(#c8cdd8 1px, transparent 1px); opacity: 0.5; }
-    [data-theme="dark"] body::before { background-image: radial-gradient(#21262d 1px, transparent 1px); opacity: 0.45; }
-    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; }
-    code, pre, .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-
-    /* ── dot-grid background ── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background-size: 28px 28px;
-      pointer-events: none;
-      z-index: 0;
-    }
-    #app { position: relative; z-index: 1; display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
-
-    /* ── SIDEBAR ── */
-    #sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: var(--bg2); }
-    #sb-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .logo-name { font-size: 15px; font-weight: 800; letter-spacing: -0.6px; }
-    .logo-sub  { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; letter-spacing: 0.3px; }
-    #sb-body { flex: 1; overflow-y: auto; }
-    #sb-body::-webkit-scrollbar { width: 3px; }
-    #sb-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    #sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
-    .new-task-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 10px; padding: 9px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s; letter-spacing: 0.2px; }
-    .new-task-btn:hover { border-color: var(--blue); color: var(--blue); background: #1f6feb0a; }
-
-    .sec-label { padding: 14px 16px 7px; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted2); display:flex; align-items:center; gap:6px; }
-    .sec-label::after { content:''; flex:1; height:1px; background:var(--border); border-radius:1px; }
-    .ticket-item { padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
-    .ticket-item:hover { background: var(--surface2); }
-    .ticket-item.active { background: var(--surface2); border-left-color: var(--blue); }
-    .t-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-    .t-key { font-size: 11px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; }
-    .t-sum { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .task-item { padding: 8px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
-    .task-item:hover { background: var(--surface2); }
-    .task-item.active { background: var(--surface2); border-left-color: var(--purple); }
-    .task-row { display: flex; align-items: center; gap: 6px; }
-    .task-title { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
-
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
-    .b-todo { background: var(--surface3); color: var(--muted); }
-    .b-prog { background: #b7791022; color: var(--orange); border: 1px solid #b7791044; }
-    .b-rev  { background: #1f6feb22; color: var(--blue);   border: 1px solid #1f6feb44; }
-    .b-done { background: #23863622; color: var(--green);  border: 1px solid #23863644; }
-    .b-run  { background: #1f6feb22; color: var(--blue);   border: 1px solid #1f6feb44; animation: blink 1.4s infinite; }
-    .b-fail { background: #da363322; color: var(--red);    border: 1px solid #da363344; }
-
-    /* ── MAIN ── */
-    #main { display: flex; flex-direction: column; overflow: hidden; }
-    #pbar-wrap { height: 2px; background: transparent; flex-shrink: 0; }
-    #pbar { height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple)); width: 0; transition: width .6s; box-shadow: 0 0 8px #58a6ff88; }
-    #m-header { padding: 0 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; height: 54px; background: var(--bg2); }
-    #m-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-
-    /* ── WELCOME — two-column hero ── */
-    #welcome {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      overflow: hidden; position: relative; padding: 0;
+      --bg:       #0B0B10;
+      --surface:  #131319;
+      --surface2: #1C1C24;
+      --surface3: #24242E;
+      --border:   #2A2A38;
+      --border2:  #363648;
+      --text:     #EEEEF5;
+      --muted:    #8888A4;
+      --muted2:   #5A5A78;
+      --accent:   #818CF8;
+      --accent-bg:#1E1B4B;
+      --accent-dim:#6366F1;
+      --green:    #34D399;
+      --green-bg: #022C22;
+      --red:      #F87171;
+      --red-bg:   #2D0B0B;
+      --amber:    #FCD34D;
+      --amber-bg: #2D1B00;
+      --shadow:   0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+      --shadow-md:0 4px 24px rgba(0,0,0,.4), 0 1px 4px rgba(0,0,0,.3);
     }
 
-    /* subtle ambient glow across the page */
-    .wb-bg-glow {
-      position: absolute; inset: 0; pointer-events: none;
-      background:
-        radial-gradient(ellipse 55% 70% at 30% 50%, rgba(88,166,255,.07) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 75% 60%, rgba(167,139,250,.05) 0%, transparent 70%);
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
-    [data-theme="dark"] .wb-bg-glow {
-      background:
-        radial-gradient(ellipse 55% 70% at 30% 50%, rgba(88,166,255,.10) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 75% 60%, rgba(167,139,250,.07) 0%, transparent 70%);
-    }
+    code, pre, .mono { font-family: 'DM Mono', 'Fira Code', monospace; }
 
-    /* hero two-column */
-    .wb-hero {
-      display: flex; align-items: center; gap: 40px;
-      max-width: 820px; width: 100%; padding: 0 40px;
-      position: relative; z-index: 1;
-    }
+    /* ── App shell ── */
+    #app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
 
-    /* left: lottie */
-    .wb-hero-art { flex-shrink: 0; }
-
-    /* right: text + agents + cta */
-    .wb-hero-content {
-      flex: 1; display: flex; flex-direction: column;
-      opacity: 0; animation: wb-rise .55s ease .45s forwards;
+    /* ── Top bar ── */
+    #topbar {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      position: relative; z-index: 10;
     }
-
-    /* brand wordmark */
-    .wb-brand {
-      font-size: 38px; font-weight: 900; letter-spacing: -2px;
-      line-height: 1; margin-bottom: 14px;
-    }
-    .wb-brand-code { color: var(--text); }
-    .wb-brand-sep  { color: var(--muted2); }
-    .wb-brand-name {
-      background: linear-gradient(130deg, var(--blue) 0%, #a78bfa 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-
-    /* tagline */
-    .wb-tagline {
-      font-size: 13.5px; color: var(--muted); line-height: 1.7;
-      font-weight: 500; margin-bottom: 28px; max-width: 300px;
-    }
-
-    /* divider */
-    .wb-divider {
+    .tb-logo {
       display: flex; align-items: center; gap: 10px;
-      margin-bottom: 16px;
-    }
-    .wb-divider-line { flex: 1; height: 1px; background: var(--border); }
-    .wb-divider-label { font-size: 9px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted2); }
-
-    /* agent rows — no boxes, just avatar + text */
-    .wb-agents { display: flex; flex-direction: column; gap: 18px; margin-bottom: 28px; }
-    .wb-agent {
-      display: flex; align-items: center; gap: 18px;
-      opacity: 0; animation: wb-rise .38s ease var(--wd, 1s) forwards;
-    }
-    .wb-agent-avatar {
-      width: 96px; height: 96px; flex-shrink: 0;
-      position: relative;
-    }
-    .wb-agent-avatar svg { width: 96px; height: 96px; overflow: visible; }
-    /* static only — no motion in intro */
-    .wb-agent-avatar .ant-dot { fill: var(--wa); opacity: .8; }
-    .wb-agent-avatar .iris    { fill: var(--wa); }
-    .wb-agent-avatar .led-acc { fill: var(--wa); opacity: .7; }
-    .wb-agent-avatar .bot-mouth { stroke: var(--wa); }
-
-    .wb-agent-info { display: flex; flex-direction: column; gap: 3px; }
-    .wb-agent-name {
-      font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
-      text-transform: uppercase; color: var(--wa);
-    }
-    .wb-agent-role { font-size: 12px; color: var(--muted); font-weight: 500; line-height: 1.5; }
-
-    /* CTA hint */
-    .wb-cta {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 11.5px; color: var(--muted2); font-weight: 600;
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 8px 18px; border-radius: 999px;
-      opacity: 0; animation: wb-rise .4s ease 1.4s forwards;
-      letter-spacing: 0.2px; width: fit-content;
-    }
-    .wb-cta-arrow { font-size: 14px; color: var(--blue); }
-
-    /* keep old class names that may be referenced */
-    .welcome-hint { display:none; }
-    .wb-hint-wrap { display:none; }
-    .wb-greeting  { display:none; }
-    .welcome-title, .welcome-sub { display:none; }
-
-    .crew-row { display: flex; gap: 16px; margin-top: 24px; }
-    .crew-chip { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 5px 14px 5px 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
-    .crew-chip .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
-
-    /* ── TICKET DETAIL ── */
-    #ticket-detail { flex: 1; overflow-y: auto; padding: 28px; display: none; }
-    #ticket-detail::-webkit-scrollbar { width: 3px; }
-    #ticket-detail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .td-hero { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
-    .td-icon-box { width: 48px; height: 48px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-    .td-key { font-size: 11px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; letter-spacing: 0.5px; }
-    .td-title { font-size: 20px; font-weight: 800; line-height: 1.3; letter-spacing: -0.3px; }
-    .td-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-    .td-desc { color: var(--muted); font-size: 13px; line-height: 1.8; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px; white-space: pre-wrap; }
-    .run-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 11px 26px; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; box-shadow: 0 4px 20px #3fb95033; }
-    .run-btn:hover { background: #52d966; transform: translateY(-2px); box-shadow: 0 8px 28px #3fb95055; }
-
-    /* ── AGENT TRACE ── */
-    #agent-trace { flex: 1; overflow: hidden; display: none; flex-direction: column; }
-
-    /* ── WORKERS BANNER ── */
-    #workers-banner {
-      padding: 16px 24px 14px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, var(--surface2) 0%, var(--bg2) 100%);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-weight: 700; font-size: 15px; letter-spacing: -0.3px;
+      color: var(--text); text-decoration: none; margin-right: 8px;
       flex-shrink: 0;
-      position: relative;
-      overflow: visible;
-      min-height: 196px;
     }
-    .workers-row { display: flex; gap: 18px; align-items: flex-end; flex: 1; justify-content: center; }
+    .tb-logo-mark {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 12px; flex-shrink: 0; }
+    .tb-nav { display: flex; align-items: center; gap: 2px; flex: 1; overflow-x: auto; }
+    .tb-nav::-webkit-scrollbar { display: none; }
+    .tb-nav-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 6px; border: none; background: none;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+    }
+    .tb-nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .tb-nav-btn.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+    .tb-nav-btn svg { flex-shrink: 0; opacity: .8; }
+    .tb-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .tb-badge { font-size: 11px; color: var(--muted2); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; }
+    .icon-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 14px; transition: all .15s; }
+    .icon-btn:hover { color: var(--text); border-color: var(--border2); }
+    .primary-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 6px; border: none;
+      background: var(--accent); color: #fff;
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: all .15s; flex-shrink: 0;
+    }
+    .primary-btn:hover { opacity: .9; }
 
-    /* Worker card */
-    .worker-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 16px 12px;
-      border-radius: 18px;
+    /* ── Split panels ── */
+    .split-view {
+      flex: 1; display: none; grid-template-columns: minmax(280px, 360px) 1fr;
+      overflow: hidden; min-height: 0;
+    }
+    .split-list {
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+    }
+    .split-list-header {
+      padding: 20px 18px 14px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
+      flex-shrink: 0;
+    }
+    .split-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 5px;
+    }
+    .split-title { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+    .split-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .split-scroll { flex: 1; overflow-y: auto; padding: 10px 10px 16px; min-height: 0; }
+    .split-scroll::-webkit-scrollbar { width: 3px; }
+    .split-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .split-content {
+      display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0;
+      background:
+        radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 30%),
+        var(--bg);
+    }
+    .split-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; text-align: center; padding: 40px; color: var(--muted);
+    }
+    .split-empty-icon { font-size: 34px; opacity: .45; }
+    .split-empty-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .split-empty-sub { max-width: 360px; font-size: 13px; line-height: 1.6; }
+
+    .ticket-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 11px 10px; border-radius: var(--radius); cursor: pointer;
+      border: 1px solid transparent; transition: all .12s; margin-bottom: 3px;
+    }
+    .ticket-row:hover { background: var(--surface2); }
+    .ticket-row.active { background: var(--accent-bg); border-color: rgba(99,102,241,.25); }
+    .t-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+    .t-body { flex: 1; min-width: 0; }
+    .t-key { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent); font-weight: 600; margin-bottom: 3px; }
+    .t-sum { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; line-height: 1.3; }
+    .ticket-row.active .t-sum { color: var(--accent); }
+    .t-status { font-size: 11px; color: var(--muted2); margin-top: 4px; }
+
+    .task-row-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 10px; border-radius: var(--radius); cursor: pointer;
+      transition: all .12s; margin-bottom: 3px; border: 1px solid transparent;
+    }
+    .task-row-item:hover { background: var(--surface2); }
+    .task-row-item.active { background: var(--accent-bg); border-color: rgba(99,102,241,.25); }
+    .task-row-item .task-title { font-size: 13px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+    .task-row-item.active .task-title { color: var(--accent); }
+
+    /* Status pills */
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+    .pill-pending  { background: var(--surface3); color: var(--muted); }
+    .pill-running  { background: var(--accent-bg); color: var(--accent); }
+    .pill-completed{ background: var(--green-bg); color: var(--green); }
+    .pill-failed   { background: var(--red-bg); color: var(--red); }
+    .pill-todo     { background: var(--surface3); color: var(--muted); }
+    .pill-inprogress { background: var(--accent-bg); color: var(--accent); }
+    .pill-inreview { background: var(--amber-bg); color: var(--amber); }
+    .pill-done     { background: var(--green-bg); color: var(--green); }
+    .run-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pulse-dot 1.4s infinite; }
+
+    /* ── Main panel ── */
+    #main { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+    /* ── Progress bar ── */
+    #pbar-track { height: 2px; background: transparent; flex-shrink: 0; }
+    #pbar { height: 100%; background: var(--accent); width: 0; transition: width .5s ease; }
+
+    /* ── Home ── */
+    #view-home {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative; padding: 56px;
+      background:
+        radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 26%),
+        radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--amber) 15%, transparent), transparent 28%),
+        linear-gradient(135deg, var(--bg) 0%, var(--surface2) 100%);
+    }
+    #view-home::before {
+      content: ""; position: absolute; inset: 0; opacity: .22; pointer-events: none;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at 50% 48%, #000 0%, transparent 68%);
+    }
+    .home-shell {
+      position: relative; z-index: 1; width: min(1120px, 100%);
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 430px);
+      gap: 44px; align-items: center;
+    }
+    .home-kicker {
+      display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px;
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+      color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase;
+    }
+    .home-title {
+      font-size: clamp(46px, 8vw, 92px); line-height: .92; letter-spacing: -4px;
+      font-weight: 700; color: var(--text); margin-bottom: 20px;
+    }
+    .home-title span { color: var(--accent); }
+    .home-copy { max-width: 580px; font-size: 17px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+    .home-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .home-card {
+      border: 1px solid var(--border); border-radius: 28px; padding: 26px;
+      background: color-mix(in srgb, var(--surface) 80%, transparent);
+      box-shadow: 0 24px 80px rgba(0,0,0,.12); backdrop-filter: blur(18px);
+    }
+    .home-lottie {
+      display: block; width: min(360px, 70vw); height: min(360px, 70vw);
+      margin: 0 auto 12px; filter: drop-shadow(0 20px 35px rgba(79,70,229,.18));
+    }
+    .home-card-caption { color: var(--muted); font-size: 13px; text-align: center; }
+
+    /* ── Ticket detail ── */
+    #view-detail { flex: 1; overflow-y: auto; padding: 28px 32px; display: none; }
+    #view-detail::-webkit-scrollbar { width: 3px; }
+    #view-detail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .det-header { margin-bottom: 20px; }
+    .det-key { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--accent); margin-bottom: 6px; }
+    .det-title { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; line-height: 1.3; margin-bottom: 12px; }
+    .det-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+    .det-desc {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 16px; font-size: 13px; color: var(--muted); line-height: 1.7;
+      white-space: pre-wrap; margin-bottom: 24px;
+    }
+
+    /* ── Trace ── */
+    #view-trace { flex: 1; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
+    .trace-header {
+      padding: 12px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
       background: var(--surface);
-      border: 1.5px solid var(--border2);
-      transition: all .3s cubic-bezier(.34,1.56,.64,1);
-      min-width: 170px;
-      overflow: hidden;
     }
-    /* color shimmer on top edge */
-    .worker-card::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 15%; right: 15%; height: 1.5px;
-      background: linear-gradient(90deg, transparent, #58a6ff66, transparent);
-      border-radius: 0 0 4px 4px;
+    .tr-title { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tr-sub { font-size: 12px; color: var(--muted); }
+
+    /* Workflow stepper */
+    .workflow-steps {
+      display: flex; align-items: center; padding: 10px 20px;
+      border-bottom: 1px solid var(--border); background: var(--surface2);
+      flex-shrink: 0; gap: 0; overflow-x: auto;
     }
-    .worker-card.wg2::after { background: linear-gradient(90deg, transparent, #d2992266, transparent); }
-    .worker-card.wg3::after { background: linear-gradient(90deg, transparent, #bc8cff66, transparent); }
-
-    .worker-card.active {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 2px #58a6ff20, 0 0 28px #58a6ff18, 0 6px 20px rgba(0,0,0,.5);
-      transform: translateY(-4px) scale(1.03);
-      background: #1f6feb0c;
+    .workflow-steps::-webkit-scrollbar { display: none; }
+    .wf-step {
+      display: flex; align-items: center; gap: 0; flex-shrink: 0;
     }
-    .worker-card.wg2.active { border-color: var(--orange); box-shadow: 0 0 0 2px #d2992220, 0 0 28px #d2992218, 0 6px 20px rgba(0,0,0,.5); background: #d2992208; }
-    .worker-card.wg3.active { border-color: var(--purple); box-shadow: 0 0 0 2px #bc8cff20, 0 0 28px #bc8cff18, 0 6px 20px rgba(0,0,0,.5); background: #bc8cff08; }
+    .wf-step-inner {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; color: var(--muted2);
+      border: 1px solid transparent; transition: all .25s;
+    }
+    .wf-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: all .25s; flex-shrink: 0; }
+    .wf-step.done .wf-step-inner  { color: var(--green); }
+    .wf-step.done .wf-step-dot    { background: var(--green); }
+    .wf-step.active .wf-step-inner{ color: var(--accent); background: var(--accent-bg); border-color: rgba(99,102,241,.2); }
+    .wf-step.active .wf-step-dot  { background: var(--accent); animation: pulse-dot 1s infinite; }
+    .wf-connector { width: 24px; height: 1px; background: var(--border2); flex-shrink: 0; margin: 0 -1px; }
+    .wf-step.done + .wf-step .wf-connector,
+    .wf-connector.done { background: var(--green); }
 
-    .worker-spark { display: none; }
+    /* Stats strip — always shown for running/done tasks */
+    .stat-strip {
+      display: flex; gap: 0; flex-shrink: 0;
+      border-bottom: 1px solid var(--border); background: var(--surface);
+    }
+    .stat-cell {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 8px 12px; border-right: 1px solid var(--border); gap: 2px;
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 15px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text); }
+    .stat-lbl { font-size: 10px; color: var(--muted2); font-weight: 500; letter-spacing: .3px; }
 
-    .worker-info { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-    .worker-name { font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.3px; transition: color .3s; }
-    .worker-card.active .worker-name { color: var(--blue); }
-    .worker-card.wg2.active .worker-name { color: var(--orange); }
-    .worker-card.wg3.active .worker-name { color: var(--purple); }
+    /* Tab bar */
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; padding: 0 16px; }
+    .tab-btn { padding: 10px 14px; border: none; background: none; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; display: flex; align-items: center; gap: 5px; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-cnt { background: var(--surface3); color: var(--muted); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+    .tab-btn.active .tab-cnt { background: var(--accent-bg); color: var(--accent); }
 
-    .worker-role { font-size: 9px; color: var(--muted2); background: var(--surface2); padding: 2px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.5px; }
-    .worker-status { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted2); transition: background .3s, box-shadow .3s; flex-shrink: 0; }
-    .worker-card.active .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .status-text { font-size: 10px; color: var(--muted2); font-weight: 600; transition: color .3s; min-width: 52px; text-align: center; }
-    .worker-card.active .status-text { color: var(--green); font-weight: 700; }
+    /* Event log */
+    #trace-log { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 0; }
+    #trace-log::-webkit-scrollbar { width: 3px; }
+    #trace-log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    #trace-hdr { padding: 10px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--bg2); }
-    #trace-body { flex: 1; overflow-y: auto; padding: 14px 24px; }
-    #trace-body::-webkit-scrollbar { width: 3px; }
-    #trace-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-    /* stat cards */
-    #trace-stats { padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; gap: 10px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
-    .stat-card { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 14px; }
-    .sc-icon { font-size: 14px; }
-    .sc-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.3px; }
-    .sc-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
-
-    #thinking { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
-    .think-dots { display: flex; gap: 4px; }
-    .think-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: bounce 1.3s infinite ease-in-out; }
-    .think-dot:nth-child(2) { animation-delay: .2s; }
-    .think-dot:nth-child(3) { animation-delay: .4s; }
-
-    .ev { margin-bottom: 7px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; animation: slideIn .2s ease; }
-    .ev-hdr { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; user-select: none; }
-    .ev-icon { font-size: 13px; flex-shrink: 0; }
-    .ev-type { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
-    .ev-sub { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ev-tog { color: var(--muted2); font-size: 11px; margin-left: auto; flex-shrink: 0; }
+    .ev-item { margin-bottom: 6px; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; animation: fadeUp .2s ease; }
+    .ev-hdr { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; }
+    .ev-tag { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+    .ev-sub { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'DM Mono', monospace; }
+    .ev-chevron { color: var(--muted2); font-size: 10px; flex-shrink: 0; transition: transform .15s; }
+    .ev-chevron.open { transform: rotate(180deg); }
     .ev-body { padding: 10px 12px; border-top: 1px solid var(--border); display: none; }
     .ev-body.open { display: block; }
-    .ev-start     { background: #1f6feb08; border-color: #1f6feb33; } .ev-start .ev-type     { color: var(--blue); }
-    .ev-thinking  { background: var(--surface); }                     .ev-thinking .ev-type  { color: var(--muted); }
-    .ev-tool_call { background: #d2992210; border-color: #d2992233; } .ev-tool_call .ev-type { color: var(--orange); }
-    .ev-tool_result { background: var(--surface); }                   .ev-tool_result .ev-type { color: var(--muted2); }
-    .ev-complete  { background: #3fb95008; border-color: #3fb95033; } .ev-complete .ev-type  { color: var(--green); }
-    .ev-error     { background: #f8514908; border-color: #f8514933; } .ev-error .ev-type     { color: var(--red); }
-    pre.epre { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; line-height: 1.6; color: var(--muted); }
-    .diff { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; border-radius: 6px; overflow: hidden; }
+
+    .ev-start       { border-color: var(--accent-bg); }
+    .ev-start       .ev-tag { background: var(--accent-bg); color: var(--accent); }
+    .ev-thinking    { background: var(--surface); }
+    .ev-thinking    .ev-tag { background: var(--surface2); color: var(--muted); }
+    .ev-tool_call   { background: var(--surface); border-left: 3px solid var(--amber); }
+    .ev-tool_call   .ev-tag { background: var(--amber-bg); color: var(--amber); }
+    .ev-tool_result { background: var(--surface2); }
+    .ev-tool_result .ev-tag { background: var(--surface3); color: var(--muted2); }
+    .ev-complete    { border-left: 3px solid var(--green); }
+    .ev-complete    .ev-tag { background: var(--green-bg); color: var(--green); }
+    .ev-error       { border-left: 3px solid var(--red); }
+    .ev-error       .ev-tag { background: var(--red-bg); color: var(--red); }
+
+    pre.epre { white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.6; color: var(--muted); }
+    .diff { font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.6; border-radius: 6px; overflow: hidden; }
     .dl { padding: 1px 8px; white-space: pre-wrap; word-break: break-word; }
-    .dl.add { background: #23863620; color: var(--green); } .dl.del { background: #da363320; color: var(--red); } .dl.ctx { color: var(--muted2); }
-    .cmt-card { background: var(--surface); border: 1px solid var(--green); border-radius: 8px; padding: 12px 16px; margin-top: 4px; }
-    .cmt-lbl { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: var(--green); margin-bottom: 6px; text-transform: uppercase; }
-    .cmt-msg { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); }
-    .jira-sync { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
-    .jsync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dl.add { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green); }
+    .dl.del { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+    .dl.ctx { color: var(--muted2); }
 
-    /* ── MODAL ── */
-    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
-    #modal.open { display: flex; animation: fadeIn .2s ease; }
-    .mbox { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 28px; width: 520px; max-width: 95vw; box-shadow: 0 32px 80px rgba(0,0,0,.7); animation: slideUp .25s cubic-bezier(.34,1.56,.64,1); }
-    .mbox-title { font-size: 18px; font-weight: 900; margin-bottom: 20px; }
-    .mlbl { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: block; }
-    .minput { width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s; margin-bottom: 14px; }
-    .minput:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #58a6ff18; }
-    textarea.minput { resize: vertical; min-height: 90px; }
-    .mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-    .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit; }
-    .btn-p { background: var(--green); color: #000; }
-    .btn-p:hover { background: #52d966; transform: translateY(-1px); }
-    .btn-g { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
-    .btn-g:hover { color: var(--text); background: var(--surface2); }
-    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+    /* Thinking indicator */
+    .thinking-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; }
+    .think-dots { display: flex; gap: 4px; }
+    .think-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: bounce 1.3s infinite ease-in-out; }
+    .think-dot:nth-child(2) { animation-delay: .15s; }
+    .think-dot:nth-child(3) { animation-delay: .3s; }
 
-    /* ── TOAST ── */
-    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-    .toast { background: var(--surface); border: 1px solid var(--border2); border-left-width: 3px; border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); transform: translateX(130%); transition: transform .35s cubic-bezier(.34,1.56,.64,1); pointer-events: all; font-family: 'Inter', sans-serif; }
+    /* Changes panel */
+    #trace-changes { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 0; display: none; }
+    #trace-changes::-webkit-scrollbar { width: 3px; }
+    #trace-changes::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .chg-file { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .chg-file-hdr { padding: 8px 12px; background: var(--surface2); font-size: 12px; font-family: 'DM Mono', monospace; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+    .chg-new { font-size: 10px; background: var(--green-bg); color: var(--green); padding: 1px 5px; border-radius: 3px; font-family: 'DM Sans', sans-serif; font-weight: 600; }
+    .chg-milestone { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; font-size: 12px; font-family: 'DM Mono', monospace; }
+
+    /* Review panel */
+    #trace-review { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 0; display: none; }
+    #trace-review::-webkit-scrollbar { width: 3px; }
+    #trace-review::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .review-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .review-shot { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .review-shot-hdr { padding: 7px 12px; font-size: 11px; font-weight: 600; letter-spacing: .5px; }
+    .review-shot-hdr.before { background: var(--red-bg); color: var(--red); border-bottom: 1px solid color-mix(in srgb, var(--red) 20%, transparent); }
+    .review-shot-hdr.after  { background: var(--green-bg); color: var(--green); border-bottom: 1px solid color-mix(in srgb, var(--green) 20%, transparent); }
+    .review-shot img { width: 100%; display: block; }
+    .review-empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 12px; background: var(--surface); }
+
+    /* ── Ask Code View ── */
+    #view-ask { flex: 1; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
+    .ask-header { padding: 20px 32px 0; flex-shrink: 0; }
+    .ask-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .ask-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .ask-messages { flex: 1; overflow-y: auto; padding: 0 32px 16px; min-height: 0; }
+    .ask-messages::-webkit-scrollbar { width: 3px; }
+    .ask-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .ask-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; color: var(--muted); }
+    .ask-empty-icon { font-size: 32px; opacity: .4; }
+    .ask-empty-text { font-size: 14px; }
+
+    .msg { margin-bottom: 20px; animation: fadeUp .2s ease; }
+    .msg-user { display: flex; justify-content: flex-end; }
+    .msg-user .msg-bubble { background: var(--accent); color: #fff; border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg); padding: 10px 16px; max-width: 80%; font-size: 14px; line-height: 1.5; }
+    .msg-assistant { display: flex; gap: 10px; align-items: flex-start; }
+    .msg-avatar { width: 28px; height: 28px; border-radius: 7px; background: var(--surface3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; }
+    .msg-content { flex: 1; min-width: 0; }
+    .msg-bubble-assistant {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg);
+      padding: 14px 16px; font-size: 13px; line-height: 1.7; color: var(--text);
+    }
+    .msg-bubble-assistant code { font-family: 'DM Mono', monospace; font-size: 12px; background: var(--surface2); padding: 2px 5px; border-radius: 3px; }
+    .msg-bubble-assistant pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; overflow-x: auto; }
+    .msg-bubble-assistant pre code { background: none; padding: 0; }
+    .msg-sources { margin-top: 10px; }
+    .msg-sources-label { font-size: 10px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--muted2); margin-bottom: 6px; }
+    .source-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); margin: 0 4px 4px 0; }
+    .msg-thinking { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg); font-size: 13px; color: var(--muted); }
+
+    .ask-input-wrap {
+      padding: 12px 32px 20px; flex-shrink: 0;
+      border-top: 1px solid var(--border); background: var(--surface);
+    }
+    .ask-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .ask-textarea {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--radius); padding: 10px 14px; color: var(--text);
+      font-size: 13px; font-family: 'DM Sans', sans-serif; resize: none;
+      outline: none; min-height: 42px; max-height: 120px; line-height: 1.5;
+      transition: border-color .15s;
+    }
+    .ask-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+    .ask-send {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: var(--radius); border: none;
+      background: var(--accent); color: #fff; cursor: pointer; flex-shrink: 0;
+      transition: all .15s;
+    }
+    .ask-send:hover { opacity: .85; }
+    .ask-send:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Stats View ── */
+    #view-stats { flex: 1; display: none; overflow-y: auto; padding: 28px 32px; }
+    #view-stats::-webkit-scrollbar { width: 3px; }
+    #view-stats::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stats-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+    .stats-card-label { font-size: 11px; font-weight: 600; color: var(--muted2); letter-spacing: .5px; margin-bottom: 8px; text-transform: uppercase; }
+    .stats-card-val { font-size: 28px; font-weight: 700; letter-spacing: -1px; color: var(--text); font-family: 'DM Mono', monospace; }
+    .stats-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .stats-section-title { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin: 0 0 12px; }
+    .recent-tasks-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .rtt td, .rtt th { padding: 10px 16px; text-align: left; font-size: 12px; border-bottom: 1px solid var(--border); }
+    .rtt th { background: var(--surface2); font-weight: 600; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+    .rtt tr:last-child td { border-bottom: none; }
+    .rtt td.mono { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 11px; }
+    .rtt tr:hover td { background: var(--surface2); cursor: pointer; }
+
+    /* ── Modal ── */
+    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #modal.open { display: flex; animation: fadeIn .15s ease; }
+    .mbox { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-md); animation: scaleIn .2s cubic-bezier(.34,1.4,.64,1); }
+    .mbox-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.2px; }
+    .mform-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: block; }
+    .mform-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 9px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color .15s; margin-bottom: 14px; }
+    .mform-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+    textarea.mform-input { resize: vertical; min-height: 80px; }
+    .mform-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .btn-ghost { background: none; border: 1px solid var(--border2); border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+    .btn-primary { background: var(--accent); border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+    .toast { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--text); box-shadow: var(--shadow-md); transform: translateX(120%); transition: transform .3s cubic-bezier(.34,1.4,.64,1); pointer-events: all; border-left: 3px solid var(--accent); }
     .toast.show { transform: translateX(0); }
 
-    /* ── TABS ── */
-    .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 5px 13px; font-size: 11px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s; font-family: inherit; letter-spacing: .3px; }
-    .tab-btn.active { color: var(--text); border-bottom-color: var(--blue); }
-    .tab-btn:hover:not(.active) { color: var(--text); }
-    .tab-cnt { background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; font-size: 9px; margin-left: 3px; font-family: 'JetBrains Mono', monospace; vertical-align: middle; }
+    /* ── Animations ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes scaleIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ── CHANGES PANEL ── */
-    #changes-panel { flex: 1; overflow-y: auto; padding: 14px 24px; display: none; }
-    #changes-panel::-webkit-scrollbar { width: 3px; }
-    #changes-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .chg-file { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; animation: slideIn .2s ease; }
-    .chg-file-hdr { padding: 8px 12px; background: var(--surface2); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue); display: flex; align-items: center; gap: 6px; }
-    .chg-new-badge { color: var(--green); font-size: 9px; background: #23863618; padding: 1px 6px; border-radius: 4px; border: 1px solid #23863633; }
-    .chg-milestone { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; font-size: 11px; display: flex; align-items: center; gap: 8px; animation: slideIn .2s ease; }
-    .chg-empty { padding: 56px; text-align: center; color: var(--muted2); font-size: 12px; }
+    /* ── Screenshot ── */
+    .screenshot-img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border); margin-top: 6px; }
 
-    /* ── REVIEW PANEL ── */
-    #review-panel { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; }
-    #review-panel::-webkit-scrollbar { width: 3px; }
-    #review-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .review-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .review-shot { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .review-shot-hdr { padding: 7px 12px; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
-    .review-shot-hdr.before { background: #f8514910; color: var(--red); border-bottom: 1px solid #f8514930; }
-    .review-shot-hdr.after  { background: #3fb95010; color: var(--green); border-bottom: 1px solid #3fb95030; }
-    .review-shot img { width: 100%; display: block; }
-    .review-shot-empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 11px; background: var(--surface); }
-    .review-section-lbl { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; }
-
-    /* ── SCREENSHOT ── */
-    .ev-screenshot { background: #1f6feb08; border-color: #1f6feb33; }
-    .ev-screenshot .ev-type { color: var(--blue); }
-    .screenshot-img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-top: 4px; }
-    /* ── TESTS ── */
-    .ev-test_pass { background: #3fb95008; border-color: #3fb95033; }
-    .ev-test_pass .ev-type { color: var(--green); }
-    .ev-test_fail { background: #f8514908; border-color: #f8514933; }
-    .ev-test_fail .ev-type { color: var(--red); }
-
-    /* ── MANAGER BOT + ANIMATION OVERLAYS ── */
-    #mgr-bot { position: absolute; bottom: 14px; left: 0; opacity: 0; pointer-events: none; z-index: 6; }
-    #ticket-card {
-      position: absolute; bottom: 20px; left: 0;
-      background: #1c2128; border: 1.5px solid #58a6ff;
-      border-radius: 8px; padding: 7px 11px; width: 82px;
-      opacity: 0; pointer-events: none; z-index: 7;
-    }
-    #tc-key { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #58a6ff; font-weight: 700; }
-    .tc-line { height: 2px; border-radius: 1px; margin-top: 4px; background: #e6edf3; }
-    #bubble-mgr, #bubble-dev {
-      position: absolute; top: 10px;
-      background: #1f6feb; color: white;
-      font-size: 11px; font-weight: 800;
-      padding: 5px 10px; border-radius: 8px;
-      opacity: 0; pointer-events: none; white-space: nowrap; z-index: 8;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
-      font-family: 'Inter', sans-serif;
-    }
-    #bubble-mgr { left: 14px; }
-    #bubble-dev { background: #238636; left: 50%; }
-    #bubble-mgr::after, #bubble-dev::after {
-      content: ''; position: absolute; bottom: -5px; left: 12px;
-      width: 0; height: 0;
-      border-left: 5px solid transparent; border-right: 5px solid transparent;
-      border-top: 6px solid #1f6feb;
-    }
-    #bubble-dev::after { border-top-color: #238636; }
-
-    /* ── KEYFRAMES ── */
-    @keyframes bounce      { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-    @keyframes blink       { 0%,100%{opacity:1} 50%{opacity:.3} }
-    @keyframes slideIn     { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-    @keyframes fadeIn      { from{opacity:0} to{opacity:1} }
-    @keyframes slideUp     { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:none} }
-    @keyframes bob         { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-    @keyframes bob-fast    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-    @keyframes eye-blink   { 0%,88%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.1)} }
-    @keyframes ant-glow    { 0%,100%{opacity:.5} 50%{opacity:1} }
-    @keyframes type-left   { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(-8deg) translateY(2px)} }
-    @keyframes type-right  { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(8deg) translateY(2px)} }
-    @keyframes screen-scan { 0%{transform:translateY(0);opacity:.8} 100%{transform:translateY(30px);opacity:0} }
-    @keyframes float-card  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-    @keyframes sparkle     { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.4);opacity:1} }
-    @keyframes cursor-blink{ 0%,100%{opacity:1} 50%{opacity:0} }
-    @keyframes pulse-dot   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6)} }
-    @keyframes spark-float { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-36px) translateX(4px);opacity:0} }
-    @keyframes complete-burst { 0%{transform:scale(0);opacity:1} 100%{transform:scale(3);opacity:0} }
-
-    /* PNG robot character */
-    .robot-wrap {
-      width: 140px; height: 140px;
-      background: #fff;
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-      transition: box-shadow .3s;
-      flex-shrink: 0;
-    }
-    /* ── per-worker accent colour ── */
-    #wg1 { --accent: var(--blue);   --accent-glow: rgba(88,166,255,.22); }
-    #wg2 { --accent: var(--orange); --accent-glow: rgba(210,153,34,.22); }
-    #wg3 { --accent: var(--purple); --accent-glow: rgba(188,140,255,.22); }
-
-    /* ── bot SVG base styles ── */
-    .bot-stage { position:relative; flex-shrink:0; }
-    .bot-svg   { width:148px; height:148px; overflow:visible; }
-    .ring-track   { stroke: var(--border2); }
-    .ring-fill    { stroke: var(--accent); opacity:0; transition: stroke .4s, opacity .3s; }
-    .bot-shadow   { fill: rgba(0,0,0,.07); }
-    .ant-stem     { stroke:#c8cdd8; stroke-width:1.8; stroke-linecap:round; }
-    .ant-dot      { fill: var(--accent); }
-    .bot-neck     { fill:#eaecf0; }
-    .bot-body-shape { fill:#eef0f3; stroke:#dde0e6; stroke-width:1; }
-    .led-acc      { fill: var(--accent); opacity:.7; }
-    .led-g        { fill:#3fb950; opacity:.6; }
-    .led-p        { fill:#bc8cff; opacity:.5; }
-    .bot-head     { fill:#f8f9fc; stroke:#e0e3ea; stroke-width:1.5; }
-    .bot-screen   { fill:#12151e; }
-    .eye-bg       { fill:#1e2235; }
-    .iris         { fill: var(--accent); opacity:.9; }
-    .pupil-w      { fill:white; }
-    .pupil-d      { fill:#12151e; }
-    .pupil-s      { fill:white; }
-    .bot-mouth    { fill:none; stroke: var(--accent); stroke-width:1.8; stroke-linecap:round; opacity:.5; }
-    .badge-bg     { fill:#1e2235; }
-    .badge-g      { fill: var(--accent); font-size:6.5px; font-weight:700; font-family:system-ui,sans-serif; }
-    .thought-bub  { fill:white; stroke:#e0e3ea; stroke-width:1; }
-    .td1,.td2,.td3 { fill:#94a3b8; }
-    .thought-group { opacity:0; transform-box:fill-box; transform-origin:76px 18px; }
-    .check-group  { opacity:0; transform:scale(0); transform-box:fill-box; transform-origin:center; }
-    .check-circle { fill:#3fb950; }
-    .check-path   { stroke:white; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
-
-    /* ── keyframes ── */
-    @keyframes bot-float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-    @keyframes bot-tilt    { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-3deg)} 70%{transform:rotate(3deg)} }
-    @keyframes ant-pulse   { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
-    @keyframes eye-blink   { 0%,86%,100%{transform:scaleY(1)} 90%{transform:scaleY(.06)} 94%{transform:scaleY(1)} }
-    @keyframes eye-scan    { 0%,100%{transform:translateX(0)} 50%{transform:translateX(3px)} }
-    @keyframes td-pulse    { 0%,100%{opacity:.12;transform:scale(.6)} 50%{opacity:1;transform:scale(1)} }
-    @keyframes ring-dash   { to{stroke-dashoffset:-276} }
-    @keyframes ant-wiggle  { 0%,100%{transform:rotate(0deg);transform-origin:bottom center} 25%{transform:rotate(-4deg)} 75%{transform:rotate(4deg)} }
-    @keyframes thought-pop { from{opacity:0;transform:scale(.3)} to{opacity:1;transform:scale(1)} }
-    @keyframes check-pop   { 0%{opacity:0;transform:scale(0)} 65%{opacity:1;transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
-    @keyframes label-in    { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-
-    /* ── IDLE ── */
-    .bot-idle .bot-unit  { animation: bot-float 3.5s ease-in-out infinite; }
-    .bot-idle .ant-dot   { animation: ant-pulse 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-    .bot-idle .eye-l, .bot-idle .eye-r { animation: eye-blink 5s 1s infinite; transform-box: fill-box; transform-origin: center; }
-    .bot-idle .led-acc   { animation: led-seq 2.2s 0s ease-in-out infinite; }
-    .bot-idle .led-g     { animation: led-seq 2.2s .36s ease-in-out infinite; }
-    .bot-idle .led-p     { animation: led-seq 2.2s .72s ease-in-out infinite; }
-
-    /* ── THINKING ── */
-    .bot-thinking .bot-unit { animation: bot-tilt 2s ease-in-out infinite; }
-    .bot-thinking .thought-group { animation: thought-pop .4s cubic-bezier(.34,1.56,.64,1) forwards; }
-    .bot-thinking .td1  { animation: td-pulse 1s 0s infinite; transform-box:fill-box; transform-origin:center; }
-    .bot-thinking .td2  { animation: td-pulse 1s .33s infinite; transform-box:fill-box; transform-origin:center; }
-    .bot-thinking .td3  { animation: td-pulse 1s .66s infinite; transform-box:fill-box; transform-origin:center; }
-
-    /* ── WORKING ── */
-    .bot-working .ring-fill { opacity:1; stroke-dashoffset:0; }
-    .bot-working.active     { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow), 0 0 28px var(--accent-glow), 0 6px 20px rgba(0,0,0,.15); }
-
-    /* ── DONE ── */
-    .bot-done .check-group  { animation: check-pop .5s cubic-bezier(.34,1.56,.64,1) forwards; }
-    .bot-done .ring-fill    { opacity:1; stroke:#3fb950; stroke-dashoffset:0; }
-
-    /* ── activity label ── */
-    .bot-label { display:flex; align-items:center; gap:5px; margin-top:5px; font-size:10px; color:var(--muted); font-weight:600; letter-spacing:.2px; min-height:16px; }
-    .bat-dot   { width:5px; height:5px; border-radius:50%; background:var(--muted2); flex-shrink:0; transition:background .3s; }
-    .bat-text  { transition: opacity .2s; }
-    .bot-working .bat-dot  { background: var(--accent); }
-    .bot-thinking .bat-dot { background: var(--muted2); }
-    .bot-done .bat-dot     { background: #3fb950; }
-
-    /* welcome illustration */
-    .wb .robot-head, .wb .robot-torso { animation: bob 4s ease-in-out infinite; }
-    .wb .eye-l, .wb .eye-r { animation: eye-blink 6s 1s infinite; transform-box: fill-box; transform-origin: center; }
-    .wb .ant-dot { animation: ant-glow 2.5s infinite; }
-    .fc1 { animation: float-card 4s ease-in-out infinite; }
-    .fc2 { animation: float-card 4s ease-in-out infinite; animation-delay: -1.3s; }
-    .fc3 { animation: float-card 4s ease-in-out infinite; animation-delay: -2.6s; }
-    .fc4 { animation: float-card 4s ease-in-out infinite; animation-delay: -0.7s; }
-    .sp1 { animation: sparkle 2s infinite; }
-    .sp2 { animation: sparkle 2s .7s infinite; }
-    .sp3 { animation: sparkle 2s 1.4s infinite; }
-    .cursor-blink { animation: cursor-blink .9s step-end infinite; }
-
-    /* ── WELCOME LOGO ── */
-    .wb-logo-wrap {
-      opacity: 0;
-      animation: wb-drop .8s cubic-bezier(.34,1.56,.64,1) .1s forwards;
-      position: relative;
-    }
-    .wb-logo-glow {
-      position: absolute;
-      inset: -20%;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(88,166,255,0.15) 0%, rgba(167,139,250,0.08) 45%, transparent 70%);
-      animation: glow-breathe 4s ease-in-out infinite;
-      pointer-events: none;
-    }
-    [data-theme="dark"] .wb-logo-glow {
-      background: radial-gradient(circle, rgba(88,166,255,0.22) 0%, rgba(167,139,250,0.12) 45%, transparent 70%);
-    }
-    .wb-logo {
-      width: 340px; height: 340px;
-      display: block;
-      position: relative;
-      z-index: 1;
-      animation: wb-float 5s ease-in-out 1s infinite;
-    }
-    [data-theme="dark"] .wb-logo { filter: brightness(0.92); }
-    .wb-greeting { text-align:center; opacity:0; animation: wb-rise .5s ease .7s forwards; margin-bottom:6px; }
-    .wb-hint-wrap { opacity:0; animation: wb-rise .4s ease 1.5s forwards; margin-top: 8px; }
-
-    /* ── CREW INTRO CARDS ── */
-    .wb-crew-intro { display:flex; gap:12px; margin-top:12px; }
-    .wb-ci-card {
-      display:flex; flex-direction:column; align-items:center; gap:4px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-top: 2.5px solid var(--accent);
-      border-radius: 18px;
-      padding: 16px 14px 14px;
-      width: 148px;
-      opacity: 0;
-      animation: wb-rise-pop .45s cubic-bezier(.34,1.4,.64,1) var(--cd, 1s) forwards;
-      transition: transform .2s, box-shadow .2s;
-    }
-    .wb-ci-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 28px rgba(0,0,0,.1);
-    }
-    [data-theme="dark"] .wb-ci-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,.38); }
-    .wb-ci1 { --cd: .95s; }
-    .wb-ci2 { --cd: 1.1s; }
-    .wb-ci3 { --cd: 1.25s; }
-
-    /* Bot inside card — bigger, no box */
-    .wb-ci-bot { position: relative; margin-bottom: 2px; }
-    .wb-ci-bot svg { width: 86px !important; height: 86px !important; overflow: visible; }
-    .wb-ci-bot .bot-unit { animation: bot-float 3.2s ease-in-out infinite; }
-    .wb-ci-bot .eye-l, .wb-ci-bot .eye-r { animation: eye-blink 5s 1s infinite; transform-box: fill-box; transform-origin: center; }
-    .wb-ci-bot .ant-dot { animation: ant-pulse 3s ease-in-out infinite; fill: var(--accent); }
-    .wb-ci-bot .iris    { fill: var(--accent); }
-    .wb-ci-bot .led-acc { animation: led-seq 2.4s 0s ease-in-out infinite; fill: var(--accent); }
-    .wb-ci-bot .led-g   { animation: led-seq 2.4s .4s ease-in-out infinite; }
-    .wb-ci-bot .led-p   { animation: led-seq 2.4s .8s ease-in-out infinite; }
-    .wb-ci-bot .bot-mouth { stroke: var(--accent); }
-    .wb-ci1 .wb-ci-bot .bot-unit { animation-delay: 0s; }
-    .wb-ci2 .wb-ci-bot .bot-unit { animation-delay: -1.1s; }
-    .wb-ci3 .wb-ci-bot .bot-unit { animation-delay: -2.2s; }
-
-    .wb-ci-name { font-size: 11px; font-weight: 800; letter-spacing: 1.6px; color: var(--accent); margin-top: 2px; text-transform: uppercase; }
-    .wb-ci-role { font-size: 10.5px; color: var(--muted2); font-weight: 600; }
-    .wb-ci-desc { font-size: 10.5px; color: var(--muted); text-align: center; line-height: 1.6; margin-top: 4px; font-weight: 500; }
-    @keyframes wb-drop {
-      0%   { transform: translateY(-80px) scale(0.65); opacity:0; filter:blur(8px); }
-      50%  { opacity:1; filter:blur(0); }
-      68%  { transform: translateY(12px) scale(1.05); }
-      84%  { transform: translateY(-5px) scale(0.98); }
-      100% { transform: translateY(0) scale(1); opacity:1; }
-    }
-    @keyframes wb-float {
-      0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-7px); }
-    }
-    @keyframes wb-rise {
-      from { opacity:0; transform:translateY(14px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    @keyframes wb-rise-pop {
-      from { opacity:0; transform: translateY(16px) scale(0.92); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
-    }
-    @keyframes glow-breathe {
-      0%,100% { transform: scale(1); opacity: 0.7; }
-      50%     { transform: scale(1.08); opacity: 1; }
-    }
-    @keyframes led-seq {
-      0%,100% { opacity: 0.35; transform: scale(0.8); }
-      40%,60% { opacity: 1; transform: scale(1.25); }
-    }
-
-    /* ══════════════════════════════════════════════════
-       SINGLE-BOT STAGE  (replaces old worker-card row)
-       ══════════════════════════════════════════════════ */
-    #workers-banner {
-      min-height: 340px !important;
-      justify-content: center !important;
-      gap: 0 !important;
-      padding: 24px 24px 20px !important;
-    }
-
-    #bot-stage-wrap {
-      position: relative;
-      width: 260px;
-      height: 310px;
-      flex-shrink: 0;
-    }
-
-    /* Ambient colour glow behind the active bot */
-    #bot-glow-ring {
-      position: absolute;
-      width: 240px; height: 240px;
-      top: 0; left: 10px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(88,166,255,.16) 0%, transparent 68%);
-      pointer-events: none;
-      transition: background .7s ease;
-      animation: glow-breathe 3.5s ease-in-out infinite;
-    }
-    #bot-glow-ring[data-bot="wg2"] { background: radial-gradient(circle, rgba(210,153,34,.18) 0%, transparent 68%); }
-    #bot-glow-ring[data-bot="wg3"] { background: radial-gradient(circle, rgba(188,140,255,.18) 0%, transparent 68%); }
-
-    /* Each bot lives absolutely in the stage, all invisible by default */
-    .bot-solo {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      margin-left: -115px;   /* half of 230px */
-      width: 230px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /* Big SVG — no box, no border */
-    .bot-solo .bot-svg {
-      width: 220px !important;
-      height: 220px !important;
-      overflow: visible;
-      filter: drop-shadow(0 6px 20px rgba(0,0,0,.10));
-    }
-    [data-theme="dark"] .bot-solo .bot-svg {
-      filter: drop-shadow(0 8px 24px rgba(0,0,0,.32));
-    }
-    /* Make the ring-track very subtle in solo view */
-    .bot-solo .ring-track { stroke-opacity: 0.2; }
-
-    /* Keep existing bot state animations working — they target .bot-unit inside */
-    .bot-solo.bot-working .bot-svg { filter: drop-shadow(0 8px 28px var(--accent-glow, rgba(88,166,255,.35))); }
-
-    /* Info below the bot */
-    .bot-solo-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      margin-top: 0;
-    }
-    .bot-solo-name {
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--accent, var(--blue));
-    }
-    .bot-solo-role {
-      font-size: 12px;
-      color: var(--muted2);
-      font-weight: 500;
-    }
-    .bot-solo .bot-label {
-      font-size: 11.5px;
-      margin-top: 2px;
-    }
-    .bot-solo .bat-dot {
-      width: 6px; height: 6px;
-    }
-
-    /* Step-indicator pills at the bottom */
-    #step-dots {
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .step-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--border2);
-      transition: width .35s cubic-bezier(.34,1.2,.64,1), border-radius .35s, background .35s;
-    }
-    .step-dot.step-active { width: 22px; border-radius: 3.5px; }
-    #sd-wg1.step-active { background: var(--blue); }
-    #sd-wg2.step-active { background: var(--orange); }
-    #sd-wg3.step-active { background: var(--purple); }
-
-    /* ── MOBILE RESPONSIVE ── */
+    /* ── Mobile ── */
     @media (max-width: 768px) {
-      /* sidebar hidden by default, shown via .sb-open on #app */
       #app { grid-template-columns: 1fr; }
-      #sidebar {
-        position: fixed; top: 0; left: 0; bottom: 0; width: 280px; z-index: 100;
-        transform: translateX(-100%); transition: transform .25s ease;
-        box-shadow: 4px 0 40px rgba(0,0,0,.5);
-      }
-      #app.sb-open #sidebar { transform: translateX(0); }
-      #app.sb-open::before {
-        content: ''; position: fixed; inset: 0; z-index: 99;
-        background: rgba(0,0,0,.5); backdrop-filter: blur(2px);
-      }
-
-      /* hamburger toggle button */
-      #sb-toggle {
-        display: flex !important;
-        align-items: center; justify-content: center;
-        width: 32px; height: 32px; border-radius: 8px;
-        background: var(--surface); border: 1px solid var(--border2);
-        cursor: pointer; color: var(--muted); font-size: 16px;
-        flex-shrink: 0;
-      }
-
-      /* main header gets the toggle */
-      #m-header { padding: 0 14px; gap: 8px; }
-
-      /* hero two-column → single column */
-      .wb-hero {
-        flex-direction: column; align-items: center; text-align: center;
-        padding: 24px 20px; gap: 24px;
-      }
-      .wb-hero-art dotlottie-wc { width: 160px !important; height: 160px !important; }
-      .wb-tagline { max-width: 100%; }
-      .wb-cta { align-self: center; }
-      .wb-brand { font-size: 28px; }
-
-      /* workers banner — scroll horizontally */
-      #workers-banner { padding: 12px 14px; min-height: unset; overflow-x: auto; }
-      .workers-row { justify-content: flex-start; flex-wrap: nowrap; padding-bottom: 4px; }
-      .worker-card { min-width: 130px; padding: 10px 12px 10px; }
-
-      /* bot svgs slightly smaller */
-      .bot-unit-wrap, .bot-unit { transform-origin: center; }
-
-      /* trace / task panel */
-      #trace-hdr { padding: 8px 14px; }
-      #trace-body { padding: 10px 14px; }
-      #trace-stats { padding: 6px 14px; gap: 6px; }
-      .stat-card { padding: 5px 10px; }
-
-      /* ticket detail */
-      #ticket-detail { padding: 16px; }
-      .td-title { font-size: 16px; }
-
-      /* modal full-width */
-      .mbox { width: 95vw; padding: 20px; }
-
-      /* toasts closer to edge */
-      #toast-container { bottom: 16px; right: 12px; left: 12px; }
-      .toast { transform: translateY(120%); }
-      .toast.show { transform: translateY(0); }
-
-      /* review tab screenshots stack */
-      .review-cols { flex-direction: column !important; }
+      #view-home { padding: 28px 16px; overflow-y: auto; }
+      .home-shell { grid-template-columns: 1fr; gap: 28px; }
+      .home-title { letter-spacing: -2px; }
+      .split-view { grid-template-columns: 1fr; }
+      .split-list { max-height: 42vh; border-right: none; border-bottom: 1px solid var(--border); }
+      #view-ask .ask-header,
+      #view-ask .ask-input-wrap,
+      #view-ask .ask-messages { padding-left: 16px; padding-right: 16px; }
+      #view-detail { padding: 20px 16px; }
+      #trace-log, #trace-changes, #trace-review { padding: 12px 16px; }
+      .trace-header { padding: 12px 16px; }
+      .stat-strip { overflow-x: auto; }
+      .review-shots { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      #view-stats { padding: 16px; }
     }
-
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
 
-<div id="toast-container"></div>
+<div id="toasts"></div>
 
 <div id="app">
 
-  <!-- ═══════════════════════════════════════ SIDEBAR ═══ -->
-  <aside id="sidebar">
-    <div id="sb-header">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect x="4" y="6" width="24" height="18" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-        <rect x="7" y="9" width="18" height="12" rx="3" fill="#0a0e17"/>
-        <circle cx="12" cy="14" r="3" fill="#58a6ff" opacity=".9"/>
-        <circle cx="20" cy="14" r="3" fill="#58a6ff" opacity=".9"/>
-        <circle cx="12" cy="14" r="1.2" fill="white"/>
-        <circle cx="20" cy="14" r="1.2" fill="white"/>
-        <path d="M10 19 Q16 23 22 19" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <line x1="16" y1="6" x2="16" y2="2" stroke="#6e7681" stroke-width="1.5"/>
-        <circle cx="16" cy="1" r="2" fill="#f85149"/>
-        <rect x="0" y="11" width="5" height="7" rx="2" fill="#161b22" stroke="#30363d"/>
-        <rect x="27" y="11" width="5" height="7" rx="2" fill="#161b22" stroke="#30363d"/>
-        <rect x="7" y="25" width="18" height="6" rx="3" fill="#1c2128" stroke="#30363d"/>
-        <rect x="9" y="27" width="5" height="2" rx="1" fill="#58a6ff" opacity=".8"/>
-        <rect x="16" y="27" width="4" height="2" rx="1" fill="#3fb950" opacity=".8"/>
-        <rect x="22" y="27" width="3" height="2" rx="1" fill="#bc8cff" opacity=".6"/>
-      </svg>
-      <div>
-        <div class="logo-name">Geppetto</div>
-        <div class="logo-sub">AI Coding Agent</div>
-      </div>
-      <span id="model-tag" style="margin-left:auto;font-size:9px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">Gemini 2.5</span>
-      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="margin-left:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .2s;flex-shrink:0;">🌙</button>
-      <script>document.getElementById('theme-toggle').textContent = document.documentElement.dataset.theme==='light' ? '🌙' : '☀️';</script>
-    </div>
-
-    <div id="sb-body">
-      <div class="sec-label">Jira · SCRUM</div>
-      <div id="jira-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">Loading…</div></div>
-      <div class="sec-label" style="margin-top:6px;">Agent Tasks</div>
-      <div id="task-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tasks yet</div></div>
-    </div>
-
-    <div id="sb-footer">
-      <button class="new-task-btn" onclick="openModal()">
+  <!-- ═══ TOP BAR ═══ -->
+  <header id="topbar">
+    <a class="tb-logo" href="#">
+      <div class="tb-logo-mark">cG</div>
+      codeGeppetto
+    </a>
+    <div class="tb-sep"></div>
+    <nav class="tb-nav">
+      <button class="tb-nav-btn active" id="nav-home" onclick="setView('home')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 1.22a.75.75 0 0 1 1.06 0l6.25 6.25a.75.75 0 1 1-1.06 1.06L13 7.81v5.44A1.75 1.75 0 0 1 11.25 15h-6.5A1.75 1.75 0 0 1 3 13.25V7.81l-.72.72a.75.75 0 0 1-1.06-1.06l6.25-6.25ZM4.5 6.31v6.94c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25V6.31L8 2.81 4.5 6.31Z"/></svg>
+        Home
+      </button>
+      <button class="tb-nav-btn" id="nav-tasks" onclick="setView('tasks')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8Z"/></svg>
+        Tasks
+      </button>
+      <button class="tb-nav-btn" id="nav-jira" onclick="setView('jira')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 1A1.75 1.75 0 0 0 1 2.75v10.5C1 14.216 1.784 15 2.75 15h10.5A1.75 1.75 0 0 0 15 13.25V2.75A1.75 1.75 0 0 0 13.25 1H2.75Zm0 1.5h10.5a.25.25 0 0 1 .25.25V5h-11V2.75a.25.25 0 0 1 .25-.25Zm-.25 4h3v7h-2.75a.25.25 0 0 1-.25-.25V6.5Zm4.5 7v-7h6.5v6.75a.25.25 0 0 1-.25.25H7Z"/></svg>
+        Jira
+      </button>
+      <button class="tb-nav-btn" id="nav-ask" onclick="setView('ask')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 14.25 12H7.5l-2.578 2.578A.749.749 0 0 1 3.5 14H1.75A1.75 1.75 0 0 1 0 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h1.5L5.872 14.4l.128.1V12.75h8.25a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+        Ask Code
+      </button>
+      <button class="tb-nav-btn" id="nav-stats" onclick="setView('stats'); loadStats()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 2.53 11.53a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l5-5a.75.75 0 0 1 1.06 0L9 7.94l4.72-4.72a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734Z"/></svg>
+        Analytics
+      </button>
+    </nav>
+    <div class="tb-right">
+      <span class="tb-badge" id="model-badge">Gemini 2.5</span>
+      <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">☀</button>
+      <button class="primary-btn" onclick="openModal()">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/></svg>
         New Task
       </button>
     </div>
-  </aside>
+  </header>
 
-  <!-- ═══════════════════════════════════════ MAIN ═══════ -->
-  <div id="main">
-    <div id="pbar-wrap"><div id="pbar"></div></div>
+  <!-- ═══ MAIN ═══ -->
+  <main id="main">
+    <div id="pbar-track"><div id="pbar"></div></div>
 
-    <div id="m-header">
-      <button id="sb-toggle" style="display:none;" onclick="document.getElementById('app').classList.toggle('sb-open')">☰</button>
-      <span id="hd-icon" style="font-size:18px;display:none;"></span>
-      <div style="flex:1;min-width:0;">
-        <div id="hd-key" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--blue);display:none;"></div>
-        <div id="hd-title" style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
-      </div>
-      <div id="hd-actions" style="display:flex;gap:8px;flex-shrink:0;"></div>
+    <!-- Home -->
+    <div id="view-home">
+      <section class="home-shell">
+        <div>
+          <div class="home-kicker">AI coding agent for Jira-driven delivery</div>
+          <h1 class="home-title">Meet <span>codeGeppetto</span>.</h1>
+          <p class="home-copy">Turn tickets into traceable coding runs, inspect every tool call, and ask questions about the repository without keeping operational lists pinned to every screen.</p>
+          <div class="home-actions">
+            <button class="btn-primary" onclick="setView('tasks')">View Task Runs</button>
+            <button class="btn-ghost" onclick="setView('jira')">Browse Jira</button>
+          </div>
+        </div>
+        <div class="home-card">
+          <dotlottie-wc
+            class="home-lottie"
+            src="https://lottie.host/b565193e-fec4-4f3c-a798-99404d79c287/JvUPQ05bEW.lottie"
+            autoplay
+            loop>
+          </dotlottie-wc>
+          <div class="home-card-caption">Your wooden-nosed coding assistant, now with a cleaner cockpit.</div>
+        </div>
+      </section>
     </div>
 
-    <div id="m-body">
-
-      <!-- ─── WELCOME ─── -->
-      <div id="welcome">
-        <div class="wb-bg-glow"></div>
-
-        <div class="wb-hero">
-          <!-- Left: Lottie logo -->
-          <div class="wb-hero-art">
-            <div class="wb-logo-wrap">
-              <div class="wb-logo-glow"></div>
-              <dotlottie-wc src="https://lottie.host/b565193e-fec4-4f3c-a798-99404d79c287/JvUPQ05bEW.lottie" class="wb-logo" autoplay loop></dotlottie-wc>
-            </div>
-          </div>
-
-          <!-- Right: wordmark + agents + CTA -->
-          <div class="wb-hero-content">
-            <div class="wb-brand">
-              <span class="wb-brand-code">code</span><span class="wb-brand-sep">·</span><span class="wb-brand-name">geppetto</span>
-            </div>
-            <div class="wb-tagline">Pick a Jira ticket and the crew will search your codebase, write the code, open a PR, and sync Jira — automatically.</div>
-
-            <div class="wb-divider">
-              <div class="wb-divider-line"></div>
-              <div class="wb-divider-label">your crew</div>
-              <div class="wb-divider-line"></div>
-            </div>
-
-            <div class="wb-agents">
-
-              <div class="wb-agent wb-a1" style="--wa:var(--blue);--wd:.65s">
-                <div class="wb-agent-avatar">
-                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                    <g class="bot-unit">
-                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">R</text>
-                    </g>
-                  </svg>
-                </div>
-                <div class="wb-agent-info">
-                  <div class="wb-agent-name">RAGNA</div>
-                  <div class="wb-agent-role">🔍 Semantic codebase search</div>
-                </div>
-              </div>
-
-              <div class="wb-agent wb-a2" style="--wa:var(--orange);--wd:.85s">
-                <div class="wb-agent-avatar">
-                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                    <g class="bot-unit">
-                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">C</text>
-                    </g>
-                  </svg>
-                </div>
-                <div class="wb-agent-info">
-                  <div class="wb-agent-name">CODIE</div>
-                  <div class="wb-agent-role">✏️ Writes &amp; patches source files</div>
-                </div>
-              </div>
-
-              <div class="wb-agent wb-a3" style="--wa:var(--purple);--wd:1.05s">
-                <div class="wb-agent-avatar">
-                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                    <g class="bot-unit">
-                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
-                    </g>
-                  </svg>
-                </div>
-                <div class="wb-agent-info">
-                  <div class="wb-agent-name">GITTY</div>
-                  <div class="wb-agent-role">🌿 Branches, commits &amp; PRs</div>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="wb-cta">
-              <span>Select a ticket to begin</span>
-              <span class="wb-cta-arrow">→</span>
-            </div>
-          </div>
+    <!-- Jira split view -->
+    <div id="view-jira" class="split-view">
+      <section class="split-list">
+        <div class="split-list-header">
+          <div class="split-eyebrow">Jira</div>
+          <div class="split-title">Ticket Board</div>
+          <div class="split-sub">Choose a ticket to review or run with codeGeppetto.</div>
         </div>
+        <div class="split-scroll" id="jira-list">
+          <div style="padding:8px 6px;color:var(--muted2);font-size:12px;">Loading…</div>
+        </div>
+      </section>
+      <section class="split-content">
+        <div id="jira-empty" class="split-empty">
+          <div class="split-empty-icon">▣</div>
+          <div class="split-empty-title">Pick a Jira ticket</div>
+          <div class="split-empty-sub">Ticket details and the Run Agent action appear here only while you are on the Jira tab.</div>
+        </div>
+
+    <!-- Ticket detail -->
+    <div id="view-detail">
+      <div class="det-header">
+        <div class="det-key" id="det-key"></div>
+        <div class="det-title" id="det-title"></div>
+        <div class="det-meta" id="det-meta"></div>
+        <div class="det-desc"  id="det-desc"></div>
+      </div>
+      <button class="btn-primary" onclick="openModal()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg>
+        Run Agent
+      </button>
+    </div>
+      </section>
+    </div>
+
+    <!-- Tasks split view -->
+    <div id="view-tasks" class="split-view">
+      <section class="split-list">
+        <div class="split-list-header">
+          <div class="split-eyebrow">Tasks</div>
+          <div class="split-title">Agent Runs</div>
+          <div class="split-sub">Inspect recent runs and follow live execution traces.</div>
+        </div>
+        <div class="split-scroll" id="task-list">
+          <div style="padding:8px 6px;color:var(--muted2);font-size:12px;">No tasks yet</div>
+        </div>
+      </section>
+      <section class="split-content">
+        <div id="task-empty" class="split-empty">
+          <div class="split-empty-icon">◌</div>
+          <div class="split-empty-title">Select a task run</div>
+          <div class="split-empty-sub">The execution trace, changes, screenshots, and review panels appear here only while you are on the Tasks tab.</div>
+        </div>
+
+    <!-- Agent trace -->
+    <div id="view-trace">
+      <div class="trace-header">
+        <span id="tr-status-icon" style="font-size:16px;flex-shrink:0;"></span>
+        <div style="flex:1;min-width:0;">
+          <div class="tr-title" id="tr-title">—</div>
+          <div class="tr-sub" id="tr-sub"></div>
+        </div>
+        <div id="tr-jira-link" style="display:none;"></div>
       </div>
 
-      <!-- ─── TICKET DETAIL ─── -->
-      <div id="ticket-detail">
-        <div class="td-hero">
-          <div class="td-icon-box" id="td-icon-box">📋</div>
-          <div>
-            <div class="td-key"   id="td-key"></div>
-            <div class="td-title" id="td-title"></div>
-          </div>
-        </div>
-        <div class="td-meta" id="td-meta"></div>
-        <div class="td-desc"  id="td-desc"></div>
-        <button class="run-btn" onclick="openModal()">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg>
-          Run Agent
-        </button>
+      <!-- Workflow stepper -->
+      <div class="workflow-steps" id="workflow-steps" style="display:none;">
+        <div class="wf-step" id="ws-search"><div class="wf-step-inner"><div class="wf-step-dot"></div>Search</div></div>
+        <div class="wf-connector" id="wc-1"></div>
+        <div class="wf-step" id="ws-read"><div class="wf-step-inner"><div class="wf-step-dot"></div>Read</div></div>
+        <div class="wf-connector" id="wc-2"></div>
+        <div class="wf-step" id="ws-branch"><div class="wf-step-inner"><div class="wf-step-dot"></div>Branch</div></div>
+        <div class="wf-connector" id="wc-3"></div>
+        <div class="wf-step" id="ws-edit"><div class="wf-step-inner"><div class="wf-step-dot"></div>Edit</div></div>
+        <div class="wf-connector" id="wc-4"></div>
+        <div class="wf-step" id="ws-test"><div class="wf-step-inner"><div class="wf-step-dot"></div>Test</div></div>
+        <div class="wf-connector" id="wc-5"></div>
+        <div class="wf-step" id="ws-commit"><div class="wf-step-inner"><div class="wf-step-dot"></div>Commit</div></div>
+        <div class="wf-connector" id="wc-6"></div>
+        <div class="wf-step" id="ws-pr"><div class="wf-step-inner"><div class="wf-step-dot"></div>PR</div></div>
       </div>
 
-      <!-- ─── AGENT TRACE ─── -->
-      <div id="agent-trace">
+      <div class="stat-strip" id="stat-strip">
+        <div class="stat-cell"><div class="stat-val" id="st-tokens">—</div><div class="stat-lbl">Tokens</div></div>
+        <div class="stat-cell"><div class="stat-val" id="st-cost">—</div><div class="stat-lbl">Cost</div></div>
+        <div class="stat-cell"><div class="stat-val" id="st-dur">—</div><div class="stat-lbl">Duration</div></div>
+        <div class="stat-cell"><div class="stat-val" id="st-tools">—</div><div class="stat-lbl">Tool calls</div></div>
+      </div>
 
-        <!-- Workers banner -->
-        <div id="workers-banner">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-log"     onclick="switchTab('log')">Log</button>
+        <button class="tab-btn"        id="tab-changes" onclick="switchTab('changes')">Changes <span class="tab-cnt" id="change-cnt">0</span></button>
+        <button class="tab-btn"        id="tab-review"  onclick="switchTab('review')">Review</button>
+      </div>
 
-          <!-- Geppetto character -->
-          <svg id="mgr-bot" viewBox="0 0 90 92" width="90" height="92">
-            <rect x="23" y="9"  width="44" height="4" rx="1.5" fill="#7a5c2e"/>
-            <rect x="28" y="4"  width="34" height="7"  rx="3"   fill="#8b6914"/>
-            <g id="mgr-head">
-              <ellipse cx="22" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
-              <ellipse cx="68" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
-              <ellipse cx="45" cy="25" rx="22" ry="21" fill="#d4956a"/>
-              <path d="M26 15 Q31 11 37 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-              <path d="M53 15 Q59 11 64 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-              <ellipse cx="34" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
-              <ellipse cx="56" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
-              <circle  cx="35" cy="21" r="1.2"            fill="white"/>
-              <circle  cx="57" cy="21" r="1.2"            fill="white"/>
-              <ellipse cx="45" cy="30" rx="6" ry="5" fill="#c07855"/>
-              <path d="M29 37 Q37 33 45 36 Q53 33 61 37" stroke="#e0e0e0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-              <ellipse cx="25" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
-              <ellipse cx="65" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
-              <path d="M35 40 Q45 46 55 40" stroke="#a06040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-            </g>
-            <rect x="23" y="48" width="44" height="24" rx="5" fill="#2c3e50"/>
-            <path d="M30 49 Q45 46 60 49 L57 72 Q45 75 33 72 Z" fill="#8b7355" opacity=".85"/>
-            <rect x="40" y="56" width="3" height="12" rx="1.5" fill="#d4a820"/>
-            <rect x="46" y="57" width="3" height="11" rx="1.5" fill="#aaaaaa"/>
-            <rect id="mgr-arm-l" x="5"  y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
-            <rect id="mgr-arm-r" x="65" y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
-            <line x1="73" y1="60" x2="70" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
-            <line x1="75" y1="60" x2="77" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
-            <circle cx="73" cy="72" r="4" fill="#d4956a"/>
-            <line   x1="73" y1="72" x2="82" y2="72" stroke="#a06040" stroke-width="1.5"/>
-            <circle cx="82" cy="72" r="1" fill="#a06040"/>
-            <path d="M69 69 Q73 65 77 69" fill="#3a7a3a"/>
-            <rect x="70" y="76" width="6" height="7" rx="2" fill="#4a8a4a"/>
-            <line x1="71" y1="83" x2="69" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="75" y1="83" x2="77" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
-            <rect x="30" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
-            <rect x="48" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
-            <ellipse cx="36" cy="86" rx="9" ry="5" fill="#111"/>
-            <ellipse cx="54" cy="86" rx="9" ry="5" fill="#111"/>
-          </svg>
-
-          <div id="ticket-card">
-            <div id="tc-key">SCRUM-X</div>
-            <div class="tc-line" style="width:54px;opacity:.6;"></div>
-            <div class="tc-line" style="width:40px;opacity:.4;margin-top:3px;"></div>
-            <div class="tc-line" style="width:50px;opacity:.3;margin-top:3px;"></div>
-          </div>
-
-          <div id="bubble-mgr">🪄 To work, boys!</div>
-          <div id="bubble-dev">On it! 🤖</div>
-
-          <!-- ── Single-bot stage ── -->
-          <div id="bot-stage-wrap">
-            <div id="bot-glow-ring" data-bot="wg1"></div>
-
-            <!-- Bot 1: RAGNA (blue) -->
-            <div id="wg1" class="bot-solo bot-idle">
-              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
-                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
-                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                <g class="bot-unit">
-                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
-                </g>
-                <g class="thought-group">
-                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
-                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
-                </g>
-                <g class="check-group" transform="translate(74,10)">
-                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
-                </g>
-              </svg>
-              <div class="bot-solo-label">
-                <div class="bot-solo-name">RAGNA</div>
-                <div class="bot-solo-role">🔍 RAG Search</div>
-                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg1-act">ready</span></div>
-              </div>
-              <span id="wg1-status" style="display:none"></span>
-            </div>
-
-            <!-- Bot 2: CODIE (orange) -->
-            <div id="wg2" class="bot-solo bot-idle">
-              <dotlottie-wc id="wg2-lottie" src="https://lottie.host/2713c62a-f638-4892-9fbf-2fb05737a2de/Ctwi7y3QbA.lottie" style="width:220px;height:220px;display:none;flex-shrink:0;" autoplay loop></dotlottie-wc>
-              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
-                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
-                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                <g class="bot-unit">
-                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
-                </g>
-                <g class="thought-group">
-                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
-                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
-                </g>
-                <g class="check-group" transform="translate(74,10)">
-                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
-                </g>
-              </svg>
-              <div class="bot-solo-label">
-                <div class="bot-solo-name">CODIE</div>
-                <div class="bot-solo-role">✏️ Code Edit</div>
-                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg2-act">ready</span></div>
-              </div>
-              <span id="wg2-status" style="display:none"></span>
-            </div>
-
-            <!-- Bot 3: GITTY (purple) -->
-            <div id="wg3" class="bot-solo bot-idle">
-              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
-                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
-                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
-                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
-                <g class="bot-unit">
-                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
-                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
-                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
-                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
-                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
-                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
-                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
-                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
-                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
-                </g>
-                <g class="thought-group">
-                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
-                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
-                </g>
-                <g class="check-group" transform="translate(74,10)">
-                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
-                </g>
-              </svg>
-              <div class="bot-solo-label">
-                <div class="bot-solo-name">GITTY</div>
-                <div class="bot-solo-role">🌿 Git Bot</div>
-                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg3-act">ready</span></div>
-              </div>
-              <span id="wg3-status" style="display:none"></span>
-            </div>
-
-            <!-- Step indicator -->
-            <div id="step-dots">
-              <div class="step-dot" id="sd-wg1" title="RAGNA · RAG Search"></div>
-              <div class="step-dot" id="sd-wg2" title="CODIE · Code Edit"></div>
-              <div class="step-dot" id="sd-wg3" title="GITTY · Git Bot"></div>
-            </div>
-          </div><!-- bot-stage-wrap -->
-
-          <div id="tr-jira" class="jira-sync" style="display:none;position:absolute;bottom:12px;right:18px;"><span class="jsync-dot"></span>Jira updated</div>
-        </div><!-- workers-banner -->
-
-        <!-- trace header -->
-        <div id="trace-hdr">
-          <span id="tr-icon" style="font-size:16px;"></span>
-          <div style="flex:1;">
-            <div id="tr-title" style="font-weight:700;font-size:13px;"></div>
-            <div id="tr-sub"   style="font-size:11px;color:var(--muted);"></div>
-          </div>
-          <div id="tab-bar" style="display:none;gap:0;align-items:center;">
-            <button class="tab-btn active" id="tab-log"     onclick="switchTab('log')">Log</button>
-            <button class="tab-btn"        id="tab-changes" onclick="switchTab('changes')">Changes <span class="tab-cnt" id="change-count">0</span></button>
-            <button class="tab-btn"        id="tab-review"  onclick="switchTab('review')">Review</button>
-          </div>
+      <div id="trace-log">
+        <div id="thinking-row" class="thinking-row" style="display:none;">
+          <div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>
+          <span style="font-size:12px;color:var(--muted);">Agent is thinking…</span>
         </div>
+        <div id="events"></div>
+      </div>
+      <div id="trace-changes"><div style="padding:32px;text-align:center;color:var(--muted2);font-size:12px;">No file changes yet</div></div>
+      <div id="trace-review"></div>
+    </div>
+      </section>
+    </div>
 
-        <!-- stats strip -->
-        <div id="trace-stats" style="display:none;">
-          <div class="stat-card">
-            <span class="sc-icon">🔢</span>
-            <span class="sc-val" id="stat-tokens">—</span>
-            <span class="sc-lbl">tokens</span>
-          </div>
-          <div class="stat-card">
-            <span class="sc-icon">💰</span>
-            <span class="sc-val" id="stat-cost">—</span>
-            <span class="sc-lbl">cost</span>
-          </div>
-          <div class="stat-card">
-            <span class="sc-icon">⏱</span>
-            <span class="sc-val" id="stat-dur">—</span>
-            <span class="sc-lbl">duration</span>
-          </div>
-          <div class="stat-card">
-            <span class="sc-icon">⚡</span>
-            <span class="sc-val" id="stat-tools">—</span>
-            <span class="sc-lbl">tool calls</span>
-          </div>
+    <!-- Ask Code -->
+    <div id="view-ask">
+      <div class="ask-header">
+        <div class="ask-title">Ask about the codebase</div>
+        <div class="ask-sub">Search semantically and get an LLM-powered answer with relevant code context.</div>
+      </div>
+      <div class="ask-messages" id="ask-messages">
+        <div class="ask-empty" id="ask-empty">
+          <div class="ask-empty-icon">💬</div>
+          <div class="ask-empty-text">Ask anything about the codebase</div>
         </div>
-
-        <!-- trace body -->
-        <div id="trace-body">
-          <div id="thinking">
-            <div class="think-dots">
-              <div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div>
-            </div>
-            <span style="font-size:12px;color:var(--muted);">Agent is thinking…</span>
-          </div>
-          <div id="events"></div>
+      </div>
+      <div class="ask-input-wrap">
+        <div class="ask-input-row">
+          <textarea class="ask-textarea" id="ask-input" placeholder="e.g. How does authentication work? Where is the data fetching logic?" rows="1"></textarea>
+          <button class="ask-send" id="ask-send" onclick="submitAsk()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.958 8 .197 1.15a.7.7 0 0 1 .898-.87l14 6a.7.7 0 0 1 0 1.44l-14 6a.7.7 0 0 1-.898-.87L1.958 8ZM1.45 2.094l1.18 4.49a.702.702 0 0 0 .525.507L8 8.002l-4.846 1.91a.701.701 0 0 0-.525.507l-1.18 4.49L13.558 8 1.45 2.094Z"/></svg>
+          </button>
         </div>
+      </div>
+    </div>
 
-        <!-- changes panel -->
-        <div id="changes-panel">
-          <div class="chg-empty">No file changes yet</div>
-        </div>
+    <!-- Analytics -->
+    <div id="view-stats">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stats-card"><div class="stats-card-label">Total Tasks</div><div class="stats-card-val" id="s-total">—</div></div>
+        <div class="stats-card"><div class="stats-card-label">Success Rate</div><div class="stats-card-val" id="s-rate">—</div><div class="stats-card-sub">completed tasks</div></div>
+        <div class="stats-card"><div class="stats-card-label">Total Cost</div><div class="stats-card-val" id="s-cost">—</div><div class="stats-card-sub">USD spent</div></div>
+        <div class="stats-card"><div class="stats-card-label">Avg Duration</div><div class="stats-card-val" id="s-dur">—</div><div class="stats-card-sub">per task</div></div>
+        <div class="stats-card"><div class="stats-card-label">Total Tokens</div><div class="stats-card-val" id="s-tokens">—</div></div>
+        <div class="stats-card"><div class="stats-card-label">Tool Calls</div><div class="stats-card-val" id="s-tools">—</div></div>
+      </div>
+      <div class="stats-section-title">Recent Runs</div>
+      <table class="recent-tasks-table rtt">
+        <thead><tr><th>Task</th><th>Status</th><th>Jira</th><th>Created</th></tr></thead>
+        <tbody id="stats-tasks"></tbody>
+      </table>
+    </div>
 
-        <!-- review panel -->
-        <div id="review-panel"></div>
-
-      </div><!-- agent-trace -->
-    </div><!-- m-body -->
-  </div><!-- main -->
-</div><!-- app -->
+  </main>
+</div>
 
 <!-- ═══ MODAL ═══ -->
 <div id="modal">
   <div class="mbox">
-    <div class="mbox-title">🚀 Run Agent</div>
-    <label class="mlbl">Jira Ticket</label>
-    <input  class="minput mono" id="m-jira"  readonly style="color:var(--blue);"/>
-    <label class="mlbl">Title</label>
-    <input  class="minput"      id="m-title" placeholder="Short task title"/>
-    <label class="mlbl">Description / Extra Instructions</label>
-    <textarea class="minput"    id="m-desc"  placeholder="Any extra context for the agent…"></textarea>
-    <div class="mactions">
-      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-p" id="m-submit" onclick="submitTask()">
+    <div class="mbox-title">Run Agent</div>
+    <label class="mform-label">Jira Ticket</label>
+    <input class="mform-input mono" id="m-jira" readonly style="color:var(--accent);"/>
+    <label class="mform-label">Title</label>
+    <input class="mform-input" id="m-title" placeholder="Short task title"/>
+    <label class="mform-label">Description / Extra Instructions</label>
+    <textarea class="mform-input" id="m-desc" placeholder="Any context for the agent…"></textarea>
+    <div class="mform-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="m-submit" onclick="submitTask()">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg>
         Run Agent
       </button>
@@ -1251,701 +739,636 @@
 </div>
 
 <script>
-let selTicket=null, selTask=null, es=null, ptimer=null, prog=0, changesData=[], screenshots={};
-let currentActiveBot = null;
-loadJira(); loadTasks();
-setInterval(loadTasks, 4000);
+/* ─── State ─── */
+let selTicket = null, selTask = null, es = null;
+let prog = 0, ptimer = null, changesData = [], screenshots = {};
+let chatHistory = [];
+let askAbort = null;
+let currentView = 'home';
 
-/* ── Worker state ── */
-const TOOL_WORKER = {
-  search_code:'wg1', read_file:'wg1', lookup_symbol:'wg1',
-  edit_file:'wg2', create_file:'wg2', write_file:'wg2',
-  commit_changes:'wg3', push_and_create_pr:'wg3', create_branch:'wg3', git_diff:'wg3', git_status:'wg3',
-  take_screenshot:'wg2', run_tests:'wg2',
-};
-const TOOL_TEXT = {
-  search_code:'searching…', read_file:'reading…', lookup_symbol:'looking up…',
-  edit_file:'editing…', create_file:'creating…', write_file:'writing…',
-  commit_changes:'committing…', push_and_create_pr:'pushing PR…',
-  create_branch:'branching…', git_diff:'diffing…', git_status:'checking…',
-  take_screenshot:'screenshotting…', run_tests:'running tests…',
-};
-function setWorkerStatusText(wId, text) {
-  const el = document.getElementById(wId + '-status');
-  if (el) el.textContent = text;
+/* ─── Helpers ─── */
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+async function api(path, method='GET', body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  return r.json();
 }
-function setBotState(wid, state) {
-  const el = document.getElementById(wid);
-  if (!el) return;
-  el.classList.remove('bot-idle','bot-thinking','bot-working','bot-done');
-  el.classList.add('bot-' + state);
-  if (wid === 'wg2') {
-    const lottie = document.getElementById('wg2-lottie');
-    const svg    = el.querySelector('.bot-svg');
-    if (lottie && svg) {
-      const working = state === 'working';
-      lottie.style.display = working ? 'block' : 'none';
-      svg.style.display    = working ? 'none'  : 'block';
-    }
-  }
+function fmtT(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
 }
-function setBotActivity(wid, text) {
-  const el = document.getElementById(wid + '-act');
-  if (!el || el.textContent === text) return;
-  el.style.opacity = '0';
-  setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 150);
+function fmtNum(n) {
+  if (n === undefined || n === null) return '—';
+  return Number(n).toLocaleString();
 }
 
-/* ── Bot transition: slide one bot out, slide the next one in ── */
-function transitionBot(toId) {
-  if (currentActiveBot === toId) return;
-  const prev = currentActiveBot;
-  currentActiveBot = toId;
-
-  // Update glow ring colour
-  const glow = document.getElementById('bot-glow-ring');
-  if (glow) glow.dataset.bot = toId;
-
-  // Update step dots
-  ['wg1','wg2','wg3'].forEach(wid => {
-    const dot = document.getElementById('sd-' + wid);
-    if (dot) dot.classList.toggle('step-active', wid === toId);
+/* ─── View management ─── */
+function setView(view) {
+  currentView = view;
+  ['home','tasks','jira','ask','stats'].forEach(v => {
+    $('nav-' + v)?.classList.toggle('active', v === view);
   });
 
-  if (typeof gsap === 'undefined') {
-    if (prev) { const p = document.getElementById(prev); if (p) p.style.opacity = '0'; }
-    const n = document.getElementById(toId); if (n) n.style.opacity = '1';
-    return;
-  }
+  const views = {
+    home: $('view-home'),
+    tasks: $('view-tasks'),
+    jira: $('view-jira'),
+    ask: $('view-ask'),
+    stats: $('view-stats'),
+  };
+  Object.values(views).forEach(p => { if (p) p.style.display = 'none'; });
 
-  // Slide prev out to the left
-  if (prev) {
-    const prevEl = document.getElementById(prev);
-    if (prevEl) {
-      gsap.killTweensOf(prevEl);
-      gsap.to(prevEl, {
-        x: -58, opacity: 0, scale: 0.86,
-        duration: 0.3, ease: 'power2.in',
-        onComplete: () => { gsap.set(prevEl, { x: 58 }); prevEl.style.pointerEvents = 'none'; }
-      });
-    }
-  }
-
-  // Slide next in from the right
-  const nextEl = document.getElementById(toId);
-  if (nextEl) {
-    nextEl.style.pointerEvents = 'auto';
-    gsap.killTweensOf(nextEl);
-    gsap.fromTo(nextEl,
-      { x: 58, opacity: 0, scale: 0.86 },
-      { x: 0, opacity: 1, scale: 1, duration: 0.42, ease: 'back.out(1.3)', delay: prev ? 0.16 : 0 }
-    );
+  if (view === 'home') {
+    views.home.style.display = 'flex';
+  } else if (view === 'tasks') {
+    views.tasks.style.display = 'grid';
+    showTaskPanel(selTask ? 'trace' : 'empty');
+  } else if (view === 'jira') {
+    views.jira.style.display = 'grid';
+    showJiraPanel(selTicket ? 'detail' : 'empty');
+  } else if (view === 'ask') {
+    views.ask.style.display = 'flex';
+  } else if (view === 'stats') {
+    views.stats.style.display = 'block';
   }
 }
 
-function setWorkers(mode, active) {
-  ['wg1','wg2','wg3'].forEach(wid => {
-    const el = document.getElementById(wid);
-    if (!el) return;
-    if (mode === 'running') {
-      const isActive = el.id === active;
-      if (isActive) {
-        setBotState(wid, 'working');
-        setBotActivity(wid, 'working…');
-        setWorkerStatusText(wid, '…');
-      } else {
-        setBotState(wid, 'thinking');
-        setBotActivity(wid, 'standing by…');
-        setWorkerStatusText(wid, 'standby');
-      }
-    } else if (mode === 'done') {
-      setBotState(wid, 'done');
-      setBotActivity(wid, 'done ✓');
-      setWorkerStatusText(wid, 'done');
-    } else {
-      setBotState(wid, 'idle');
-      setBotActivity(wid, 'ready');
-      setWorkerStatusText(wid, 'idle');
-    }
-  });
-  if (mode === 'running' && active) transitionBot(active);
-  else if (!currentActiveBot) transitionBot('wg1');
+function showPanel(name) {
+  if (name === 'trace') showTaskPanel('trace');
+  if (name === 'detail') showJiraPanel('detail');
 }
+function showTaskPanel(name) {
+  $('task-empty').style.display = name === 'empty' ? 'flex' : 'none';
+  $('view-trace').style.display = name === 'trace' ? 'flex' : 'none';
+}
+function showJiraPanel(name) {
+  $('jira-empty').style.display = name === 'empty' ? 'flex' : 'none';
+  $('view-detail').style.display = name === 'detail' ? 'block' : 'none';
+}
+
+/* ─── Progress bar ─── */
+function startProg() { prog = 0; setProg(20); ptimer = setInterval(() => { if (prog < 85) setProg(prog + Math.random() * 3); }, 800); }
+function stopProg()  { clearInterval(ptimer); }
+function setProg(v)  { prog = Math.min(v, 100); $('pbar').style.width = prog + '%'; if (v >= 100) setTimeout(() => { $('pbar').style.width = '0'; }, 600); }
+
+/* ─── Theme ─── */
 function toggleTheme() {
-  const isLight = document.documentElement.dataset.theme === 'light';
-  document.documentElement.dataset.theme = isLight ? 'dark' : 'light';
-  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+  const dark = document.documentElement.dataset.theme !== 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('theme-btn').textContent = dark ? '☀' : '☾';
 }
 
-/* ── Changes panel ── */
-function switchTab(tab) {
-  ['log','changes','review'].forEach(t => {
-    const btn = id('tab-'+t); if (btn) btn.classList.toggle('active', t===tab);
-  });
-  id('trace-body').style.display    = tab==='log'     ? 'block' : 'none';
-  id('changes-panel').style.display = tab==='changes' ? 'block' : 'none';
-  id('review-panel').style.display  = tab==='review'  ? 'block' : 'none';
-  if (tab==='review') renderReview();
-}
-function lcs(a, b) {
-  const m = a.length, n = b.length;
-  const dp = Array.from({length: m+1}, () => new Uint16Array(n+1));
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
-  const ops = [];
-  let i = m, j = n;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { ops.push({t:'=', v:a[i-1]}); i--; j--; }
-    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { ops.push({t:'+', v:b[j-1]}); j--; }
-    else { ops.push({t:'-', v:a[i-1]}); i--; }
-  }
-  return ops.reverse();
-}
-function buildUnifiedDiff(oldText, newText, ctx=3) {
-  const a = oldText ? oldText.split('\n') : [];
-  const b = newText ? newText.split('\n') : [];
-  // cap size to avoid freeze on huge files
-  if (a.length > 400 || b.length > 400) {
-    let out = '<div class="diff">';
-    for (const l of a.slice(0,200)) out += `<div class="dl del">- ${esc(l)}</div>`;
-    for (const l of b.slice(0,200)) out += `<div class="dl add">+ ${esc(l)}</div>`;
-    return out + '</div>';
-  }
-  const ops = lcs(a, b);
-  // mark changed regions and collect context
-  const lines = []; // {t, v}
-  for (const op of ops) lines.push(op);
-  // find which indices are changed
-  const changed = new Set();
-  lines.forEach((l, i) => { if (l.t !== '=') changed.add(i); });
-  // build visible set with context
-  const visible = new Set();
-  changed.forEach(i => {
-    for (let k = Math.max(0,i-ctx); k <= Math.min(lines.length-1,i+ctx); k++) visible.add(k);
-  });
-  let html = '<div class="diff">';
-  let prev = -1;
-  for (const i of [...visible].sort((a,b)=>a-b)) {
-    if (prev !== -1 && i > prev + 1) html += `<div class="dl ctx">@@ … @@</div>`;
-    const l = lines[i];
-    if (l.t === '=') html += `<div class="dl ctx">  ${esc(l.v)}</div>`;
-    else if (l.t === '-') html += `<div class="dl del">- ${esc(l.v)}</div>`;
-    else html += `<div class="dl add">+ ${esc(l.v)}</div>`;
-    prev = i;
-  }
-  if (!visible.size) html += `<div class="dl ctx">  (no changes detected)</div>`;
-  return html + '</div>';
-}
-function renderPixelDiff(beforeUrl, afterUrl) {
-  const canvas = id('pixel-diff-canvas');
-  if (!canvas || !beforeUrl || !afterUrl) return;
-  const load = url => new Promise((res, rej) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
-    img.onload = () => res(img); img.onerror = rej; img.src = url;
-  });
-  Promise.all([load(beforeUrl), load(afterUrl)]).then(([i1, i2]) => {
-    const w = Math.max(i1.naturalWidth, i2.naturalWidth);
-    const h = Math.max(i1.naturalHeight, i2.naturalHeight);
-    const draw = img => { const c = document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0); return c.getContext('2d').getImageData(0,0,w,h).data; };
-    const d1 = draw(i1), d2 = draw(i2);
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    const out = ctx.createImageData(w, h);
-    let diffCount = 0;
-    for (let i = 0; i < d1.length; i += 4) {
-      const delta = Math.abs(d1[i]-d2[i]) + Math.abs(d1[i+1]-d2[i+1]) + Math.abs(d1[i+2]-d2[i+2]);
-      if (delta > 20) {
-        out.data[i]=255; out.data[i+1]=80; out.data[i+2]=0; out.data[i+3]=220;
-        diffCount++;
-      } else {
-        out.data[i]=d2[i]*0.25; out.data[i+1]=d2[i+1]*0.25; out.data[i+2]=d2[i+2]*0.25; out.data[i+3]=200;
-      }
-    }
-    ctx.putImageData(out, 0, 0);
-    const pct = ((diffCount / (w*h)) * 100).toFixed(1);
-    const lbl = id('pixel-diff-lbl');
-    if (lbl) lbl.textContent = `${pct}% pixels changed`;
-  }).catch(() => {});
-}
-function renderReview() {
-  const panel = id('review-panel');
-  const before = screenshots.before, after = screenshots.after;
-  const shotHTML = `
-    <div class="review-section-lbl">Screenshots</div>
-    <div class="review-shots">
-      <div class="review-shot">
-        <div class="review-shot-hdr before">◀ Before</div>
-        ${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-shot-empty">No screenshot yet</div>'}
-      </div>
-      <div class="review-shot">
-        <div class="review-shot-hdr after">After ▶</div>
-        ${after  ? `<img src="${esc(after)}"  alt="after"/>` : '<div class="review-shot-empty">Not taken yet</div>'}
-      </div>
-    </div>
-    ${before && after ? `
-    <div class="review-section-lbl" style="margin-top:16px;">Pixel diff <span id="pixel-diff-lbl" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--orange);margin-left:8px;"></span></div>
-    <div class="review-shot" style="margin-bottom:16px;">
-      <div class="review-shot-hdr" style="background:#ff500010;color:var(--orange);border-bottom:1px solid #ff500030;">🔬 Changed pixels highlighted</div>
-      <canvas id="pixel-diff-canvas" style="width:100%;display:block;background:#000;"></canvas>
-    </div>` : ''}`;
-
-  const fileChanges = changesData.filter(c=>c.type==='edit'||c.type==='create');
-  let diffHTML = '';
-  if (fileChanges.length) {
-    diffHTML = `<div class="review-section-lbl" style="margin-top:4px;">Code changes</div>`;
-    for (const c of fileChanges) {
-      const diff = c.type === 'edit'
-        ? buildUnifiedDiff(c.old, c.new)
-        : buildUnifiedDiff('', c.content || '');
-      const icon = c.type==='create' ? '✨' : '📝';
-      diffHTML += `<div class="chg-file" style="margin-bottom:10px;"><div class="chg-file-hdr">${icon} ${esc(c.path)}</div>${diff}</div>`;
-    }
-  }
-
-  const milestones = changesData.filter(c=>c.type==='branch'||c.type==='commit');
-  let mHTML = '';
-  for (const m of milestones) {
-    if (m.type==='branch') mHTML += `<div class="chg-milestone"><span style="color:var(--purple);">🌿</span><span style="font-family:'JetBrains Mono',monospace;color:var(--purple);">${esc(m.name)}</span></div>`;
-    if (m.type==='commit') mHTML += `<div class="chg-milestone"><span style="color:var(--green);">✅</span><span style="font-family:'JetBrains Mono',monospace;">${esc(m.message)}</span></div>`;
-  }
-
-  panel.innerHTML = shotHTML + diffHTML + mHTML ||
-    '<div class="chg-empty">Nothing to review yet — run a task first.</div>';
-  if (before && after) renderPixelDiff(before, after);
+/* ─── Toast ─── */
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  $('toasts').appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
 }
 
-function addToChanges(ev) {
-  if (ev.type === 'screenshot') {
-    const lbl = (ev.label||'').toLowerCase();
-    if (lbl.includes('before')) screenshots.before = ev.url;
-    else                         screenshots.after  = ev.url;
-    if (id('review-panel').style.display === 'block') renderReview();
-    return;
-  }
-  if (ev.type !== 'tool_call') return;
-  const t = ev.tool, inp = ev.input || {};
-  if (t === 'edit_file'   && inp.path) changesData.push({type:'edit',   path:inp.path, old:inp.old_str||'', new:inp.new_str||''});
-  else if (t === 'create_file'  && inp.path) changesData.push({type:'create', path:inp.path, content:inp.content||''});
-  else if (t === 'create_branch'&& inp.branch_name) changesData.push({type:'branch', name:inp.branch_name});
-  else if (t === 'commit_changes' && inp.message)   changesData.push({type:'commit', message:inp.message});
-  else return;
-  renderChanges();
+/* ─── Status pills ─── */
+function pillHtml(status) {
+  const map = {
+    pending:   'pill-pending',
+    running:   'pill-running',
+    completed: 'pill-completed',
+    failed:    'pill-failed',
+    'To Do':   'pill-todo',
+    'In Progress':'pill-inprogress',
+    'In Review': 'pill-inreview',
+    'Done':    'pill-done',
+  };
+  const cls = map[status] || 'pill-pending';
+  const dot = status === 'running' ? '<span class="run-dot"></span>' : '';
+  return `<span class="pill ${cls}">${dot}${esc(status)}</span>`;
 }
-function renderChanges() {
-  const panel = id('changes-panel');
-  const fileChanges = changesData.filter(c=>c.type==='edit'||c.type==='create').length;
-  id('change-count').textContent = String(fileChanges);
-  if (!changesData.length) { panel.innerHTML='<div class="chg-empty">No file changes yet</div>'; return; }
-  let html = '';
-  for (const c of changesData) {
-    if (c.type === 'edit') {
-      let diff = '<div class="diff">';
-      for (const l of c.old.split('\n')) diff += `<div class="dl del">- ${esc(l)}</div>`;
-      for (const l of c.new.split('\n')) diff += `<div class="dl add">+ ${esc(l)}</div>`;
-      diff += '</div>';
-      html += `<div class="chg-file"><div class="chg-file-hdr">📝 ${esc(c.path)}</div>${diff}</div>`;
-    } else if (c.type === 'create') {
-      const lines = c.content.split('\n');
-      let diff = '<div class="diff">';
-      for (const l of lines.slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
-      if (lines.length > 60) diff += `<div class="dl ctx">  … ${lines.length-60} more lines</div>`;
-      diff += '</div>';
-      html += `<div class="chg-file"><div class="chg-file-hdr">✨ ${esc(c.path)} <span class="chg-new-badge">NEW</span></div>${diff}</div>`;
-    } else if (c.type === 'branch') {
-      html += `<div class="chg-milestone"><span style="color:var(--purple);">🌿</span><span style="font-family:'JetBrains Mono',monospace;color:var(--purple);">${esc(c.name)}</span></div>`;
-    } else if (c.type === 'commit') {
-      html += `<div class="chg-milestone"><span style="color:var(--green);">✅</span><span style="font-family:'JetBrains Mono',monospace;">${esc(c.message)}</span></div>`;
-    }
-  }
-  panel.innerHTML = html;
+function ticketTypeDot(type) {
+  if (!type) return '';
+  const colors = { Bug:'var(--red)', Story:'var(--green)', Task:'var(--accent)', Epic:'var(--amber)' };
+  return `<div class="t-dot" style="background:${colors[type]||'var(--muted2)'}"></div>`;
 }
 
-/* ── Jira ── */
+/* ─── Jira ─── */
 async function loadJira() {
-  try { renderJira(await api('/jira/issues')); }
-  catch(e) { id('jira-list').innerHTML='<div style="padding:12px 16px;color:var(--red);font-size:12px;">Jira unavailable</div>'; }
+  try {
+    const tickets = await api('/jira/issues');
+    renderJira(tickets);
+  } catch(e) {
+    $('jira-list').innerHTML = '<div style="padding:8px 6px;color:var(--red);font-size:12px;">Jira unavailable</div>';
+  }
 }
 function renderJira(tickets) {
-  const el = id('jira-list');
-  if (!tickets.length) { el.innerHTML='<div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tickets</div>'; return; }
-  el.innerHTML = tickets.map(t=>`
-    <div class="ticket-item ${selTicket?.key===t.key?'active':''}" data-key="${t.key}" onclick='selectTicket(${JSON.stringify(t)})'>
-      <div class="t-meta">
-        <span class="t-key">${t.key}</span>
-        <span class="badge ${sbCls(t.status_key)}">${t.status}</span>
-        <span style="margin-left:auto;">${tIcon(t.type)}</span>
+  if (!tickets.length) { $('jira-list').innerHTML = '<div style="padding:8px 6px;color:var(--muted2);font-size:12px;">No tickets</div>'; return; }
+  $('jira-list').innerHTML = tickets.map(t => `
+    <div class="ticket-row ${selTicket?.key===t.key?'active':''}" data-key="${esc(t.key)}" onclick='selectTicket(${JSON.stringify(t)})'>
+      ${ticketTypeDot(t.type)}
+      <div class="t-body">
+        <div class="t-key">${esc(t.key)}</div>
+        <div class="t-sum">${esc(t.summary)}</div>
+        <div class="t-status">${t.status}</div>
       </div>
-      <div class="t-sum">${esc(t.summary)}</div>
     </div>`).join('');
 }
 function selectTicket(t) {
-  selTicket = t;
-  showView('detail');
-  id('td-key').textContent   = t.key;
-  id('td-title').textContent = t.summary;
-  id('td-icon-box').textContent = tIcon(t.type);
-  id('td-meta').innerHTML = `<span class="badge ${sbCls(t.status_key)}">${t.status}</span><span class="badge b-todo">${t.type}</span>`;
-  const d = id('td-desc');
-  d.textContent = t.description || 'No description provided.';
+  selTicket = t; selTask = null;
+  document.querySelectorAll('.ticket-row').forEach(el => el.classList.toggle('active', el.dataset.key === t.key));
+  document.querySelectorAll('.task-row-item').forEach(el => el.classList.remove('active'));
+  $('det-key').textContent   = t.key;
+  $('det-title').textContent = t.summary;
+  $('det-meta').innerHTML    = pillHtml(t.status) + `<span class="pill pill-pending">${esc(t.type||'Task')}</span>`;
+  const d = $('det-desc');
+  d.textContent  = t.description || 'No description provided.';
   d.style.fontStyle = t.description ? 'normal' : 'italic';
-  id('hd-key').textContent = t.key;   id('hd-key').style.display = 'block';
-  id('hd-title').textContent = t.summary; id('hd-title').style.color = 'var(--text)';
-  id('hd-icon').textContent = tIcon(t.type); id('hd-icon').style.display = 'inline';
-  id('hd-actions').innerHTML = `<button class="btn btn-p" onclick="openModal()" style="font-size:12px;padding:6px 14px;"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg> Run</button>`;
-  document.querySelectorAll('.ticket-item').forEach(el=>el.classList.toggle('active', el.dataset.key===t.key));
+  if (currentView === 'jira') showPanel('detail');
 }
 
-/* ── Tasks ── */
+/* ─── Tasks ─── */
 async function loadTasks() {
-  const tasks = await api('/tasks');
-  renderTasks(tasks);
-  if (selTask) {
-    const u = tasks.find(t=>t.id===selTask.id);
-    if (u && u.status !== selTask.status) { selTask = u; updateTrHdr(u); }
-  }
+  try {
+    const tasks = await api('/tasks');
+    renderTasks(tasks);
+    if (selTask) {
+      const u = tasks.find(t => t.id === selTask.id);
+      if (u && u.status !== selTask.status) { selTask = u; updateTraceHeader(u); }
+    }
+  } catch(e) {}
 }
 function renderTasks(tasks) {
-  const el = id('task-list');
-  if (!tasks.length) { el.innerHTML='<div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tasks yet</div>'; return; }
-  el.innerHTML = tasks.map(t=>`
-    <div class="task-item ${selTask?.id===t.id?'active':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
-      <div class="task-row">
-        ${t.jira_id?`<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--blue);">${t.jira_id}</span>`:''}
-        <span class="badge ${tkBadge(t.status)}">${t.status}</span>
-      </div>
-      <div class="task-title">${esc(t.title)}</div>
+  if (!tasks.length) { $('task-list').innerHTML = '<div style="padding:8px 6px;color:var(--muted2);font-size:12px;">No tasks yet</div>'; return; }
+  $('task-list').innerHTML = tasks.slice(0, 30).map(t => `
+    <div class="task-row-item ${selTask?.id===t.id?'active':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
+      ${pillHtml(t.status)}
+      <span class="task-title">${esc(t.title)}</span>
     </div>`).join('');
 }
 async function selectTask(taskId) {
-  document.getElementById('app').classList.remove('sb-open');
-  // Reset bot stage immediately (synchronous, before await)
-  currentActiveBot = null;
-  if (typeof gsap !== 'undefined') {
-    ['wg1','wg2','wg3'].forEach(wid => {
-      const el = document.getElementById(wid);
-      if (el) { gsap.killTweensOf(el); gsap.set(el, { x: 0, y: 0, opacity: 0, scale: 1 }); }
-      const dot = document.getElementById('sd-' + wid);
-      if (dot) dot.classList.remove('step-active');
-    });
-    const glow = document.getElementById('bot-glow-ring');
-    if (glow) glow.dataset.bot = 'wg1';
-  }
   const task = await api(`/tasks/${taskId}`);
-  selTask = task;
-  showView('trace');
-  id('events').innerHTML = '';
-  id('trace-stats').style.display = 'none';
-  changesData = [];
-  screenshots = {};
-  renderChanges();
-  id('review-panel').innerHTML = '';
-  id('tab-bar').style.display = 'flex';
+  selTask = task; selTicket = null;
+  document.querySelectorAll('.task-row-item').forEach(el => el.classList.toggle('active', el.dataset.id === taskId));
+  document.querySelectorAll('.ticket-row').forEach(el => el.classList.remove('active'));
+  changesData = []; screenshots = {}; liveToolCalls = 0;
+  $('events').innerHTML = '';
+  initStepper();
+  renderChangesPanel();
+  $('trace-review').innerHTML = '';
   switchTab('log');
-  renderEvts(task.events);
-  updateTrHdr(task);
+  // reset stats
+  ['st-tokens','st-cost','st-dur','st-tools'].forEach(id => $(id).textContent = '—');
+  renderEvents(task.events);
+  updateTraceHeader(task);
   subscribe(taskId, task.events.length, task.status);
-  document.querySelectorAll('.task-item').forEach(el=>el.classList.toggle('active', el.dataset.id===taskId));
+  if (currentView === 'tasks') showPanel('trace');
 }
 
-/* ── Modal ── */
+/* ─── Modal ─── */
 function openModal() {
-  if (!selTicket) { showToast('Select a Jira ticket first', 'info'); return; }
-  id('m-jira').value  = selTicket.key;
-  id('m-title').value = selTicket.summary;
-  id('m-desc').value  = selTicket.description||'';
-  id('modal').classList.add('open');
-  setTimeout(()=>id('m-title').focus(), 50);
+  if (!selTicket) { toast('Select a Jira ticket first'); return; }
+  $('m-jira').value  = selTicket.key;
+  $('m-title').value = selTicket.summary;
+  $('m-desc').value  = selTicket.description || '';
+  $('modal').classList.add('open');
+  setTimeout(() => $('m-title').focus(), 50);
 }
-function closeModal() { id('modal').classList.remove('open'); }
+function closeModal() { $('modal').classList.remove('open'); }
 async function submitTask() {
-  const jira_id     = id('m-jira').value.trim();
-  const title       = id('m-title').value.trim();
-  const description = id('m-desc').value.trim();
+  const jira_id = $('m-jira').value.trim();
+  const title   = $('m-title').value.trim();
+  const desc    = $('m-desc').value.trim();
   if (!title) return;
-  const btn = id('m-submit'); btn.disabled = true; btn.textContent = 'Starting…';
-  const task = await api('/tasks','POST',{jira_id:jira_id||null,title,description});
+  const btn = $('m-submit'); btn.disabled = true; btn.textContent = 'Starting…';
+  const task = await api('/tasks', 'POST', { jira_id: jira_id||null, title, description: desc });
   closeModal();
   btn.disabled = false;
   btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg> Run Agent';
-  showToast('🚀 Agent started!', 'info');
-  await loadTasks(); selectTask(task.id); playTaskStartAnimation(jira_id || 'TASK'); loadJira();
+  toast('Agent started');
+  await loadTasks();
+  setView('tasks');
+  await selectTask(task.id);
+  loadJira();
 }
 
-/* ── Trace ── */
-function updateTrHdr(task) {
-  const icons = {pending:'⏳',running:'⚡',completed:'✅',failed:'❌'};
-  id('tr-icon').textContent = icons[task.status]||'•';
-  id('tr-title').textContent = task.title;
-  id('tr-sub').textContent = (task.jira_id?task.jira_id+' · ':'')+task.status+' · '+fmtT(task.created_at);
-  id('hd-key').textContent = task.jira_id||''; id('hd-key').style.display = task.jira_id?'block':'none';
-  id('hd-title').textContent = task.title;     id('hd-title').style.color = 'var(--text)';
-  id('hd-icon').textContent = icons[task.status]||''; id('hd-icon').style.display = 'inline';
-  id('hd-actions').innerHTML = '';
-  if (task.status==='completed') { id('tr-jira').style.display='flex'; stopProg(); setProg(100); setWorkers('done'); setTimeout(()=>setWorkers('idle'), 3000); }
-  else if (task.status==='running') { startProg(); id('tr-jira').style.display='none'; setWorkers('running'); }
-  else { setWorkers('idle'); }
+/* ─── Workflow stepper ─── */
+const TOOL_STEP = {
+  search_code:'search', lookup_symbol:'search',
+  read_file:'read', list_files:'read', grep_code:'read',
+  create_branch:'branch',
+  edit_file:'edit', create_file:'edit', write_file:'edit',
+  run_tests:'test', take_screenshot:'test',
+  commit_changes:'commit', git_diff:'commit', git_status:'commit',
+  push_and_create_pr:'pr',
+};
+const STEP_ORDER = ['search','read','branch','edit','test','commit','pr'];
+const STEP_ELEM  = { search:'ws-search', read:'ws-read', branch:'ws-branch', edit:'ws-edit', test:'ws-test', commit:'ws-commit', pr:'ws-pr' };
+let doneSteps = new Set(), activeStep = null;
+
+function initStepper() {
+  doneSteps = new Set(); activeStep = null;
+  $('workflow-steps').style.display = 'flex';
+  STEP_ORDER.forEach(s => {
+    const el = $(STEP_ELEM[s]); if (el) { el.classList.remove('active','done'); }
+  });
+}
+function advanceStepper(tool) {
+  const step = TOOL_STEP[tool];
+  if (!step) return;
+  if (activeStep && activeStep !== step) doneSteps.add(activeStep);
+  activeStep = step;
+  STEP_ORDER.forEach((s, i) => {
+    const el = $(STEP_ELEM[s]); if (!el) return;
+    el.classList.remove('active','done');
+    if (s === step) el.classList.add('active');
+    else if (doneSteps.has(s)) el.classList.add('done');
+    // connector after each step
+    const conn = $('wc-' + (i+1));
+    if (conn) conn.style.background = doneSteps.has(s) ? 'var(--green)' : '';
+  });
+}
+function finishStepper() {
+  STEP_ORDER.forEach(s => {
+    const el = $(STEP_ELEM[s]); if (el) { el.classList.remove('active'); el.classList.add('done'); }
+  });
+  for (let i = 1; i <= 6; i++) { const c = $('wc-'+i); if (c) c.style.background = 'var(--green)'; }
 }
 
+/* ─── Trace header ─── */
+let durTimer = null;
+let liveToolCalls = 0;
+
+function updateTraceHeader(task) {
+  const icons = { pending:'⏳', running:'⚡', completed:'✅', failed:'✕' };
+  $('tr-status-icon').textContent = icons[task.status] || '·';
+  $('tr-title').textContent = task.title;
+  $('tr-sub').innerHTML = (task.jira_id ? `<span style="font-family:'DM Mono',monospace;color:var(--accent);margin-right:6px;">${esc(task.jira_id)}</span>` : '') + esc(task.status) + ' · ' + fmtT(task.created_at);
+  if (task.status === 'running') {
+    startProg();
+    hideThinking(false);
+    // Measure elapsed from NOW so we never show stale seconds
+    const t0 = Date.now();
+    clearInterval(durTimer);
+    durTimer = setInterval(() => {
+      $('st-dur').textContent = Math.round((Date.now() - t0) / 1000) + 's';
+    }, 1000);
+  }
+  if (task.status === 'completed') {
+    stopProg(); setProg(100); hideThinking(true);
+    clearInterval(durTimer); finishStepper();
+  }
+  if (task.status === 'failed')  { stopProg(); hideThinking(true); clearInterval(durTimer); }
+  if (task.status === 'pending') { hideThinking(true); }
+}
+function hideThinking(hide) {
+  $('thinking-row').style.display = hide ? 'none' : 'flex';
+}
+
+/* ─── Stats strip ─── */
 function updateStats(ev) {
-  id('trace-stats').style.display = 'flex';
-  id('stat-tokens').textContent = (ev.total_tokens||0).toLocaleString();
-  id('stat-cost').textContent   = ev.cost_usd > 0 ? `$${ev.cost_usd.toFixed(4)}` : '—';
-  id('stat-dur').textContent    = `${ev.duration_s}s`;
-  id('stat-tools').textContent  = String(ev.tool_calls || 0);
+  $('st-tokens').textContent = fmtNum(ev.total_tokens);
+  $('st-cost').textContent   = ev.cost_usd > 0 ? `$${ev.cost_usd.toFixed(4)}` : '—';
+  $('st-dur').textContent    = `${ev.duration_s}s`;
+  $('st-tools').textContent  = String(ev.tool_calls || 0);
+  clearInterval(durTimer); // stop live timer once final stats arrive
 }
 
-function renderEvts(evts)   { evts.forEach(e=>appendEvt(e,false)); }
-function appendEvt(ev,anim) {
-  if (ev.type==='ping') return;
-  if (ev.type==='stats') { updateStats(ev); return; }
-  hideTh();
-  addToChanges(ev);
-  // Convert special tool_result values into typed events for richer rendering
+/* ─── Tab switching ─── */
+function switchTab(tab) {
+  ['log','changes','review'].forEach(t => $('tab-' + t)?.classList.toggle('active', t === tab));
+  $('trace-log').style.display     = tab === 'log'     ? 'block' : 'none';
+  $('trace-changes').style.display = tab === 'changes' ? 'block' : 'none';
+  $('trace-review').style.display  = tab === 'review'  ? 'block' : 'none';
+  if (tab === 'review') renderReviewPanel();
+}
+
+/* ─── Event rendering ─── */
+const EV_ICONS = { start:'▶', thinking:'···', tool_call:'⚙', tool_result:'↩', complete:'✓', error:'✕' };
+function renderEvents(evts) { evts.forEach(e => appendEvent(e, false)); }
+function appendEvent(ev, animate) {
+  if (ev.type === 'ping') return;
+  if (ev.type === 'stats') { updateStats(ev); return; }
+  hideThinking(true);
+  trackChanges(ev);
+
   if (ev.type === 'tool_result') {
     const r = ev.result || '';
     if (r.startsWith('screenshot:')) {
       const url = r.slice('screenshot:'.length);
-      const label = url.includes('before') ? 'before' : 'after';
-      appendEvt({type:'screenshot', url, label}, anim);
-      return;
-    }
-    if (r.startsWith('tests:PASSED')) {
-      appendEvt({type:'test_pass', output: r.slice(r.indexOf('\n')+1)}, anim);
-      return;
-    }
-    if (r.startsWith('tests:FAILED')) {
-      appendEvt({type:'test_fail', output: r.slice(r.indexOf('\n')+1)}, anim);
+      const lbl = (ev.label||url).toLowerCase();
+      if (lbl.includes('before')) screenshots.before = url;
+      else screenshots.after = url;
+      appendScreenshotEv(url, lbl.includes('before') ? 'Before' : 'After', animate);
       return;
     }
   }
-  const c=id('events'), card=buildCard(ev,anim);
-  if (card) { c.appendChild(card); id('trace-body').scrollTop=99999; }
-}
-function showTh() { id('thinking').style.display='flex'; id('trace-body').scrollTop=99999; }
-function hideTh() { id('thinking').style.display='none'; }
 
-function buildCard(ev, anim=true) {
-  const MAP = {
-    start:       {icon:'▶', lbl:'Start',    cls:'ev-start',      open:true},
-    thinking:    {icon:'💭',lbl:'Thinking', cls:'ev-thinking',   open:false},
-    tool_call:   {icon:'⚡',lbl:'Tool Call',cls:'ev-tool_call',  open:true},
-    tool_result: {icon:'↩', lbl:'Result',   cls:'ev-tool_result',open:false},
-    complete:    {icon:'✅',lbl:'Complete', cls:'ev-complete',   open:true},
-    error:       {icon:'❌',lbl:'Error',    cls:'ev-error',      open:true},
-    screenshot: {icon:'📸', lbl:'Screenshot', cls:'ev-screenshot', open:true},
-    test_pass:  {icon:'✅', lbl:'Tests Passed', cls:'ev-test_pass', open:false},
-    test_fail:  {icon:'❌', lbl:'Tests Failed', cls:'ev-test_fail', open:true},
-  };
-  const cfg = MAP[ev.type]; if (!cfg) return null;
-
-  if (ev.type==='tool_call' && ev.tool) {
-    const wId = TOOL_WORKER[ev.tool] || 'wg2';
-    setWorkers('running', wId);
-    setWorkerStatusText(wId, TOOL_TEXT[ev.tool] || 'working…');
+  // Advance stepper and live tool count
+  if (ev.type === 'tool_call' && ev.tool) {
+    advanceStepper(ev.tool);
+    liveToolCalls++;
+    $('st-tools').textContent = String(liveToolCalls);
   }
 
-  const sub = getSub(ev), body = getBody(ev);
-  const d = document.createElement('div');
-  d.className = `ev ${cfg.cls}`;
-  if (!anim) d.style.animation = 'none';
-  d.innerHTML = `<div class="ev-hdr" onclick="toggleEv(this)">
-    <span class="ev-icon">${cfg.icon}</span>
-    <span class="ev-type">${cfg.lbl}</span>
-    ${sub?`<span class="ev-sub">${esc(sub)}</span>`:''}
-    <span class="ev-tog">${cfg.open?'▲':'▼'}</span>
-  </div>
-  <div class="ev-body ${cfg.open?'open':''}">${body}</div>`;
-  return d;
-}
-function toggleEv(h) {
-  const b=h.nextElementSibling, t=h.querySelector('.ev-tog');
-  b.classList.toggle('open'); t.textContent=b.classList.contains('open')?'▲':'▼';
-}
-function getSub(ev) {
-  if (ev.type==='tool_call')   return ev.tool+(ev.input?.path?' · '+ev.input.path:ev.input?.query?' · "'+ev.input.query+'"':'');
-  if (ev.type==='tool_result') return ev.tool;
-  if (ev.type==='thinking')    return ev.text?.split('\n')[0]?.slice(0,80)||'';
-  return ev.message||'';
-}
-function getBody(ev) {
-  if (ev.type==='thinking') return `<pre class="epre">${esc(ev.text)}</pre>`;
-  if (ev.type==='tool_call') {
-    if (ev.tool==='edit_file'&&ev.input?.old_str&&ev.input?.new_str) return buildInlineDiff(ev.input.old_str,ev.input.new_str,ev.input.path);
-    if (ev.tool==='commit_changes'&&ev.input?.message) return `<div class="cmt-card"><div class="cmt-lbl">Commit · Conventional Format</div><div class="cmt-msg">${esc(ev.input.message)}</div></div>`;
-    if (ev.tool==='create_branch'&&ev.input?.branch_name) return `<div style="font-size:12px;color:var(--blue);font-family:'JetBrains Mono',monospace;padding:4px 0;">🌿 ${esc(ev.input.branch_name)}</div>`;
-    return `<pre class="epre">${esc(JSON.stringify(ev.input,null,2))}</pre>`;
+  const el = document.createElement('div');
+  el.className = `ev-item ev-${ev.type}`;
+  const icon = EV_ICONS[ev.type] || '·';
+  let sub = '';
+  if (ev.type === 'tool_call')   sub = `${esc(ev.tool)} — ${esc(JSON.stringify(ev.input || {}).slice(0,80))}`;
+  else if (ev.type === 'tool_result') sub = esc((ev.result||'').slice(0,120));
+  else if (ev.type === 'thinking')    sub = esc((ev.text||'').slice(0,120));
+  else if (ev.type === 'start')       sub = esc(ev.message || '');
+  else if (ev.type === 'complete')    sub = esc(ev.message || 'Done');
+  else if (ev.type === 'error')       sub = esc(ev.message || 'Error');
+
+  const hasBody = ev.type === 'thinking' || ev.type === 'tool_result' || ev.type === 'tool_call';
+  let bodyHtml = '';
+  if (ev.type === 'thinking')     bodyHtml = `<pre class="epre">${esc(ev.text||'')}</pre>`;
+  else if (ev.type === 'tool_call') bodyHtml = `<pre class="epre">${esc(JSON.stringify(ev.input||{}, null, 2))}</pre>`;
+  else if (ev.type === 'tool_result') {
+    const r = ev.result || '';
+    if (ev.tool === 'edit_file' || ev.tool === 'git_diff') {
+      bodyHtml = buildDiff(r);
+    } else {
+      bodyHtml = `<pre class="epre">${esc(r)}</pre>`;
+    }
   }
-  if (ev.type==='tool_result') {
-    if (ev.tool==='git_diff') return buildGitDiff(ev.result);
-    const t = ev.result?.slice(0,1500)||'';
-    return `<pre class="epre">${esc(t)}${(ev.result?.length||0)>1500?'\n…truncated':''}</pre>`;
-  }
-  if (ev.type==='complete') return `<div style="color:var(--green);font-size:13px;font-weight:700;">${esc(ev.message)}</div>`;
-  if (ev.type==='error')    return `<div style="color:var(--red);font-size:12px;">${esc(ev.message)}</div>`;
-  if (ev.type==='screenshot') return `<img class="screenshot-img" src="${esc(ev.url)}" alt="${esc(ev.label||'')}" loading="lazy"/>`;
-  if (ev.type==='test_pass')  return `<pre class="epre">${esc(ev.output||'')}</pre>`;
-  if (ev.type==='test_fail')  return `<pre class="epre" style="color:var(--red);">${esc(ev.output||'')}</pre>`;
-  return `<pre class="epre">${esc(JSON.stringify(ev,null,2))}</pre>`;
+
+  el.innerHTML = `
+    <div class="ev-hdr" onclick="toggleEvBody(this)">
+      <span class="ev-tag">${icon} ${esc(ev.type)}</span>
+      <span class="ev-sub">${sub}</span>
+      ${hasBody ? '<span class="ev-chevron">▾</span>' : ''}
+    </div>
+    ${hasBody ? `<div class="ev-body">${bodyHtml}</div>` : ''}`;
+
+  $('events').appendChild(el);
+  el.scrollIntoView({ block: 'nearest' });
 }
-function buildInlineDiff(o,n,path) {
-  let h=`<div style="font-size:10px;color:var(--muted2);margin-bottom:4px;font-family:'JetBrains Mono',monospace;">${esc(path||'')}</div><div class="diff">`;
-  for (const l of o.split('\n')) h+=`<div class="dl del">- ${esc(l)}</div>`;
-  for (const l of n.split('\n')) h+=`<div class="dl add">+ ${esc(l)}</div>`;
-  return h+'</div>';
+function appendScreenshotEv(url, label, animate) {
+  const el = document.createElement('div');
+  el.className = 'ev-item ev-tool_result';
+  el.innerHTML = `
+    <div class="ev-hdr" onclick="toggleEvBody(this)">
+      <span class="ev-tag">📷 screenshot</span>
+      <span class="ev-sub">${esc(label)}</span>
+      <span class="ev-chevron">▾</span>
+    </div>
+    <div class="ev-body">
+      <img class="screenshot-img" src="${esc(url)}" alt="${esc(label)}"/>
+    </div>`;
+  $('events').appendChild(el);
 }
-function buildGitDiff(txt) {
-  if (!txt||txt==='No changes.') return `<pre class="epre">${esc(txt)}</pre>`;
-  let h='<div class="diff">';
-  for (const l of txt.split('\n').slice(0,80)) {
-    if (l.startsWith('+')&&!l.startsWith('+++')) h+=`<div class="dl add">${esc(l)}</div>`;
-    else if (l.startsWith('-')&&!l.startsWith('---')) h+=`<div class="dl del">${esc(l)}</div>`;
-    else h+=`<div class="dl ctx">${esc(l)}</div>`;
-  }
-  return h+'</div>';
+function toggleEvBody(hdr) {
+  const body = hdr.nextElementSibling;
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  const chev = hdr.querySelector('.ev-chevron');
+  if (chev) chev.classList.toggle('open', open);
 }
 
-/* ── SSE ── */
-function subscribe(taskId, seen0, status) {
+/* ─── Diff renderer ─── */
+function buildDiff(text) {
+  const lines = text.split('\n');
+  let html = '<div class="diff">';
+  for (const l of lines.slice(0, 200)) {
+    if (l.startsWith('+')) html += `<div class="dl add">+ ${esc(l.slice(1))}</div>`;
+    else if (l.startsWith('-')) html += `<div class="dl del">- ${esc(l.slice(1))}</div>`;
+    else html += `<div class="dl ctx">  ${esc(l)}</div>`;
+  }
+  return html + '</div>';
+}
+
+/* ─── Changes tracking ─── */
+function trackChanges(ev) {
+  if (ev.type !== 'tool_call') return;
+  const t = ev.tool, i = ev.input || {};
+  if      (t === 'edit_file'    && i.path)        changesData.push({ type:'edit',   path:i.path, old:i.old_str||'', new:i.new_str||'' });
+  else if (t === 'create_file'  && i.path)        changesData.push({ type:'create', path:i.path, content:i.content||'' });
+  else if (t === 'create_branch'&& i.branch_name) changesData.push({ type:'branch', name:i.branch_name });
+  else if (t === 'commit_changes'&& i.message)    changesData.push({ type:'commit', message:i.message });
+  else return;
+  const cnt = changesData.filter(c => c.type==='edit'||c.type==='create').length;
+  $('change-cnt').textContent = String(cnt);
+  renderChangesPanel();
+}
+function renderChangesPanel() {
+  const panel = $('trace-changes');
+  if (!changesData.length) { panel.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted2);font-size:12px;">No file changes yet</div>'; return; }
+  let html = '';
+  for (const c of changesData) {
+    if (c.type === 'edit') {
+      let diff = '<div class="diff">';
+      for (const l of c.old.split('\n').slice(0,60)) diff += `<div class="dl del">- ${esc(l)}</div>`;
+      for (const l of c.new.split('\n').slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      html += `<div class="chg-file"><div class="chg-file-hdr">📝 ${esc(c.path)}</div>${diff}</div>`;
+    } else if (c.type === 'create') {
+      let diff = '<div class="diff">';
+      for (const l of c.content.split('\n').slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      html += `<div class="chg-file"><div class="chg-file-hdr">✨ ${esc(c.path)} <span class="chg-new">NEW</span></div>${diff}</div>`;
+    } else if (c.type === 'branch') {
+      html += `<div class="chg-milestone"><span style="color:var(--accent);">⎇</span> <span class="mono">${esc(c.name)}</span></div>`;
+    } else if (c.type === 'commit') {
+      html += `<div class="chg-milestone"><span style="color:var(--green);">✓</span> <span class="mono">${esc(c.message)}</span></div>`;
+    }
+  }
+  panel.innerHTML = html;
+}
+function renderReviewPanel() {
+  const panel = $('trace-review');
+  const before = screenshots.before, after = screenshots.after;
+  const files = changesData.filter(c => c.type==='edit'||c.type==='create');
+  let html = `
+    <div class="review-shots">
+      <div class="review-shot"><div class="review-shot-hdr before">Before</div>${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-empty">No screenshot</div>'}</div>
+      <div class="review-shot"><div class="review-shot-hdr after">After</div>${after ? `<img src="${esc(after)}" alt="after"/>` : '<div class="review-empty">Not yet</div>'}</div>
+    </div>`;
+  if (files.length) {
+    html += '<div class="stats-section-title" style="margin-bottom:10px;">Code Changes</div>';
+    for (const c of files) {
+      const diff = c.type === 'edit'
+        ? buildUnifiedDiff(c.old, c.new)
+        : buildUnifiedDiff('', c.content||'');
+      html += `<div class="chg-file"><div class="chg-file-hdr">${c.type==='create'?'✨':'📝'} ${esc(c.path)}</div>${diff}</div>`;
+    }
+  }
+  panel.innerHTML = html || '<div class="review-empty" style="padding:40px;text-align:center;color:var(--muted2);">Nothing to review yet</div>';
+}
+
+/* ─── Unified diff ─── */
+function lcs(a, b) {
+  const m=a.length,n=b.length,dp=Array.from({length:m+1},()=>new Uint16Array(n+1));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]+1:Math.max(dp[i-1][j],dp[i][j-1]);
+  const ops=[];let i=m,j=n;
+  while(i>0||j>0){if(i>0&&j>0&&a[i-1]===b[j-1]){ops.push({t:'=',v:a[i-1]});i--;j--;}else if(j>0&&(i===0||dp[i][j-1]>=dp[i-1][j])){ops.push({t:'+',v:b[j-1]});j--;}else{ops.push({t:'-',v:a[i-1]});i--;}}
+  return ops.reverse();
+}
+function buildUnifiedDiff(oldText, newText, ctx=3) {
+  const a=oldText?oldText.split('\n'):[],b=newText?newText.split('\n'):[];
+  if(a.length>300||b.length>300){let o='<div class="diff">';for(const l of a.slice(0,150))o+=`<div class="dl del">- ${esc(l)}</div>`;for(const l of b.slice(0,150))o+=`<div class="dl add">+ ${esc(l)}</div>`;return o+'</div>';}
+  const ops=lcs(a,b);const changed=new Set();ops.forEach((l,i)=>{if(l.t!=='=')changed.add(i);});
+  const vis=new Set();changed.forEach(i=>{for(let k=Math.max(0,i-ctx);k<=Math.min(ops.length-1,i+ctx);k++)vis.add(k);});
+  let html='<div class="diff">',prev=-1;
+  for(const i of [...vis].sort((a,b)=>a-b)){if(prev!==-1&&i>prev+1)html+=`<div class="dl ctx">@@ … @@</div>`;const l=ops[i];if(l.t==='=')html+=`<div class="dl ctx">  ${esc(l.v)}</div>`;else if(l.t==='-')html+=`<div class="dl del">- ${esc(l.v)}</div>`;else html+=`<div class="dl add">+ ${esc(l.v)}</div>`;prev=i;}
+  if(!vis.size)html+=`<div class="dl ctx">  (no visible changes)</div>`;
+  return html+'</div>';
+}
+
+/* ─── SSE subscription ─── */
+function subscribe(taskId, skip, status) {
   if (es) es.close();
-  if (['completed','failed'].includes(status)) return;
-  showTh();
+  if (status === 'completed' || status === 'failed') return;
   es = new EventSource(`/tasks/${taskId}/stream`);
-  let seen = 0;
+  let idx = 0;
   es.onmessage = e => {
-    const ev = JSON.parse(e.data); seen++;
-    if (seen<=seen0) return;
-    hideTh(); appendEvt(ev,true);
-    if (ev.type==='tool_result') showTh();
-    if (['complete','error'].includes(ev.type)) {
-      hideTh(); es.close(); stopProg(); setProg(100);
-      loadTasks(); loadJira(); setWorkers('idle');
-      id('tr-icon').textContent = ev.type==='complete'?'✅':'❌';
-      if (ev.type==='complete') {
-        id('tr-jira').style.display='flex';
-        showToast('✅ Task completed successfully!', 'success');
-      } else {
-        showToast('❌ Task failed — check the trace', 'error');
+    const ev = JSON.parse(e.data);
+    if (idx++ < skip) return;
+    appendEvent(ev, true);
+    if (ev.type === 'thinking') hideThinking(false);
+    if (ev.type === 'complete' || ev.type === 'error') {
+      const finalStatus = ev.type === 'complete' ? 'completed' : 'failed';
+      updateTraceHeader({ ...selTask, status: finalStatus });
+      loadTasks(); loadJira();
+      es.close();
+    }
+  };
+}
+
+/* ─── Ask Code ─── */
+function initAskInput() {
+  const ta = $('ask-input');
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAsk(); }
+  });
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+}
+
+async function submitAsk() {
+  const input = $('ask-input');
+  const question = input.value.trim();
+  if (!question || $('ask-send').disabled) return;
+
+  $('ask-empty')?.remove();
+  $('ask-send').disabled = true;
+  input.value = '';
+  input.style.height = 'auto';
+
+  // User message
+  appendUserMsg(question);
+
+  // Assistant placeholder
+  const msgEl = appendAssistantMsg('');
+  const bubble = msgEl.querySelector('.msg-bubble-assistant');
+  bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Searching codebase…</div>`;
+
+  let fullText = '';
+  try {
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let started = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+        if (payload === '[DONE]') break;
+        try {
+          const d = JSON.parse(payload);
+          if (d.error) { bubble.innerHTML = `<span style="color:var(--red)">${esc(d.error)}</span>`; break; }
+          if (d.text) {
+            if (!started) { bubble.innerHTML = ''; started = true; }
+            fullText += d.text;
+            bubble.innerHTML = renderMarkdown(fullText);
+          }
+        } catch(e) {}
       }
     }
-  };
-  es.onerror = () => { hideTh(); es.close(); setWorkers('idle'); };
-}
-
-/* ── Task start animation ── */
-function playTaskStartAnimation(ticketKey) {
-  if (typeof gsap === 'undefined') return;
-
-  // Show wg1 immediately as the starting bot
-  currentActiveBot = 'wg1';
-  gsap.set('#wg1', { x: 0, y: 0, opacity: 1, scale: 1 });
-  gsap.set('#wg2', { x: 58, opacity: 0, scale: 1 });
-  gsap.set('#wg3', { x: 58, opacity: 0, scale: 1 });
-  const glowEl = document.getElementById('bot-glow-ring');
-  if (glowEl) glowEl.dataset.bot = 'wg1';
-  ['wg1','wg2','wg3'].forEach(wid => {
-    const dot = document.getElementById('sd-' + wid);
-    if (dot) dot.classList.toggle('step-active', wid === 'wg1');
-  });
-
-  const tcKey = document.getElementById('tc-key');
-  if (tcKey) tcKey.textContent = ticketKey || 'TASK';
-
-  const banner = document.getElementById('workers-banner');
-  const stageEl = document.getElementById('bot-stage-wrap');
-  if (!banner || !stageEl) return;
-  const br = banner.getBoundingClientRect();
-  const sr = stageEl.getBoundingClientRect();
-  const stageCx = sr.left - br.left + sr.width / 2;
-  const ticketTargetX = stageCx - 41;
-  gsap.set('#bubble-dev', { left: Math.max(10, stageCx - 38) });
-
-  gsap.killTweensOf(['#mgr-bot','#mgr-head','#mgr-arm-r','#ticket-card','#bubble-mgr','#bubble-dev']);
-  gsap.set('#mgr-bot',    { x: -120, opacity: 0 });
-  gsap.set('#mgr-head',   { rotation: 0, clearProps: 'transform' });
-  gsap.set('#mgr-arm-r',  { rotation: 0, clearProps: 'transform' });
-  gsap.set('#ticket-card',{ x: 10, y: 0, opacity: 0, scale: 0.5 });
-  gsap.set(['#bubble-mgr','#bubble-dev'], { opacity: 0, y: 0 });
-
-  const tl = gsap.timeline({
-    onComplete() {
-      gsap.set('#mgr-bot',    { opacity: 0, x: -120 });
-      gsap.set('#ticket-card',{ opacity: 0 });
-      gsap.set(['#mgr-head','#mgr-arm-r'], { clearProps: 'all' });
-      gsap.set('#wg1', { clearProps: 'y' });
-    }
-  });
-  tl.to('#mgr-bot',    { x: 10, opacity: 1, duration: 0.5, ease: 'power2.out' });
-  tl.to('#ticket-card',{ opacity: 1, scale: 1, duration: 0.22, ease: 'back.out(2)' }, '+=0.05');
-  tl.to('#mgr-head',   { rotation: 13, svgOrigin: '45 49', duration: 0.22, ease: 'power1.inOut' })
-    .to('#mgr-head',   { rotation: -9, duration: 0.18 })
-    .to('#mgr-head',   { rotation: 5,  duration: 0.14 })
-    .to('#mgr-head',   { rotation: 0,  duration: 0.14 });
-  tl.to('#bubble-mgr', { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
-  tl.to('#bubble-mgr', { opacity: 0, duration: 0.2 }, '+=0.55');
-  tl.to('#ticket-card',{ x: ticketTargetX, y: -6, duration: 0.55, ease: 'power2.inOut' }, '-=0.1');
-  tl.to('#wg1', { y: -12, duration: 0.13, ease: 'power2.out' });
-  tl.to('#wg1', { y: 0,   duration: 0.32, ease: 'bounce.out' });
-  tl.to('#ticket-card', { opacity: 0, scale: 0.6, duration: 0.18 }, '-=0.18');
-  tl.to('#bubble-dev',  { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
-  tl.to('#bubble-dev',  { opacity: 0, duration: 0.2 }, '+=0.45');
-  tl.to('#mgr-arm-r', { rotation: -55, svgOrigin: '64 58', duration: 0.18, ease: 'power1.out' }, '-=0.35');
-  tl.to('#mgr-arm-r', { rotation: 0,   duration: 0.14 });
-  tl.to('#mgr-arm-r', { rotation: -55, duration: 0.13 });
-  tl.to('#mgr-arm-r', { rotation: 0,   duration: 0.14 });
-  tl.to('#mgr-bot',   { x: -120, opacity: 0, duration: 0.35, ease: 'power2.in' }, '-=0.05');
-}
-
-/* ── Toast notifications ── */
-function showToast(msg, type='info') {
-  const colors = {info:'var(--blue)', success:'var(--green)', error:'var(--red)'};
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.style.borderLeftColor = colors[type] || colors.info;
-  toast.textContent = msg;
-  id('toast-container').appendChild(toast);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>toast.classList.add('show')));
-  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>toast.remove(), 400); }, 3200);
-}
-
-/* ── Views ── */
-function showView(n) {
-  id('welcome').style.display      = n==='welcome' ? 'flex'  : 'none';
-  id('ticket-detail').style.display= n==='detail'  ? 'block' : 'none';
-  id('agent-trace').style.display  = n==='trace'   ? 'flex'  : 'none';
-  if (n !== 'trace') id('tab-bar').style.display = 'none';
-}
-
-/* ── Progress ── */
-function setProg(p)  { id('pbar').style.width=p+'%'; }
-function startProg() { prog=5; setProg(prog); ptimer=setInterval(()=>{ if(prog<85){prog+=Math.random()*2.5; setProg(prog);} },1200); }
-function stopProg()  { clearInterval(ptimer); }
-
-/* ── Helpers ── */
-async function api(path,method='GET',body=null) {
-  const o={method,headers:{'Content-Type':'application/json'}};
-  if (body) o.body=JSON.stringify(body);
-  const r=await fetch(path,o);
-  if (!r.ok) throw new Error(r.status);
-  return r.json();
-}
-function id(x)     { return document.getElementById(x); }
-function esc(s)    { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function sbCls(k)  { return {new:'b-todo',indeterminate:'b-prog',done:'b-done'}[k]??'b-todo'; }
-function tkBadge(s){ return {pending:'b-todo',running:'b-run',completed:'b-done',failed:'b-fail'}[s]??'b-todo'; }
-function tIcon(t)  { return {Story:'📖',Feature:'✨',Bug:'🐛',Subtask:'🔧',Task:'📋'}[t]??'📌'; }
-function fmtT(iso) { return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-
-/* ── keyboard shortcut: Escape closes modal ── */
-document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
-
-// close sidebar overlay on backdrop click
-document.getElementById('app').addEventListener('click', e => {
-  const app = document.getElementById('app');
-  if (app.classList.contains('sb-open') && !document.getElementById('sidebar').contains(e.target) && e.target.id !== 'sb-toggle') {
-    app.classList.remove('sb-open');
+    if (!started) bubble.innerHTML = '<span style="color:var(--muted)">No response</span>';
+  } catch(e) {
+    bubble.innerHTML = `<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
   }
-});
+
+  $('ask-send').disabled = false;
+  $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
+}
+
+function appendUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg msg-user';
+  el.innerHTML = `<div class="msg-bubble">${esc(text)}</div>`;
+  $('ask-messages').appendChild(el);
+  $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
+  return el;
+}
+function appendAssistantMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg msg-assistant';
+  el.innerHTML = `
+    <div class="msg-avatar">cG</div>
+    <div class="msg-content"><div class="msg-bubble-assistant">${text ? renderMarkdown(text) : ''}</div></div>`;
+  $('ask-messages').appendChild(el);
+  $('ask-messages').scrollTop = $('ask-messages').scrollHeight;
+  return el;
+}
+
+function renderMarkdown(text) {
+  // Minimal markdown: code blocks, inline code, bold, line breaks
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+/* ─── Analytics ─── */
+async function loadStats() {
+  try {
+    const s = await api('/stats');
+    $('s-total').textContent  = s.total_tasks ?? '—';
+    $('s-rate').textContent   = s.total_tasks ? `${s.success_rate}%` : '—';
+    $('s-cost').textContent   = s.total_cost_usd > 0 ? `$${s.total_cost_usd}` : '—';
+    $('s-dur').textContent    = s.avg_duration_s > 0 ? `${s.avg_duration_s}s` : '—';
+    $('s-tokens').textContent = fmtNum(s.total_tokens);
+    $('s-tools').textContent  = fmtNum(s.total_tool_calls);
+    const tasks = s.recent_tasks || [];
+    $('stats-tasks').innerHTML = tasks.map(t => `
+      <tr onclick="selectTask('${t.id}');setView('tasks')">
+        <td>${esc(t.title)}</td>
+        <td>${pillHtml(t.status)}</td>
+        <td class="mono">${esc(t.jira_id||'—')}</td>
+        <td class="mono">${fmtT(t.created_at)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+/* ─── Init (must be last — all functions defined above) ─── */
+loadJira();
+loadTasks();
+setInterval(loadTasks, 5000);
+initAskInput();
+updateThemeBtn();
 </script>
 </body>
 </html>
