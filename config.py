@@ -44,7 +44,7 @@ JIRA_TRANSITION_DONE        = "41"
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SAMPLE_REPO_PATH = Path(os.getenv(
     "SAMPLE_REPO_PATH",
-    "/Users/mohammadhosseinmalek/tract-projects/code-geppetto/sample-repo"
+    "/Users/mohammadhosseinmalek/tract-projects/code-geppetto/sample-geppetto-repo"
 ))
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", "./data/chroma"))
 SQLITE_PATH = Path(os.getenv("SQLITE_PATH", "./data/tasks.db"))

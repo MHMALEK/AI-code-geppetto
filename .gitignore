@@ -8,5 +8,5 @@ data/tasks.db
 data/*.db
 .DS_Store
 
-# sample-repo is a separate standalone git repo — not part of this project
-sample-repo/
+# sample-geppetto-repo is a separate standalone git repo — not part of this project
+sample-geppetto-repo/
