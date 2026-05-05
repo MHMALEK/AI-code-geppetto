@@ -1,30 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Geppetto · AI Coding Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── colour tokens — light default, dark override ── */
     :root {
+      --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --red: #f85149;
+      --bg: #f4f6fb; --bg2: #ffffff; --surface: #ffffff; --surface2: #f0f2f7; --surface3: #e5e8ef;
+      --border: #dde1ea; --border2: #c8cdd8;
+      --text: #111827; --muted: #6b7280; --muted2: #9ca3af;
+    }
+    [data-theme="dark"] {
       --bg: #080c14; --bg2: #0d1117; --surface: #161b22; --surface2: #1c2128; --surface3: #21262d;
       --border: #21262d; --border2: #30363d;
       --text: #e6edf3; --muted: #8b949e; --muted2: #6e7681;
-      --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --red: #f85149;
     }
-    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Nunito', -apple-system, sans-serif; font-size: 14px; }
+    body::before { background-image: radial-gradient(#c8cdd8 1px, transparent 1px); opacity: 0.5; }
+    [data-theme="dark"] body::before { background-image: radial-gradient(#21262d 1px, transparent 1px); opacity: 0.45; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; }
     code, pre, .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
 
     /* ── dot-grid background ── */
     body::before {
       content: '';
       position: fixed; inset: 0;
-      background-image: radial-gradient(var(--border) 1px, transparent 1px);
       background-size: 28px 28px;
-      opacity: 0.45;
       pointer-events: none;
       z-index: 0;
     }
@@ -33,16 +39,17 @@
     /* ── SIDEBAR ── */
     #sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: var(--bg2); }
     #sb-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .logo-name { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
-    .logo-sub  { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+    .logo-name { font-size: 15px; font-weight: 800; letter-spacing: -0.6px; }
+    .logo-sub  { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; letter-spacing: 0.3px; }
     #sb-body { flex: 1; overflow-y: auto; }
     #sb-body::-webkit-scrollbar { width: 3px; }
     #sb-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
     #sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
-    .new-task-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 10px; padding: 9px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .2s; }
+    .new-task-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 10px; padding: 9px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s; letter-spacing: 0.2px; }
     .new-task-btn:hover { border-color: var(--blue); color: var(--blue); background: #1f6feb0a; }
 
-    .sec-label { padding: 14px 16px 6px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted2); }
+    .sec-label { padding: 14px 16px 7px; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted2); display:flex; align-items:center; gap:6px; }
+    .sec-label::after { content:''; flex:1; height:1px; background:var(--border); border-radius:1px; }
     .ticket-item { padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
     .ticket-item:hover { background: var(--surface2); }
     .ticket-item.active { background: var(--surface2); border-left-color: var(--blue); }
@@ -68,14 +75,110 @@
     #main { display: flex; flex-direction: column; overflow: hidden; }
     #pbar-wrap { height: 2px; background: transparent; flex-shrink: 0; }
     #pbar { height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple)); width: 0; transition: width .6s; box-shadow: 0 0 8px #58a6ff88; }
-    #m-header { padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-height: 52px; background: var(--bg2); }
+    #m-header { padding: 0 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; height: 54px; background: var(--bg2); }
     #m-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
-    /* ── WELCOME ── */
-    #welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; gap: 0; }
-    .welcome-title { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 10px; background: linear-gradient(135deg, var(--text) 40%, var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .welcome-sub { color: var(--muted); font-size: 13px; max-width: 420px; text-align: center; line-height: 1.7; }
-    .welcome-hint { margin-top: 18px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted2); background: var(--surface); border: 1px solid var(--border); padding: 8px 18px; border-radius: 999px; font-weight: 600; }
+    /* ── WELCOME — two-column hero ── */
+    #welcome {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative; padding: 0;
+    }
+
+    /* subtle ambient glow across the page */
+    .wb-bg-glow {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 55% 70% at 30% 50%, rgba(88,166,255,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 75% 60%, rgba(167,139,250,.05) 0%, transparent 70%);
+    }
+    [data-theme="dark"] .wb-bg-glow {
+      background:
+        radial-gradient(ellipse 55% 70% at 30% 50%, rgba(88,166,255,.10) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 75% 60%, rgba(167,139,250,.07) 0%, transparent 70%);
+    }
+
+    /* hero two-column */
+    .wb-hero {
+      display: flex; align-items: center; gap: 40px;
+      max-width: 820px; width: 100%; padding: 0 40px;
+      position: relative; z-index: 1;
+    }
+
+    /* left: lottie */
+    .wb-hero-art { flex-shrink: 0; }
+
+    /* right: text + agents + cta */
+    .wb-hero-content {
+      flex: 1; display: flex; flex-direction: column;
+      opacity: 0; animation: wb-rise .55s ease .45s forwards;
+    }
+
+    /* brand wordmark */
+    .wb-brand {
+      font-size: 38px; font-weight: 900; letter-spacing: -2px;
+      line-height: 1; margin-bottom: 14px;
+    }
+    .wb-brand-code { color: var(--text); }
+    .wb-brand-sep  { color: var(--muted2); }
+    .wb-brand-name {
+      background: linear-gradient(130deg, var(--blue) 0%, #a78bfa 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    /* tagline */
+    .wb-tagline {
+      font-size: 13.5px; color: var(--muted); line-height: 1.7;
+      font-weight: 500; margin-bottom: 28px; max-width: 300px;
+    }
+
+    /* divider */
+    .wb-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .wb-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .wb-divider-label { font-size: 9px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted2); }
+
+    /* agent rows — no boxes, just avatar + text */
+    .wb-agents { display: flex; flex-direction: column; gap: 18px; margin-bottom: 28px; }
+    .wb-agent {
+      display: flex; align-items: center; gap: 18px;
+      opacity: 0; animation: wb-rise .38s ease var(--wd, 1s) forwards;
+    }
+    .wb-agent-avatar {
+      width: 96px; height: 96px; flex-shrink: 0;
+      position: relative;
+    }
+    .wb-agent-avatar svg { width: 96px; height: 96px; overflow: visible; }
+    /* static only — no motion in intro */
+    .wb-agent-avatar .ant-dot { fill: var(--wa); opacity: .8; }
+    .wb-agent-avatar .iris    { fill: var(--wa); }
+    .wb-agent-avatar .led-acc { fill: var(--wa); opacity: .7; }
+    .wb-agent-avatar .bot-mouth { stroke: var(--wa); }
+
+    .wb-agent-info { display: flex; flex-direction: column; gap: 3px; }
+    .wb-agent-name {
+      font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--wa);
+    }
+    .wb-agent-role { font-size: 12px; color: var(--muted); font-weight: 500; line-height: 1.5; }
+
+    /* CTA hint */
+    .wb-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--muted2); font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 8px 18px; border-radius: 999px;
+      opacity: 0; animation: wb-rise .4s ease 1.4s forwards;
+      letter-spacing: 0.2px; width: fit-content;
+    }
+    .wb-cta-arrow { font-size: 14px; color: var(--blue); }
+
+    /* keep old class names that may be referenced */
+    .welcome-hint { display:none; }
+    .wb-hint-wrap { display:none; }
+    .wb-greeting  { display:none; }
+    .welcome-title, .welcome-sub { display:none; }
 
     .crew-row { display: flex; gap: 16px; margin-top: 24px; }
     .crew-chip { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 5px 14px 5px 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
@@ -87,8 +190,8 @@
     #ticket-detail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
     .td-hero { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
     .td-icon-box { width: 48px; height: 48px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-    .td-key { font-size: 12px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
-    .td-title { font-size: 21px; font-weight: 800; line-height: 1.3; }
+    .td-key { font-size: 11px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; letter-spacing: 0.5px; }
+    .td-title { font-size: 20px; font-weight: 800; line-height: 1.3; letter-spacing: -0.3px; }
     .td-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
     .td-desc { color: var(--muted); font-size: 13px; line-height: 1.8; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px; white-space: pre-wrap; }
     .run-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 11px 26px; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; box-shadow: 0 4px 20px #3fb95033; }
@@ -118,13 +221,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding: 12px 14px 10px;
+      gap: 8px;
+      padding: 14px 16px 12px;
       border-radius: 18px;
       background: var(--surface);
       border: 1.5px solid var(--border2);
       transition: all .3s cubic-bezier(.34,1.56,.64,1);
-      min-width: 148px;
+      min-width: 170px;
       overflow: hidden;
     }
     /* color shimmer on top edge */
@@ -193,8 +296,8 @@
     #trace-stats { padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; gap: 10px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
     .stat-card { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 14px; }
     .sc-icon { font-size: 14px; }
-    .sc-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
-    .sc-lbl { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
+    .sc-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.3px; }
+    .sc-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
 
     #thinking { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
     .think-dots { display: flex; gap: 4px; }
@@ -245,7 +348,7 @@
 
     /* ── TOAST ── */
     #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-    .toast { background: var(--surface); border: 1px solid var(--border2); border-left-width: 3px; border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); transform: translateX(130%); transition: transform .35s cubic-bezier(.34,1.56,.64,1); pointer-events: all; font-family: 'Nunito', sans-serif; }
+    .toast { background: var(--surface); border: 1px solid var(--border2); border-left-width: 3px; border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); transform: translateX(130%); transition: transform .35s cubic-bezier(.34,1.56,.64,1); pointer-events: all; font-family: 'Inter', sans-serif; }
     .toast.show { transform: translateX(0); }
 
     /* ── TABS ── */
@@ -304,7 +407,7 @@
       padding: 5px 10px; border-radius: 8px;
       opacity: 0; pointer-events: none; white-space: nowrap; z-index: 8;
       box-shadow: 0 2px 8px rgba(0,0,0,.4);
-      font-family: 'Nunito', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
     #bubble-mgr { left: 14px; }
     #bubble-dev { background: #238636; left: 50%; }
@@ -336,20 +439,98 @@
     @keyframes spark-float { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-36px) translateX(4px);opacity:0} }
     @keyframes complete-burst { 0%{transform:scale(0);opacity:1} 100%{transform:scale(3);opacity:0} }
 
-    /* idle robot */
-    .rb-idle .robot-torso  { animation: bob 3.5s ease-in-out infinite; }
-    .rb-idle .robot-head   { animation: bob 3.5s ease-in-out infinite; }
-    .rb-idle .eye-l, .rb-idle .eye-r { animation: eye-blink 5s infinite; transform-box: fill-box; transform-origin: center; }
-    .rb-idle .ant-dot      { animation: ant-glow 3s infinite; }
+    /* PNG robot character */
+    .robot-wrap {
+      width: 140px; height: 140px;
+      background: #fff;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      transition: box-shadow .3s;
+      flex-shrink: 0;
+    }
+    /* ── per-worker accent colour ── */
+    #wg1 { --accent: var(--blue);   --accent-glow: rgba(88,166,255,.22); }
+    #wg2 { --accent: var(--orange); --accent-glow: rgba(210,153,34,.22); }
+    #wg3 { --accent: var(--purple); --accent-glow: rgba(188,140,255,.22); }
 
-    /* active robot */
-    .rb-active .robot-torso { animation: bob-fast .7s ease-in-out infinite; }
-    .rb-active .robot-head  { animation: bob-fast .7s ease-in-out infinite; }
-    .rb-active .eye-l, .rb-active .eye-r { animation: eye-blink 1.5s infinite; transform-box: fill-box; transform-origin: center; }
-    .rb-active .ant-dot     { animation: ant-glow .6s infinite; }
-    .rb-active .arm-l       { animation: type-left .35s infinite; transform-box: fill-box; transform-origin: right center; }
-    .rb-active .arm-r       { animation: type-right .35s infinite; transform-box: fill-box; transform-origin: left center; }
-    .rb-active .scan-line   { animation: screen-scan 1.2s linear infinite; }
+    /* ── bot SVG base styles ── */
+    .bot-stage { position:relative; flex-shrink:0; }
+    .bot-svg   { width:148px; height:148px; overflow:visible; }
+    .ring-track   { stroke: var(--border2); }
+    .ring-fill    { stroke: var(--accent); opacity:0; transition: stroke .4s, opacity .3s; }
+    .bot-shadow   { fill: rgba(0,0,0,.07); }
+    .ant-stem     { stroke:#c8cdd8; stroke-width:1.8; stroke-linecap:round; }
+    .ant-dot      { fill: var(--accent); }
+    .bot-neck     { fill:#eaecf0; }
+    .bot-body-shape { fill:#eef0f3; stroke:#dde0e6; stroke-width:1; }
+    .led-acc      { fill: var(--accent); opacity:.7; }
+    .led-g        { fill:#3fb950; opacity:.6; }
+    .led-p        { fill:#bc8cff; opacity:.5; }
+    .bot-head     { fill:#f8f9fc; stroke:#e0e3ea; stroke-width:1.5; }
+    .bot-screen   { fill:#12151e; }
+    .eye-bg       { fill:#1e2235; }
+    .iris         { fill: var(--accent); opacity:.9; }
+    .pupil-w      { fill:white; }
+    .pupil-d      { fill:#12151e; }
+    .pupil-s      { fill:white; }
+    .bot-mouth    { fill:none; stroke: var(--accent); stroke-width:1.8; stroke-linecap:round; opacity:.5; }
+    .badge-bg     { fill:#1e2235; }
+    .badge-g      { fill: var(--accent); font-size:6.5px; font-weight:700; font-family:system-ui,sans-serif; }
+    .thought-bub  { fill:white; stroke:#e0e3ea; stroke-width:1; }
+    .td1,.td2,.td3 { fill:#94a3b8; }
+    .thought-group { opacity:0; transform-box:fill-box; transform-origin:76px 18px; }
+    .check-group  { opacity:0; transform:scale(0); transform-box:fill-box; transform-origin:center; }
+    .check-circle { fill:#3fb950; }
+    .check-path   { stroke:white; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* ── keyframes ── */
+    @keyframes bot-float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes bot-tilt    { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-3deg)} 70%{transform:rotate(3deg)} }
+    @keyframes ant-pulse   { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+    @keyframes eye-blink   { 0%,86%,100%{transform:scaleY(1)} 90%{transform:scaleY(.06)} 94%{transform:scaleY(1)} }
+    @keyframes eye-scan    { 0%,100%{transform:translateX(0)} 50%{transform:translateX(3px)} }
+    @keyframes td-pulse    { 0%,100%{opacity:.12;transform:scale(.6)} 50%{opacity:1;transform:scale(1)} }
+    @keyframes ring-dash   { to{stroke-dashoffset:-276} }
+    @keyframes ant-wiggle  { 0%,100%{transform:rotate(0deg);transform-origin:bottom center} 25%{transform:rotate(-4deg)} 75%{transform:rotate(4deg)} }
+    @keyframes thought-pop { from{opacity:0;transform:scale(.3)} to{opacity:1;transform:scale(1)} }
+    @keyframes check-pop   { 0%{opacity:0;transform:scale(0)} 65%{opacity:1;transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
+    @keyframes label-in    { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── IDLE ── */
+    .bot-idle .bot-unit  { animation: bot-float 3.5s ease-in-out infinite; }
+    .bot-idle .ant-dot   { animation: ant-pulse 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .bot-idle .eye-l, .bot-idle .eye-r { animation: eye-blink 5s 1s infinite; transform-box: fill-box; transform-origin: center; }
+    .bot-idle .led-acc   { animation: led-seq 2.2s 0s ease-in-out infinite; }
+    .bot-idle .led-g     { animation: led-seq 2.2s .36s ease-in-out infinite; }
+    .bot-idle .led-p     { animation: led-seq 2.2s .72s ease-in-out infinite; }
+
+    /* ── THINKING ── */
+    .bot-thinking .bot-unit { animation: bot-tilt 2s ease-in-out infinite; }
+    .bot-thinking .thought-group { animation: thought-pop .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .bot-thinking .td1  { animation: td-pulse 1s 0s infinite; transform-box:fill-box; transform-origin:center; }
+    .bot-thinking .td2  { animation: td-pulse 1s .33s infinite; transform-box:fill-box; transform-origin:center; }
+    .bot-thinking .td3  { animation: td-pulse 1s .66s infinite; transform-box:fill-box; transform-origin:center; }
+
+    /* ── WORKING ── */
+    .bot-working .bot-unit  { animation: bot-float 1s ease-in-out infinite; }
+    .bot-working .eye-l     { animation: eye-scan .85s ease-in-out infinite; transform-box:fill-box; }
+    .bot-working .eye-r     { animation: eye-scan .85s .1s ease-in-out infinite; transform-box:fill-box; }
+    .bot-working .ring-fill { opacity:1; animation: ring-dash 1.8s linear infinite; }
+    .bot-working.active     { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow), 0 0 28px var(--accent-glow), 0 6px 20px rgba(0,0,0,.15); }
+
+    /* ── DONE ── */
+    .bot-done .check-group  { animation: check-pop .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .bot-done .ring-fill    { opacity:1; stroke:#3fb950; stroke-dashoffset:0; }
+
+    /* ── activity label ── */
+    .bot-label { display:flex; align-items:center; gap:5px; margin-top:5px; font-size:10px; color:var(--muted); font-weight:600; letter-spacing:.2px; min-height:16px; }
+    .bat-dot   { width:5px; height:5px; border-radius:50%; background:var(--muted2); flex-shrink:0; transition:background .3s; }
+    .bat-text  { transition: opacity .2s; }
+    .bot-working .bat-dot  { background: var(--accent); animation: pulse-dot 1s infinite; }
+    .bot-thinking .bat-dot { background: var(--muted2); }
+    .bot-done .bat-dot     { background: #3fb950; }
 
     /* welcome illustration */
     .wb .robot-head, .wb .robot-torso { animation: bob 4s ease-in-out infinite; }
@@ -363,8 +544,218 @@
     .sp2 { animation: sparkle 2s .7s infinite; }
     .sp3 { animation: sparkle 2s 1.4s infinite; }
     .cursor-blink { animation: cursor-blink .9s step-end infinite; }
+
+    /* ── WELCOME LOGO ── */
+    .wb-logo-wrap {
+      opacity: 0;
+      animation: wb-drop .8s cubic-bezier(.34,1.56,.64,1) .1s forwards;
+      position: relative;
+    }
+    .wb-logo-glow {
+      position: absolute;
+      inset: -20%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(88,166,255,0.15) 0%, rgba(167,139,250,0.08) 45%, transparent 70%);
+      animation: glow-breathe 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    [data-theme="dark"] .wb-logo-glow {
+      background: radial-gradient(circle, rgba(88,166,255,0.22) 0%, rgba(167,139,250,0.12) 45%, transparent 70%);
+    }
+    .wb-logo {
+      width: 340px; height: 340px;
+      display: block;
+      position: relative;
+      z-index: 1;
+      animation: wb-float 5s ease-in-out 1s infinite;
+    }
+    [data-theme="dark"] .wb-logo { filter: brightness(0.92); }
+    .wb-greeting { text-align:center; opacity:0; animation: wb-rise .5s ease .7s forwards; margin-bottom:6px; }
+    .wb-hint-wrap { opacity:0; animation: wb-rise .4s ease 1.5s forwards; margin-top: 8px; }
+
+    /* ── CREW INTRO CARDS ── */
+    .wb-crew-intro { display:flex; gap:12px; margin-top:12px; }
+    .wb-ci-card {
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2.5px solid var(--accent);
+      border-radius: 18px;
+      padding: 16px 14px 14px;
+      width: 148px;
+      opacity: 0;
+      animation: wb-rise-pop .45s cubic-bezier(.34,1.4,.64,1) var(--cd, 1s) forwards;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .wb-ci-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 28px rgba(0,0,0,.1);
+    }
+    [data-theme="dark"] .wb-ci-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,.38); }
+    .wb-ci1 { --cd: .95s; }
+    .wb-ci2 { --cd: 1.1s; }
+    .wb-ci3 { --cd: 1.25s; }
+
+    /* Bot inside card — bigger, no box */
+    .wb-ci-bot { position: relative; margin-bottom: 2px; }
+    .wb-ci-bot svg { width: 86px !important; height: 86px !important; overflow: visible; }
+    .wb-ci-bot .bot-unit { animation: bot-float 3.2s ease-in-out infinite; }
+    .wb-ci-bot .eye-l, .wb-ci-bot .eye-r { animation: eye-blink 5s 1s infinite; transform-box: fill-box; transform-origin: center; }
+    .wb-ci-bot .ant-dot { animation: ant-pulse 3s ease-in-out infinite; fill: var(--accent); }
+    .wb-ci-bot .iris    { fill: var(--accent); }
+    .wb-ci-bot .led-acc { animation: led-seq 2.4s 0s ease-in-out infinite; fill: var(--accent); }
+    .wb-ci-bot .led-g   { animation: led-seq 2.4s .4s ease-in-out infinite; }
+    .wb-ci-bot .led-p   { animation: led-seq 2.4s .8s ease-in-out infinite; }
+    .wb-ci-bot .bot-mouth { stroke: var(--accent); }
+    .wb-ci1 .wb-ci-bot .bot-unit { animation-delay: 0s; }
+    .wb-ci2 .wb-ci-bot .bot-unit { animation-delay: -1.1s; }
+    .wb-ci3 .wb-ci-bot .bot-unit { animation-delay: -2.2s; }
+
+    .wb-ci-name { font-size: 11px; font-weight: 800; letter-spacing: 1.6px; color: var(--accent); margin-top: 2px; text-transform: uppercase; }
+    .wb-ci-role { font-size: 10.5px; color: var(--muted2); font-weight: 600; }
+    .wb-ci-desc { font-size: 10.5px; color: var(--muted); text-align: center; line-height: 1.6; margin-top: 4px; font-weight: 500; }
+    @keyframes wb-drop {
+      0%   { transform: translateY(-80px) scale(0.65); opacity:0; filter:blur(8px); }
+      50%  { opacity:1; filter:blur(0); }
+      68%  { transform: translateY(12px) scale(1.05); }
+      84%  { transform: translateY(-5px) scale(0.98); }
+      100% { transform: translateY(0) scale(1); opacity:1; }
+    }
+    @keyframes wb-float {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-7px); }
+    }
+    @keyframes wb-rise {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes wb-rise-pop {
+      from { opacity:0; transform: translateY(16px) scale(0.92); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+    @keyframes glow-breathe {
+      0%,100% { transform: scale(1); opacity: 0.7; }
+      50%     { transform: scale(1.08); opacity: 1; }
+    }
+    @keyframes led-seq {
+      0%,100% { opacity: 0.35; transform: scale(0.8); }
+      40%,60% { opacity: 1; transform: scale(1.25); }
+    }
+
+    /* ══════════════════════════════════════════════════
+       SINGLE-BOT STAGE  (replaces old worker-card row)
+       ══════════════════════════════════════════════════ */
+    #workers-banner {
+      min-height: 340px !important;
+      justify-content: center !important;
+      gap: 0 !important;
+      padding: 24px 24px 20px !important;
+    }
+
+    #bot-stage-wrap {
+      position: relative;
+      width: 260px;
+      height: 310px;
+      flex-shrink: 0;
+    }
+
+    /* Ambient colour glow behind the active bot */
+    #bot-glow-ring {
+      position: absolute;
+      width: 240px; height: 240px;
+      top: 0; left: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(88,166,255,.16) 0%, transparent 68%);
+      pointer-events: none;
+      transition: background .7s ease;
+      animation: glow-breathe 3.5s ease-in-out infinite;
+    }
+    #bot-glow-ring[data-bot="wg2"] { background: radial-gradient(circle, rgba(210,153,34,.18) 0%, transparent 68%); }
+    #bot-glow-ring[data-bot="wg3"] { background: radial-gradient(circle, rgba(188,140,255,.18) 0%, transparent 68%); }
+
+    /* Each bot lives absolutely in the stage, all invisible by default */
+    .bot-solo {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      margin-left: -115px;   /* half of 230px */
+      width: 230px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Big SVG — no box, no border */
+    .bot-solo .bot-svg {
+      width: 220px !important;
+      height: 220px !important;
+      overflow: visible;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,.10));
+    }
+    [data-theme="dark"] .bot-solo .bot-svg {
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.32));
+    }
+    /* Make the ring-track very subtle in solo view */
+    .bot-solo .ring-track { stroke-opacity: 0.2; }
+
+    /* Keep existing bot state animations working — they target .bot-unit inside */
+    .bot-solo.bot-working .bot-svg { filter: drop-shadow(0 8px 28px var(--accent-glow, rgba(88,166,255,.35))); }
+
+    /* Info below the bot */
+    .bot-solo-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      margin-top: 0;
+    }
+    .bot-solo-name {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent, var(--blue));
+    }
+    .bot-solo-role {
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 500;
+    }
+    .bot-solo .bot-label {
+      font-size: 11.5px;
+      margin-top: 2px;
+    }
+    .bot-solo .bat-dot {
+      width: 6px; height: 6px;
+    }
+
+    /* Step-indicator pills at the bottom */
+    #step-dots {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--border2);
+      transition: width .35s cubic-bezier(.34,1.2,.64,1), border-radius .35s, background .35s;
+    }
+    .step-dot.step-active { width: 22px; border-radius: 3.5px; }
+    #sd-wg1.step-active { background: var(--blue); }
+    #sd-wg2.step-active { background: var(--orange); }
+    #sd-wg3.step-active { background: var(--purple); }
+
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
 
@@ -397,6 +788,8 @@
         <div class="logo-sub">AI Coding Agent</div>
       </div>
       <span id="model-tag" style="margin-left:auto;font-size:9px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">Gemini 2.5</span>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="margin-left:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .2s;flex-shrink:0;">🌙</button>
+      <script>document.getElementById('theme-toggle').textContent = document.documentElement.dataset.theme==='light' ? '🌙' : '☀️';</script>
     </div>
 
     <div id="sb-body">
@@ -422,7 +815,7 @@
       <span id="hd-icon" style="font-size:18px;display:none;"></span>
       <div style="flex:1;min-width:0;">
         <div id="hd-key" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--blue);display:none;"></div>
-        <div id="hd-title" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
+        <div id="hd-title" style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
       </div>
       <div id="hd-actions" style="display:flex;gap:8px;flex-shrink:0;"></div>
     </div>
@@ -431,106 +824,112 @@
 
       <!-- ─── WELCOME ─── -->
       <div id="welcome">
+        <div class="wb-bg-glow"></div>
 
-        <svg class="wb" viewBox="0 0 380 220" width="380" height="220" style="margin-bottom:24px;">
-          <!-- Floating code cards -->
-          <g class="fc1" transform="translate(0,25)">
-            <rect width="88" height="32" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-            <rect x="8" y="9"  width="28" height="3" rx="1.5" fill="#58a6ff" opacity=".7"/>
-            <rect x="8" y="16" width="50" height="3" rx="1.5" fill="#3fb950" opacity=".55"/>
-            <rect x="8" y="23" width="36" height="3" rx="1.5" fill="#bc8cff" opacity=".45"/>
-          </g>
-          <g class="fc2" transform="translate(282,8)">
-            <rect width="88" height="32" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-            <rect x="8" y="9"  width="42" height="3" rx="1.5" fill="#d29922" opacity=".7"/>
-            <rect x="8" y="16" width="30" height="3" rx="1.5" fill="#58a6ff" opacity=".5"/>
-            <rect x="8" y="23" width="55" height="3" rx="1.5" fill="#3fb950" opacity=".4"/>
-          </g>
-          <g class="fc3" transform="translate(288,175)">
-            <rect width="82" height="28" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-            <rect x="8" y="8"  width="35" height="3" rx="1.5" fill="#f85149" opacity=".55"/>
-            <rect x="8" y="16" width="50" height="3" rx="1.5" fill="#58a6ff" opacity=".5"/>
-          </g>
-          <g class="fc4" transform="translate(2,168)">
-            <rect width="82" height="28" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-            <rect x="8" y="8"  width="50" height="3" rx="1.5" fill="#3fb950" opacity=".6"/>
-            <rect x="8" y="16" width="30" height="3" rx="1.5" fill="#d29922" opacity=".45"/>
-          </g>
-          <!-- Sparkles -->
-          <circle class="sp1" cx="105" cy="30"  r="3" fill="#58a6ff"/>
-          <circle class="sp2" cx="268" cy="55"  r="2.5" fill="#bc8cff"/>
-          <circle class="sp3" cx="82"  cy="165" r="2" fill="#3fb950"/>
-          <circle class="sp1" cx="290" cy="145" r="2" fill="#d29922"/>
-          <!-- Desk -->
-          <rect x="62" y="162" width="256" height="10" rx="3" fill="#21262d"/>
-          <rect x="80"  y="172" width="10" height="40" rx="3" fill="#161b22"/>
-          <rect x="290" y="172" width="10" height="40" rx="3" fill="#161b22"/>
-          <!-- Monitor -->
-          <rect x="108" y="82" width="164" height="84" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
-          <rect x="113" y="87" width="154" height="74" rx="3" fill="#0a0e17"/>
-          <rect class="scan-line" x="113" y="87" width="154" height="3" rx="1" fill="#58a6ff" opacity=".12"/>
-          <rect x="120" y="95"  width="55" height="3" rx="1.5" fill="#58a6ff"  opacity=".75"/>
-          <rect x="120" y="103" width="90" height="3" rx="1.5" fill="#3fb950"  opacity=".65"/>
-          <rect x="126" y="111" width="48" height="3" rx="1.5" fill="#bc8cff"  opacity=".6"/>
-          <rect x="126" y="119" width="70" height="3" rx="1.5" fill="#d29922"  opacity=".65"/>
-          <rect x="120" y="127" width="38" height="3" rx="1.5" fill="#58a6ff"  opacity=".5"/>
-          <rect x="120" y="135" width="80" height="3" rx="1.5" fill="#3fb950"  opacity=".45"/>
-          <rect x="120" y="143" width="45" height="3" rx="1.5" fill="#f85149"  opacity=".4"/>
-          <rect class="cursor-blink" x="168" y="95" width="2" height="10" rx="1" fill="#58a6ff"/>
-          <rect x="183" y="166" width="14" height="8"  rx="2" fill="#21262d"/>
-          <rect x="172" y="173" width="36" height="5"  rx="2" fill="#21262d"/>
-          <!-- Keyboard -->
-          <rect x="118" y="166" width="144" height="16" rx="3" fill="#161b22" stroke="#21262d"/>
-          <rect x="124" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <rect x="140" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <rect x="156" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <rect x="172" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <rect x="188" y="169" width="36" height="7" rx="2" fill="#21262d"/>
-          <rect x="228" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <rect x="244" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-          <!-- Robot -->
-          <g transform="translate(190,60)">
-            <g class="robot-torso">
-              <rect x="-22" y="60" width="44" height="32" rx="6" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
-              <rect x="-16" y="70" width="32" height="10" rx="3" fill="#0a0e17"/>
-              <rect x="-14" y="72" width="10" height="6" rx="2" fill="#58a6ff" opacity=".8"/>
-              <rect x="-2"  y="72" width="8"  height="6" rx="2" fill="#3fb950" opacity=".8"/>
-              <rect x="8"   y="72" width="6"  height="6" rx="2" fill="#bc8cff" opacity=".6"/>
-              <rect class="arm-l" x="-44" y="65" width="24" height="12" rx="5" fill="#1c2128" stroke="#30363d"/>
-              <rect class="arm-r" x="20"  y="65" width="24" height="12" rx="5" fill="#1c2128" stroke="#30363d"/>
-            </g>
-            <g class="robot-head">
-              <line x1="0" y1="58" x2="0" y2="44" stroke="#6e7681" stroke-width="1.5"/>
-              <circle class="ant-dot" cx="0" cy="41" r="4" fill="#f85149"/>
-              <rect x="-26" y="8" width="52" height="50" rx="9" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
-              <rect x="-20" y="14" width="40" height="38" rx="6" fill="#0a0e17"/>
-              <rect x="-36" y="22" width="11" height="18" rx="4" fill="#161b22" stroke="#30363d"/>
-              <rect x="25"  y="22" width="11" height="18" rx="4" fill="#161b22" stroke="#30363d"/>
-              <g class="eye-l" transform="translate(-10,32)">
-                <circle r="7" fill="#58a6ff" opacity=".9"/>
-                <circle r="3" fill="white"/>
-                <circle r="1.5" cx="1" cy="-1" fill="#0a0e17"/>
-              </g>
-              <g class="eye-r" transform="translate(10,32)">
-                <circle r="7" fill="#58a6ff" opacity=".9"/>
-                <circle r="3" fill="white"/>
-                <circle r="1.5" cx="1" cy="-1" fill="#0a0e17"/>
-              </g>
-              <path d="M-10 44 Q0 51 10 44" stroke="#3fb950" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            </g>
-          </g>
-        </svg>
+        <div class="wb-hero">
+          <!-- Left: Lottie logo -->
+          <div class="wb-hero-art">
+            <div class="wb-logo-wrap">
+              <div class="wb-logo-glow"></div>
+              <dotlottie-wc src="https://lottie.host/b565193e-fec4-4f3c-a798-99404d79c287/JvUPQ05bEW.lottie" class="wb-logo" autoplay loop></dotlottie-wc>
+            </div>
+          </div>
 
-        <div class="welcome-title">Geppetto is ready to work</div>
-        <div class="welcome-sub">Pick a Jira ticket — the crew will RAG-search your codebase, write the code, open a PR, and sync Jira automatically.</div>
+          <!-- Right: wordmark + agents + CTA -->
+          <div class="wb-hero-content">
+            <div class="wb-brand">
+              <span class="wb-brand-code">code</span><span class="wb-brand-sep">·</span><span class="wb-brand-name">geppetto</span>
+            </div>
+            <div class="wb-tagline">Pick a Jira ticket and the crew will search your codebase, write the code, open a PR, and sync Jira — automatically.</div>
 
-        <div class="crew-row">
-          <div class="crew-chip"><span class="cdot"></span>🔍 Ragna · RAG</div>
-          <div class="crew-chip"><span class="cdot"></span>✏️ Codie · Edit</div>
-          <div class="crew-chip"><span class="cdot"></span>🌿 Gitty · Git</div>
+            <div class="wb-divider">
+              <div class="wb-divider-line"></div>
+              <div class="wb-divider-label">your crew</div>
+              <div class="wb-divider-line"></div>
+            </div>
+
+            <div class="wb-agents">
+
+              <div class="wb-agent wb-a1" style="--wa:var(--blue);--wd:.65s">
+                <div class="wb-agent-avatar">
+                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                    <g class="bot-unit">
+                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">R</text>
+                    </g>
+                  </svg>
+                </div>
+                <div class="wb-agent-info">
+                  <div class="wb-agent-name">RAGNA</div>
+                  <div class="wb-agent-role">🔍 Semantic codebase search</div>
+                </div>
+              </div>
+
+              <div class="wb-agent wb-a2" style="--wa:var(--orange);--wd:.85s">
+                <div class="wb-agent-avatar">
+                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                    <g class="bot-unit">
+                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">C</text>
+                    </g>
+                  </svg>
+                </div>
+                <div class="wb-agent-info">
+                  <div class="wb-agent-name">CODIE</div>
+                  <div class="wb-agent-role">✏️ Writes &amp; patches source files</div>
+                </div>
+              </div>
+
+              <div class="wb-agent wb-a3" style="--wa:var(--purple);--wd:1.05s">
+                <div class="wb-agent-avatar">
+                  <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                    <g class="bot-unit">
+                      <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                      <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                      <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                      <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                      <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                      <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                      <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                      <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                      <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
+                    </g>
+                  </svg>
+                </div>
+                <div class="wb-agent-info">
+                  <div class="wb-agent-name">GITTY</div>
+                  <div class="wb-agent-role">🌿 Branches, commits &amp; PRs</div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="wb-cta">
+              <span>Select a ticket to begin</span>
+              <span class="wb-cta-arrow">→</span>
+            </div>
+          </div>
         </div>
-
-        <div class="welcome-hint" style="margin-top:18px;">← Select a ticket to begin</div>
       </div>
 
       <!-- ─── TICKET DETAIL ─── -->
@@ -607,255 +1006,122 @@
           <div id="bubble-mgr">🪄 To work, boys!</div>
           <div id="bubble-dev">On it! 🤖</div>
 
-          <div class="workers-row">
+          <!-- ── Single-bot stage ── -->
+          <div id="bot-stage-wrap">
+            <div id="bot-glow-ring" data-bot="wg1"></div>
 
-            <!-- Worker 1: Ragna · RAG Search (blue) -->
-            <div class="worker-card wg1 rb-idle" id="wg1">
-              <div class="worker-spark"></div>
-              <svg viewBox="0 0 120 108" width="120" height="108">
-                <!-- desk -->
-                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
-                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <!-- coffee cup prop -->
-                <rect x="8" y="80" width="13" height="11" rx="2" fill="#2d333b"/>
-                <path d="M21 83 Q27 83 27 87 Q27 91 21 91" fill="none" stroke="#2d333b" stroke-width="2.5"/>
-                <rect x="9" y="78" width="11" height="3" rx="1" fill="#58a6ff" opacity=".5"/>
-                <!-- monitor -->
-                <rect x="24" y="42" width="72" height="50" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
-                <rect x="28" y="46" width="64" height="42" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="28" y="46" width="64" height="2" rx="1" fill="#58a6ff" opacity=".15"/>
-                <!-- search bar -->
-                <rect x="30" y="50" width="52" height="5" rx="2" fill="#21262d"/>
-                <rect x="32" y="51" width="28" height="3" rx="1" fill="#58a6ff" opacity=".5"/>
-                <rect x="77" y="51" width="4"  height="3" rx="1" fill="#58a6ff" opacity=".8"/>
-                <!-- results -->
-                <rect x="30" y="60" width="58" height="3" rx="1.5" fill="#58a6ff" opacity=".85"/>
-                <rect x="30" y="65" width="38" height="2" rx="1" fill="#e6edf3" opacity=".2"/>
-                <rect x="30" y="71" width="58" height="3" rx="1.5" fill="#3fb950" opacity=".65"/>
-                <rect x="30" y="76" width="28" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
-                <rect x="30" y="82" width="50" height="3" rx="1.5" fill="#bc8cff" opacity=".5"/>
-                <!-- stand -->
-                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
-                <!-- keyboard -->
-                <rect x="16" y="82" width="88" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="20" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="31" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="42" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="53" y="84" width="22" height="4" rx="1" fill="#21262d"/>
-                <rect x="78" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="89" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <!-- robot torso -->
-                <g class="robot-torso" transform="translate(60,36)">
-                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
-                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#58a6ff" opacity=".9"/>
-                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#3fb950" opacity=".7"/>
-                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+            <!-- Bot 1: RAGNA (blue) -->
+            <div id="wg1" class="bot-solo bot-idle">
+              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
+                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
+                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                <g class="bot-unit">
+                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
                 </g>
-                <!-- robot head -->
-                <g class="robot-head" transform="translate(60,36)">
-                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
-                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#f85149"/>
-                  <rect x="-29" y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
-                  <rect x="18"  y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
-                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
-                  <g class="eye-l" transform="translate(-7,-12)">
-                    <circle r="6" fill="#58a6ff" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                    <circle r="0.7" cx="2" cy="-1" fill="white"/>
-                  </g>
-                  <g class="eye-r" transform="translate(7,-12)">
-                    <circle r="6" fill="#58a6ff" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                    <circle r="0.7" cx="2" cy="-1" fill="white"/>
-                  </g>
-                  <path d="M-5 -2 Q0 3 5 -2" stroke="#3fb950" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <g class="thought-group">
+                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
+                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
+                </g>
+                <g class="check-group" transform="translate(74,10)">
+                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
                 </g>
               </svg>
-              <div class="worker-info">
-                <span class="worker-name">RAGNA</span>
-                <span class="worker-role">🔍 RAG Search</span>
-                <div class="worker-status">
-                  <span class="status-dot"></span>
-                  <span class="status-text" id="wg1-status">idle</span>
-                </div>
+              <div class="bot-solo-label">
+                <div class="bot-solo-name">RAGNA</div>
+                <div class="bot-solo-role">🔍 RAG Search</div>
+                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg1-act">ready</span></div>
               </div>
+              <span id="wg1-status" style="display:none"></span>
             </div>
 
-            <!-- Worker 2: Codie · Code Edit (orange) -->
-            <div class="worker-card wg2 rb-idle" id="wg2">
-              <div class="worker-spark"></div>
-              <svg viewBox="0 0 120 108" width="120" height="108">
-                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
-                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <!-- mug prop -->
-                <rect x="97" y="78" width="15" height="13" rx="2" fill="#2d333b"/>
-                <path d="M112 81 Q118 81 118 85 Q118 89 112 89" fill="none" stroke="#2d333b" stroke-width="2.5"/>
-                <rect x="98" y="76" width="13" height="3" rx="1" fill="#d29922" opacity=".6"/>
-                <!-- monitor (diff view) -->
-                <rect x="20" y="40" width="80" height="52" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
-                <rect x="24" y="44" width="72" height="44" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="24" y="44" width="72" height="2" rx="1" fill="#d29922" opacity=".15"/>
-                <!-- diff gutter -->
-                <rect x="24" y="48" width="2" height="4" fill="#f85149" opacity=".8"/>
-                <rect x="24" y="54" width="2" height="4" fill="#3fb950" opacity=".8"/>
-                <rect x="24" y="60" width="2" height="4" fill="#3fb950" opacity=".7"/>
-                <rect x="24" y="66" width="2" height="4" fill="#f85149" opacity=".6"/>
-                <rect x="24" y="72" width="2" height="4" fill="#3fb950" opacity=".8"/>
-                <rect x="24" y="78" width="2" height="4" fill="#3fb950" opacity=".5"/>
-                <!-- diff lines -->
-                <rect x="29" y="48" width="58" height="3" rx="1" fill="#f85149" opacity=".65"/>
-                <rect x="29" y="54" width="66" height="3" rx="1" fill="#3fb950" opacity=".75"/>
-                <rect x="29" y="60" width="44" height="3" rx="1" fill="#3fb950" opacity=".6"/>
-                <rect x="29" y="66" width="52" height="3" rx="1" fill="#f85149" opacity=".5"/>
-                <rect x="29" y="72" width="60" height="3" rx="1" fill="#3fb950" opacity=".65"/>
-                <rect x="29" y="78" width="36" height="3" rx="1" fill="#d29922" opacity=".5"/>
-                <!-- stand -->
-                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
-                <!-- keyboard -->
-                <rect x="14" y="82" width="92" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="18" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="29" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="40" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="51" y="84" width="26" height="4" rx="1" fill="#21262d"/>
-                <rect x="80" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="91" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <!-- robot torso -->
-                <g class="robot-torso" transform="translate(60,36)">
-                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
-                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#d29922" opacity=".9"/>
-                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#f85149" opacity=".7"/>
-                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+            <!-- Bot 2: CODIE (orange) -->
+            <div id="wg2" class="bot-solo bot-idle">
+              <dotlottie-wc id="wg2-lottie" src="https://lottie.host/2713c62a-f638-4892-9fbf-2fb05737a2de/Ctwi7y3QbA.lottie" style="width:220px;height:220px;display:none;flex-shrink:0;" autoplay loop></dotlottie-wc>
+              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
+                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
+                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                <g class="bot-unit">
+                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
                 </g>
-                <!-- robot head -->
-                <g class="robot-head" transform="translate(60,36)">
-                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
-                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#d29922"/>
-                  <rect x="-29" y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
-                  <rect x="18"  y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
-                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
-                  <g class="eye-l" transform="translate(-7,-12)">
-                    <circle r="6" fill="#d29922" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                  </g>
-                  <g class="eye-r" transform="translate(7,-12)">
-                    <circle r="6" fill="#d29922" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                  </g>
-                  <!-- focused expression (straight mouth) -->
-                  <rect x="-4" y="-2" width="8" height="1.5" rx="0.75" fill="#d29922" opacity=".5"/>
+                <g class="thought-group">
+                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
+                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
+                </g>
+                <g class="check-group" transform="translate(74,10)">
+                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
                 </g>
               </svg>
-              <div class="worker-info">
-                <span class="worker-name">CODIE</span>
-                <span class="worker-role">✏️ Code Edit</span>
-                <div class="worker-status">
-                  <span class="status-dot"></span>
-                  <span class="status-text" id="wg2-status">idle</span>
-                </div>
+              <div class="bot-solo-label">
+                <div class="bot-solo-name">CODIE</div>
+                <div class="bot-solo-role">✏️ Code Edit</div>
+                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg2-act">ready</span></div>
               </div>
+              <span id="wg2-status" style="display:none"></span>
             </div>
 
-            <!-- Worker 3: Gitty · Git Bot (purple) -->
-            <div class="worker-card wg3 rb-idle" id="wg3">
-              <div class="worker-spark"></div>
-              <svg viewBox="0 0 120 108" width="120" height="108">
-                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
-                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
-                <!-- git graph paper prop -->
-                <rect x="7" y="76" width="18" height="15" rx="2" fill="#21262d"/>
-                <line x1="13" y1="80" x2="13" y2="88" stroke="#bc8cff" stroke-width="1.5" opacity=".7"/>
-                <circle cx="13" cy="80" r="2.5" fill="#bc8cff" opacity=".9"/>
-                <circle cx="13" cy="86" r="2.5" fill="#bc8cff" opacity=".7"/>
-                <line x1="13" y1="83" x2="19" y2="80" stroke="#3fb950" stroke-width="1.2" opacity=".7"/>
-                <circle cx="19" cy="80" r="2" fill="#3fb950" opacity=".8"/>
-                <!-- monitor (git graph) -->
-                <rect x="22" y="40" width="76" height="52" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
-                <rect x="26" y="44" width="68" height="44" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="26" y="44" width="68" height="2" rx="1" fill="#bc8cff" opacity=".15"/>
-                <!-- git branch graph on screen -->
-                <line x1="36" y1="48" x2="36" y2="84" stroke="#bc8cff" stroke-width="1.5" opacity=".7"/>
-                <circle cx="36" cy="50" r="3.5" fill="#bc8cff"/>
-                <circle cx="36" cy="60" r="3.5" fill="#bc8cff" opacity=".85"/>
-                <circle cx="36" cy="70" r="3.5" fill="#bc8cff"/>
-                <circle cx="36" cy="80" r="3.5" fill="#bc8cff" opacity=".7"/>
-                <line x1="36" y1="60" x2="54" y2="65" stroke="#3fb950" stroke-width="1.5" opacity=".6"/>
-                <line x1="54" y1="65" x2="54" y2="75" stroke="#3fb950" stroke-width="1.5" opacity=".6"/>
-                <line x1="54" y1="75" x2="36" y2="80" stroke="#3fb950" stroke-width="1.5" opacity=".5"/>
-                <circle cx="54" cy="65" r="3" fill="#3fb950" opacity=".85"/>
-                <circle cx="54" cy="75" r="3" fill="#3fb950" opacity=".85"/>
-                <rect x="42" y="48" width="42" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
-                <rect x="42" y="58" width="30" height="2" rx="1" fill="#e6edf3" opacity=".15"/>
-                <rect x="60" y="63" width="24" height="2" rx="1" fill="#3fb950" opacity=".3"/>
-                <rect x="42" y="78" width="40" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
-                <!-- stand -->
-                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
-                <!-- keyboard -->
-                <rect x="16" y="82" width="88" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="20" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="31" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="42" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="53" y="84" width="22" height="4" rx="1" fill="#21262d"/>
-                <rect x="78" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <rect x="89" y="84" width="8" height="4" rx="1" fill="#21262d"/>
-                <!-- robot torso -->
-                <g class="robot-torso" transform="translate(60,36)">
-                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
-                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#bc8cff" opacity=".9"/>
-                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#3fb950" opacity=".7"/>
-                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+            <!-- Bot 3: GITTY (purple) -->
+            <div id="wg3" class="bot-solo bot-idle">
+              <svg class="bot-svg" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+                <circle class="ring-track" cx="50" cy="52" r="44" fill="none" stroke-width="1.5"/>
+                <circle class="ring-fill" cx="50" cy="52" r="44" fill="none" stroke-width="2" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" transform="rotate(-90 50 52)"/>
+                <ellipse class="bot-shadow" cx="50" cy="106" rx="17" ry="3.5"/>
+                <g class="bot-unit">
+                  <line class="ant-stem" x1="50" y1="16" x2="50" y2="8"/><circle class="ant-dot" cx="50" cy="5" r="3"/>
+                  <rect class="bot-neck" x="44" y="77" width="12" height="8" rx="4"/>
+                  <rect class="bot-body-shape" x="33" y="82" width="34" height="22" rx="9"/>
+                  <circle class="led-acc" cx="43" cy="94" r="2.2"/><circle class="led-g" cx="50" cy="94" r="2.2"/><circle class="led-p" cx="57" cy="94" r="2.2"/>
+                  <rect class="bot-head" x="19" y="14" width="62" height="64" rx="17"/>
+                  <rect class="bot-screen" x="26" y="21" width="48" height="50" rx="11"/>
+                  <g transform="translate(38,46)"><g class="eye-l"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <g transform="translate(62,46)"><g class="eye-r"><circle r="8" class="eye-bg"/><circle r="5.5" class="iris"/><circle r="2.8" class="pupil-w" cx=".8" cy="-.6"/><circle r="1.1" class="pupil-d" cx="1.2" cy="-.9"/><circle r=".45" class="pupil-s" cx="2" cy="-1.5"/></g></g>
+                  <path class="bot-mouth" d="M38,60 Q50,68 62,60"/>
+                  <circle class="badge-bg" cx="50" cy="27" r="6"/><text class="badge-g" x="50" y="30" text-anchor="middle">G</text>
                 </g>
-                <!-- robot head with headset -->
-                <g class="robot-head" transform="translate(60,36)">
-                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
-                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#bc8cff"/>
-                  <!-- headset arc -->
-                  <path d="M-24 -20 Q-24 -40 0 -40 Q24 -40 24 -20" fill="none" stroke="#bc8cff" stroke-width="2.5" opacity=".55"/>
-                  <!-- ear cups (with purple border for headset) -->
-                  <rect x="-31" y="-24" width="11" height="15" rx="4" fill="#161b22" stroke="#bc8cff" stroke-width="1.2"/>
-                  <rect x="20"  y="-24" width="11" height="15" rx="4" fill="#161b22" stroke="#bc8cff" stroke-width="1.2"/>
-                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
-                  <g class="eye-l" transform="translate(-7,-12)">
-                    <circle r="6" fill="#bc8cff" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                  </g>
-                  <g class="eye-r" transform="translate(7,-12)">
-                    <circle r="6" fill="#bc8cff" opacity=".95"/>
-                    <circle r="3.2" fill="white"/>
-                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
-                  </g>
-                  <!-- surprised O mouth -->
-                  <circle cx="0" cy="-2" r="2.8" fill="none" stroke="#bc8cff" stroke-width="1.5" opacity=".6"/>
+                <g class="thought-group">
+                  <circle cx="76" cy="18" r="12" class="thought-bub"/><circle cx="82" cy="28" r="5.5" class="thought-bub"/><circle cx="86" cy="35" r="3" class="thought-bub"/>
+                  <circle class="td1" cx="71" cy="18" r="2"/><circle class="td2" cx="76" cy="18" r="2"/><circle class="td3" cx="81" cy="18" r="2"/>
+                </g>
+                <g class="check-group" transform="translate(74,10)">
+                  <circle class="check-circle" r="11"/><path class="check-path" d="M-5,0 L-1.5,4 L7,-5"/>
                 </g>
               </svg>
-              <div class="worker-info">
-                <span class="worker-name">GITTY</span>
-                <span class="worker-role">🌿 Git Bot</span>
-                <div class="worker-status">
-                  <span class="status-dot"></span>
-                  <span class="status-text" id="wg3-status">idle</span>
-                </div>
+              <div class="bot-solo-label">
+                <div class="bot-solo-name">GITTY</div>
+                <div class="bot-solo-role">🌿 Git Bot</div>
+                <div class="bot-label"><span class="bat-dot"></span><span class="bat-text" id="wg3-act">ready</span></div>
               </div>
+              <span id="wg3-status" style="display:none"></span>
             </div>
 
-          </div><!-- workers-row -->
-          <div id="tr-jira" class="jira-sync" style="display:none;margin-left:12px;flex-shrink:0;"><span class="jsync-dot"></span>Jira updated</div>
+            <!-- Step indicator -->
+            <div id="step-dots">
+              <div class="step-dot" id="sd-wg1" title="RAGNA · RAG Search"></div>
+              <div class="step-dot" id="sd-wg2" title="CODIE · Code Edit"></div>
+              <div class="step-dot" id="sd-wg3" title="GITTY · Git Bot"></div>
+            </div>
+          </div><!-- bot-stage-wrap -->
+
+          <div id="tr-jira" class="jira-sync" style="display:none;position:absolute;bottom:12px;right:18px;"><span class="jsync-dot"></span>Jira updated</div>
         </div><!-- workers-banner -->
 
         <!-- trace header -->
@@ -942,6 +1208,7 @@
 
 <script>
 let selTicket=null, selTask=null, es=null, ptimer=null, prog=0, changesData=[], screenshots={};
+let currentActiveBot = null;
 loadJira(); loadTasks();
 setInterval(loadTasks, 4000);
 
@@ -963,21 +1230,107 @@ function setWorkerStatusText(wId, text) {
   const el = document.getElementById(wId + '-status');
   if (el) el.textContent = text;
 }
+function setBotState(wid, state) {
+  const el = document.getElementById(wid);
+  if (!el) return;
+  el.classList.remove('bot-idle','bot-thinking','bot-working','bot-done');
+  el.classList.add('bot-' + state);
+  if (wid === 'wg2') {
+    const lottie = document.getElementById('wg2-lottie');
+    const svg    = el.querySelector('.bot-svg');
+    if (lottie && svg) {
+      const working = state === 'working';
+      lottie.style.display = working ? 'block' : 'none';
+      svg.style.display    = working ? 'none'  : 'block';
+    }
+  }
+}
+function setBotActivity(wid, text) {
+  const el = document.getElementById(wid + '-act');
+  if (!el || el.textContent === text) return;
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 150);
+}
+
+/* ── Bot transition: slide one bot out, slide the next one in ── */
+function transitionBot(toId) {
+  if (currentActiveBot === toId) return;
+  const prev = currentActiveBot;
+  currentActiveBot = toId;
+
+  // Update glow ring colour
+  const glow = document.getElementById('bot-glow-ring');
+  if (glow) glow.dataset.bot = toId;
+
+  // Update step dots
+  ['wg1','wg2','wg3'].forEach(wid => {
+    const dot = document.getElementById('sd-' + wid);
+    if (dot) dot.classList.toggle('step-active', wid === toId);
+  });
+
+  if (typeof gsap === 'undefined') {
+    if (prev) { const p = document.getElementById(prev); if (p) p.style.opacity = '0'; }
+    const n = document.getElementById(toId); if (n) n.style.opacity = '1';
+    return;
+  }
+
+  // Slide prev out to the left
+  if (prev) {
+    const prevEl = document.getElementById(prev);
+    if (prevEl) {
+      gsap.killTweensOf(prevEl);
+      gsap.to(prevEl, {
+        x: -58, opacity: 0, scale: 0.86,
+        duration: 0.3, ease: 'power2.in',
+        onComplete: () => { gsap.set(prevEl, { x: 58 }); prevEl.style.pointerEvents = 'none'; }
+      });
+    }
+  }
+
+  // Slide next in from the right
+  const nextEl = document.getElementById(toId);
+  if (nextEl) {
+    nextEl.style.pointerEvents = 'auto';
+    gsap.killTweensOf(nextEl);
+    gsap.fromTo(nextEl,
+      { x: 58, opacity: 0, scale: 0.86 },
+      { x: 0, opacity: 1, scale: 1, duration: 0.42, ease: 'back.out(1.3)', delay: prev ? 0.16 : 0 }
+    );
+  }
+}
+
 function setWorkers(mode, active) {
   ['wg1','wg2','wg3'].forEach(wid => {
     const el = document.getElementById(wid);
     if (!el) return;
-    el.classList.remove('rb-active','rb-idle','active');
     if (mode === 'running') {
       const isActive = el.id === active;
-      el.classList.add(isActive ? 'rb-active' : 'rb-idle');
-      if (isActive) { el.classList.add('active'); setWorkerStatusText(wid, '…'); }
-      else setWorkerStatusText(wid, 'standby');
+      if (isActive) {
+        setBotState(wid, 'working');
+        setBotActivity(wid, 'working…');
+        setWorkerStatusText(wid, '…');
+      } else {
+        setBotState(wid, 'thinking');
+        setBotActivity(wid, 'standing by…');
+        setWorkerStatusText(wid, 'standby');
+      }
+    } else if (mode === 'done') {
+      setBotState(wid, 'done');
+      setBotActivity(wid, 'done ✓');
+      setWorkerStatusText(wid, 'done');
     } else {
-      el.classList.add('rb-idle');
+      setBotState(wid, 'idle');
+      setBotActivity(wid, 'ready');
       setWorkerStatusText(wid, 'idle');
     }
   });
+  if (mode === 'running' && active) transitionBot(active);
+  else if (!currentActiveBot) transitionBot('wg1');
+}
+function toggleTheme() {
+  const isLight = document.documentElement.dataset.theme === 'light';
+  document.documentElement.dataset.theme = isLight ? 'dark' : 'light';
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
 }
 
 /* ── Changes panel ── */
@@ -1221,6 +1574,18 @@ function renderTasks(tasks) {
     </div>`).join('');
 }
 async function selectTask(taskId) {
+  // Reset bot stage immediately (synchronous, before await)
+  currentActiveBot = null;
+  if (typeof gsap !== 'undefined') {
+    ['wg1','wg2','wg3'].forEach(wid => {
+      const el = document.getElementById(wid);
+      if (el) { gsap.killTweensOf(el); gsap.set(el, { x: 0, y: 0, opacity: 0, scale: 1 }); }
+      const dot = document.getElementById('sd-' + wid);
+      if (dot) dot.classList.remove('step-active');
+    });
+    const glow = document.getElementById('bot-glow-ring');
+    if (glow) glow.dataset.bot = 'wg1';
+  }
   const task = await api(`/tasks/${taskId}`);
   selTask = task;
   showView('trace');
@@ -1272,7 +1637,7 @@ function updateTrHdr(task) {
   id('hd-title').textContent = task.title;     id('hd-title').style.color = 'var(--text)';
   id('hd-icon').textContent = icons[task.status]||''; id('hd-icon').style.display = 'inline';
   id('hd-actions').innerHTML = '';
-  if (task.status==='completed') { id('tr-jira').style.display='flex'; stopProg(); setProg(100); setWorkers('idle'); }
+  if (task.status==='completed') { id('tr-jira').style.display='flex'; stopProg(); setProg(100); setWorkers('done'); setTimeout(()=>setWorkers('idle'), 3000); }
   else if (task.status==='running') { startProg(); id('tr-jira').style.display='none'; setWorkers('running'); }
   else { setWorkers('idle'); }
 }
@@ -1425,42 +1790,58 @@ function subscribe(taskId, seen0, status) {
 /* ── Task start animation ── */
 function playTaskStartAnimation(ticketKey) {
   if (typeof gsap === 'undefined') return;
+
+  // Show wg1 immediately as the starting bot
+  currentActiveBot = 'wg1';
+  gsap.set('#wg1', { x: 0, y: 0, opacity: 1, scale: 1 });
+  gsap.set('#wg2', { x: 58, opacity: 0, scale: 1 });
+  gsap.set('#wg3', { x: 58, opacity: 0, scale: 1 });
+  const glowEl = document.getElementById('bot-glow-ring');
+  if (glowEl) glowEl.dataset.bot = 'wg1';
+  ['wg1','wg2','wg3'].forEach(wid => {
+    const dot = document.getElementById('sd-' + wid);
+    if (dot) dot.classList.toggle('step-active', wid === 'wg1');
+  });
+
   const tcKey = document.getElementById('tc-key');
   if (tcKey) tcKey.textContent = ticketKey || 'TASK';
+
   const banner = document.getElementById('workers-banner');
-  const wg2el  = document.getElementById('wg2');
-  if (!banner || !wg2el) return;
-  const br   = banner.getBoundingClientRect();
-  const w2r  = wg2el.getBoundingClientRect();
-  const wg2cx = w2r.left - br.left + w2r.width / 2;
-  const ticketTargetX = wg2cx - 41;
-  gsap.set('#bubble-dev', { left: Math.max(10, wg2cx - 38) });
-  gsap.killTweensOf(['#mgr-bot','#mgr-head','#mgr-arm-r','#ticket-card','#bubble-mgr','#bubble-dev','#wg1','#wg2','#wg3']);
+  const stageEl = document.getElementById('bot-stage-wrap');
+  if (!banner || !stageEl) return;
+  const br = banner.getBoundingClientRect();
+  const sr = stageEl.getBoundingClientRect();
+  const stageCx = sr.left - br.left + sr.width / 2;
+  const ticketTargetX = stageCx - 41;
+  gsap.set('#bubble-dev', { left: Math.max(10, stageCx - 38) });
+
+  gsap.killTweensOf(['#mgr-bot','#mgr-head','#mgr-arm-r','#ticket-card','#bubble-mgr','#bubble-dev']);
   gsap.set('#mgr-bot',    { x: -120, opacity: 0 });
   gsap.set('#mgr-head',   { rotation: 0, clearProps: 'transform' });
   gsap.set('#mgr-arm-r',  { rotation: 0, clearProps: 'transform' });
   gsap.set('#ticket-card',{ x: 10, y: 0, opacity: 0, scale: 0.5 });
   gsap.set(['#bubble-mgr','#bubble-dev'], { opacity: 0, y: 0 });
+
   const tl = gsap.timeline({
     onComplete() {
       gsap.set('#mgr-bot',    { opacity: 0, x: -120 });
       gsap.set('#ticket-card',{ opacity: 0 });
       gsap.set(['#mgr-head','#mgr-arm-r'], { clearProps: 'all' });
-      gsap.set(['#wg1','#wg2','#wg3'],    { clearProps: 'all' });
+      gsap.set('#wg1', { clearProps: 'y' });
     }
   });
   tl.to('#mgr-bot',    { x: 10, opacity: 1, duration: 0.5, ease: 'power2.out' });
   tl.to('#ticket-card',{ opacity: 1, scale: 1, duration: 0.22, ease: 'back.out(2)' }, '+=0.05');
   tl.to('#mgr-head',   { rotation: 13, svgOrigin: '45 49', duration: 0.22, ease: 'power1.inOut' })
-    .to('#mgr-head',   { rotation: -9,  duration: 0.18 })
-    .to('#mgr-head',   { rotation: 5,   duration: 0.14 })
-    .to('#mgr-head',   { rotation: 0,   duration: 0.14 });
+    .to('#mgr-head',   { rotation: -9, duration: 0.18 })
+    .to('#mgr-head',   { rotation: 5,  duration: 0.14 })
+    .to('#mgr-head',   { rotation: 0,  duration: 0.14 });
   tl.to('#bubble-mgr', { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
   tl.to('#bubble-mgr', { opacity: 0, duration: 0.2 }, '+=0.55');
   tl.to('#ticket-card',{ x: ticketTargetX, y: -6, duration: 0.55, ease: 'power2.inOut' }, '-=0.1');
-  tl.to(['#wg1','#wg2','#wg3'], { y: -7, duration: 0.12, stagger: 0.07, ease: 'power2.out' });
-  tl.to(['#wg1','#wg2','#wg3'], { y: 0,  duration: 0.22, stagger: 0.07, ease: 'bounce.out' });
-  tl.to('#ticket-card', { opacity: 0, scale: 0.6, duration: 0.18 }, '-=0.15');
+  tl.to('#wg1', { y: -12, duration: 0.13, ease: 'power2.out' });
+  tl.to('#wg1', { y: 0,   duration: 0.32, ease: 'bounce.out' });
+  tl.to('#ticket-card', { opacity: 0, scale: 0.6, duration: 0.18 }, '-=0.18');
   tl.to('#bubble-dev',  { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
   tl.to('#bubble-dev',  { opacity: 0, duration: 0.2 }, '+=0.45');
   tl.to('#mgr-arm-r', { rotation: -55, svgOrigin: '64 58', duration: 0.18, ease: 'power1.out' }, '-=0.35');

@@ -19,6 +19,9 @@ app = FastAPI(title="Geppetto")
 _screenshots = Path("data/screenshots")
 _screenshots.mkdir(parents=True, exist_ok=True)
 app.mount("/screenshots", StaticFiles(directory=str(_screenshots)), name="screenshots")
+_assets = Path(__file__).parent.parent / "dashboard" / "assets"
+_assets.mkdir(parents=True, exist_ok=True)
+app.mount("/assets", StaticFiles(directory=str(_assets)), name="assets")
 init_db()
 
 

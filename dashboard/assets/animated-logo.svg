@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">code-geppetto animated robot logo</title>
+  <desc id="desc">Transparent SVG logo of a small modular robot coding assistant with a Geppetto puppet controller, smiling display, code UI elements, and subtle animation.</desc>
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0B1220" flood-opacity="0.14"/>
+    </filter>
+
+    <linearGradient id="panelWhite" x1="260" y1="230" x2="760" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9EDF2"/>
+    </linearGradient>
+
+    <linearGradient id="screenDark" x1="346" y1="272" x2="678" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#101821"/>
+      <stop offset="1" stop-color="#05080D"/>
+    </linearGradient>
+
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue-soft: #93c5fd;
+        --ink: #111827;
+        --charcoal: #202833;
+        --line: #D8DEE8;
+        --muted: #94A3B8;
+        --white: #FFFFFF;
+      }
+
+      .outline { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { stroke: #B9C3D2; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .blueStroke { stroke: var(--blue); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .blueThin { stroke: var(--blue-soft); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .uiLine { stroke: #8EA3C0; stroke-width: 5; stroke-linecap: round; opacity: .75; }
+      .blueFill { fill: var(--blue); }
+      .darkFill { fill: var(--charcoal); }
+      .screen { fill: url(#screenDark); }
+
+      #robot {
+        transform-origin: 512px 565px;
+        animation: robotFloat 3.6s ease-in-out infinite;
+      }
+
+      #head {
+        transform-origin: 512px 330px;
+        animation: headNod 3.6s ease-in-out infinite;
+      }
+
+      #leftArm {
+        transform-origin: 347px 543px;
+        animation: armIdleLeft 3.6s ease-in-out infinite;
+      }
+
+      #rightArm {
+        transform-origin: 677px 543px;
+        animation: armIdleRight 3.6s ease-in-out infinite;
+      }
+
+      .eye {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: eyePulse 1.8s ease-in-out infinite;
+      }
+
+      .smile {
+        stroke-dasharray: 80;
+        stroke-dashoffset: 80;
+        animation: drawSmile 2.2s ease-in-out infinite;
+      }
+
+      .string {
+        stroke-dasharray: 8 10;
+        animation: stringFlow 1.5s linear infinite;
+      }
+
+      #controller {
+        transform-origin: 512px 122px;
+        animation: controllerSway 4s ease-in-out infinite;
+      }
+
+      .panel {
+        animation: panelFloat 4s ease-in-out infinite;
+      }
+
+      .panel.delay1 { animation-delay: -.9s; }
+      .panel.delay2 { animation-delay: -1.7s; }
+      .panel.delay3 { animation-delay: -2.5s; }
+
+      .codeLine {
+        transform-box: fill-box;
+        transform-origin: left center;
+        animation: codeBlink 2.4s ease-in-out infinite;
+      }
+
+      .codeLine:nth-child(2) { animation-delay: .25s; }
+      .codeLine:nth-child(3) { animation-delay: .5s; }
+      .codeLine:nth-child(4) { animation-delay: .75s; }
+
+      .progressBar {
+        transform-origin: 0 0;
+        animation: progress 2.8s ease-in-out infinite;
+      }
+
+      .spark {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: sparkle 2.8s ease-in-out infinite;
+      }
+
+      .orbit {
+        stroke-dasharray: 5 13;
+        animation: dashOrbit 12s linear infinite;
+      }
+
+      @keyframes robotFloat {
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+
+      @keyframes headNod {
+        0%,100% { transform: rotate(0deg); }
+        50% { transform: rotate(-1deg); }
+      }
+
+      @keyframes armIdleLeft {
+        0%,100% { transform: rotate(0deg); }
+        50% { transform: rotate(2deg); }
+      }
+
+      @keyframes armIdleRight {
+        0%,100% { transform: rotate(0deg); }
+        50% { transform: rotate(-2deg); }
+      }
+
+      @keyframes eyePulse {
+        0%,100% { transform: scale(1); opacity: .95; }
+        50% { transform: scale(1.18); opacity: 1; }
+      }
+
+      @keyframes drawSmile {
+        0%,25% { stroke-dashoffset: 80; opacity: .2; }
+        45%,80% { stroke-dashoffset: 0; opacity: 1; }
+        100% { stroke-dashoffset: 80; opacity: .2; }
+      }
+
+      @keyframes stringFlow {
+        to { stroke-dashoffset: -18; }
+      }
+
+      @keyframes controllerSway {
+        0%,100% { transform: rotate(-1deg); }
+        50% { transform: rotate(1deg); }
+      }
+
+      @keyframes panelFloat {
+        0%,100% { transform: translateY(0); opacity: .9; }
+        50% { transform: translateY(-7px); opacity: 1; }
+      }
+
+      @keyframes codeBlink {
+        0%,100% { opacity: .45; transform: scaleX(.7); }
+        45%,75% { opacity: 1; transform: scaleX(1); }
+      }
+
+      @keyframes progress {
+        0% { transform: scaleX(.12); }
+        55% { transform: scaleX(1); }
+        100% { transform: scaleX(.12); }
+      }
+
+      @keyframes sparkle {
+        0%,100% { transform: scale(.7) rotate(0deg); opacity: .25; }
+        45% { transform: scale(1.15) rotate(18deg); opacity: 1; }
+      }
+
+      @keyframes dashOrbit {
+        to { stroke-dashoffset: -180; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+      }
+    </style>
+  </defs>
+
+  <!-- Transparent background intentionally omitted -->
+
+  <!-- subtle system orbit -->
+  <circle class="orbit" cx="512" cy="500" r="294" stroke="#B8C7DD" stroke-width="2" opacity=".65"/>
+  <circle class="orbit" cx="512" cy="500" r="240" stroke="#D6E2F2" stroke-width="2" opacity=".6"/>
+
+  <!-- Geppetto puppet controller -->
+  <g id="controller">
+    <rect x="375" y="112" width="275" height="22" rx="11" fill="url(#panelWhite)" class="outline"/>
+    <rect x="375" y="112" width="275" height="22" rx="11" fill="#FFFFFF" opacity=".55"/>
+    <rect x="501" y="101" width="22" height="44" rx="11" fill="#202833" class="outline"/>
+    <circle cx="395" cy="123" r="9" fill="#2563EB"/>
+    <circle cx="629" cy="123" r="9" fill="#2563EB"/>
+  </g>
+
+  <!-- puppet strings -->
+  <line class="string blueStroke" x1="395" y1="132" x2="345" y2="516" opacity=".9"/>
+  <line class="string blueStroke" x1="512" y1="145" x2="512" y2="222" opacity=".9"/>
+  <line class="string blueStroke" x1="629" y1="132" x2="679" y2="516" opacity=".9"/>
+
+  <!-- floating UI panels -->
+  <g class="panel delay1" filter="url(#softShadow)">
+    <rect x="116" y="345" width="176" height="142" rx="18" fill="#FFFFFF" stroke="#C9D5E6" stroke-width="3"/>
+    <circle cx="142" cy="370" r="5" fill="#202833"/>
+    <circle cx="160" cy="370" r="5" fill="#94A3B8"/>
+    <circle cx="178" cy="370" r="5" fill="#2563EB"/>
+    <path d="M148 410 L130 428 L148 446" class="blueStroke"/>
+    <path d="M260 410 L278 428 L260 446" class="blueStroke"/>
+    <line class="codeLine uiLine" x1="164" y1="410" x2="236" y2="410"/>
+    <line class="codeLine uiLine" x1="164" y1="433" x2="256" y2="433"/>
+    <line class="codeLine blueStroke" x1="164" y1="456" x2="228" y2="456"/>
+  </g>
+
+  <g class="panel delay2" filter="url(#softShadow)">
+    <rect x="746" y="360" width="168" height="128" rx="18" fill="#FFFFFF" stroke="#C9D5E6" stroke-width="3"/>
+    <rect x="782" y="408" width="42" height="42" rx="8" fill="#2563EB"/>
+    <rect x="840" y="394" width="52" height="52" rx="10" fill="#F8FAFC" stroke="#94A3B8" stroke-width="3"/>
+    <circle cx="882" cy="384" r="18" fill="#2563EB"/>
+    <circle cx="882" cy="472" r="18" fill="#94A3B8"/>
+    <path d="M824 429 H840" class="thin"/>
+    <path d="M866 412 V394" class="thin"/>
+    <path d="M866 446 V472" class="thin"/>
+  </g>
+
+  <g class="panel delay3" filter="url(#softShadow)">
+    <rect x="744" y="548" width="182" height="90" rx="18" fill="#FFFFFF" stroke="#C9D5E6" stroke-width="3"/>
+    <circle cx="772" cy="580" r="7" fill="#2563EB"/>
+    <text x="790" y="586" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#2563EB">RUNNING</text>
+    <rect x="772" y="606" width="120" height="11" rx="6" fill="#E6EEF9"/>
+    <rect class="progressBar" x="772" y="606" width="120" height="11" rx="6" fill="#2563EB"/>
+    <text x="888" y="632" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" fill="#475569">85%</text>
+  </g>
+
+  <g class="panel" filter="url(#softShadow)">
+    <rect x="125" y="550" width="170" height="70" rx="16" fill="#FFFFFF" stroke="#C9D5E6" stroke-width="3"/>
+    <path d="M175 585 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0" fill="#2563EB"/>
+    <circle cx="175" cy="585" r="9" fill="#FFFFFF"/>
+    <line class="uiLine" x1="220" y1="574" x2="268" y2="574"/>
+    <line class="uiLine" x1="220" y1="596" x2="252" y2="596"/>
+  </g>
+
+  <!-- spark/code glyphs -->
+  <g opacity=".78">
+    <path class="spark blueThin" d="M210 265 V290 M197 277 H223"/>
+    <path class="spark blueThin" d="M813 244 V273 M799 259 H827"/>
+    <path class="spark blueThin" d="M477 178 V203 M464 190 H490"/>
+    <circle cx="781" cy="277" r="6" stroke="#93C5FD" stroke-width="2"/>
+    <circle cx="248" cy="245" r="5" stroke="#93C5FD" stroke-width="2"/>
+    <text x="160" y="294" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700" fill="#2563EB">{ }</text>
+    <text x="805" y="296" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700" fill="#2563EB">&lt;/&gt;</text>
+  </g>
+
+  <!-- Robot -->
+  <g id="robot" filter="url(#softShadow)">
+    <!-- neck -->
+    <rect x="454" y="412" width="116" height="48" rx="9" fill="#202833" class="outline"/>
+    <rect x="474" y="424" width="76" height="12" rx="6" fill="#2563EB"/>
+
+    <!-- head -->
+    <g id="head">
+      <rect x="335" y="230" width="354" height="206" rx="78" fill="url(#panelWhite)" class="outline"/>
+      <path d="M383 255 C420 242 603 242 640 255" class="thin" opacity=".7"/>
+      <rect x="369" y="274" width="286" height="124" rx="42" class="screen"/>
+      <circle class="eye" cx="459" cy="336" r="13" fill="#2563EB"/>
+      <circle class="eye" cx="565" cy="336" r="13" fill="#2563EB"/>
+      <path class="smile" d="M476 363 C493 379 532 379 549 363" stroke="#2563EB" stroke-width="7" stroke-linecap="round"/>
+      <path d="M350 360 C356 386 374 406 400 414" stroke="#D9E2EF" stroke-width="3" opacity=".65"/>
+      <path d="M674 360 C668 386 650 406 624 414" stroke="#D9E2EF" stroke-width="3" opacity=".65"/>
+    </g>
+
+    <!-- body -->
+    <rect x="357" y="456" width="310" height="310" rx="58" fill="url(#panelWhite)" class="outline"/>
+    <path d="M390 482 H634" class="thin" opacity=".8"/>
+    <path d="M390 720 H634" class="thin" opacity=".75"/>
+    <path d="M381 480 C392 493 398 514 397 538" class="thin"/>
+    <path d="M381 742 C402 720 430 707 462 707" class="thin"/>
+    <path d="M639 483 C622 497 614 518 616 542" class="thin"/>
+    <rect x="642" y="538" width="12" height="54" rx="6" fill="#1F2937"/>
+    <rect x="623" y="496" width="7" height="34" rx="3.5" fill="#2563EB"/>
+    <circle cx="577" cy="704" r="4" fill="#94A3B8"/>
+    <circle cx="591" cy="704" r="4" fill="#94A3B8"/>
+    <circle cx="605" cy="704" r="4" fill="#94A3B8"/>
+
+    <!-- G mark -->
+    <path d="M540 594 H578" class="blueStroke"/>
+    <path d="M564 610 C552 636 516 644 494 622 C473 600 481 563 509 552 C531 544 556 552 569 572" stroke="#30343B" stroke-width="13" stroke-linecap="round"/>
+
+    <!-- base -->
+    <rect x="396" y="748" width="232" height="72" rx="20" fill="#202833" class="outline"/>
+    <rect x="445" y="771" width="134" height="28" rx="9" fill="#2D3542" stroke="#111827" stroke-width="2"/>
+    <rect x="605" y="774" width="7" height="28" rx="3.5" fill="#2563EB"/>
+    <rect x="419" y="775" width="7" height="25" rx="3.5" fill="#6B7280"/>
+
+    <!-- left arm -->
+    <g id="leftArm">
+      <circle cx="347" cy="542" r="28" fill="#202833" class="outline"/>
+      <rect x="296" y="551" width="46" height="94" rx="21" fill="url(#panelWhite)" class="outline" transform="rotate(12 296 551)"/>
+      <path d="M314 572 L337 576" class="blueThin"/>
+      <circle cx="311" cy="646" r="23" fill="#202833" class="outline"/>
+      <rect x="286" y="650" width="42" height="84" rx="19" fill="url(#panelWhite)" class="outline" transform="rotate(6 286 650)"/>
+      <path d="M300 676 L322 678" class="blueThin"/>
+      <circle cx="301" cy="735" r="18" fill="#202833" class="outline"/>
+      <path d="M288 750 C263 764 265 792 287 801" class="outline" fill="#202833"/>
+      <path d="M310 750 C335 764 333 792 311 801" class="outline" fill="#202833"/>
+    </g>
+
+    <!-- right arm -->
+    <g id="rightArm">
+      <circle cx="677" cy="542" r="28" fill="#202833" class="outline"/>
+      <rect x="682" y="551" width="46" height="94" rx="21" fill="url(#panelWhite)" class="outline" transform="rotate(-12 682 551)"/>
+      <path d="M690 576 L713 572" class="blueThin"/>
+      <circle cx="713" cy="646" r="23" fill="#202833" class="outline"/>
+      <rect x="700" y="650" width="42" height="84" rx="19" fill="url(#panelWhite)" class="outline" transform="rotate(-6 700 650)"/>
+      <path d="M704 678 L726 676" class="blueThin"/>
+      <circle cx="723" cy="735" r="18" fill="#202833" class="outline"/>
+      <path d="M710 750 C685 764 687 792 709 801" class="outline" fill="#202833"/>
+      <path d="M732 750 C757 764 755 792 733 801" class="outline" fill="#202833"/>
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  <g id="wordmark">
+    <text x="512" y="905" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="94" font-weight="800" letter-spacing="-4">
+      <tspan fill="#111827">code-</tspan><tspan fill="#2563EB">geppetto</tspan>
+    </text>
+    <line x1="392" y1="946" x2="632" y2="946" stroke="#B8C7DD" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="512" cy="946" r="10" fill="#FFFFFF" stroke="#2563EB" stroke-width="4"/>
+    <circle cx="392" cy="946" r="5" fill="#FFFFFF" stroke="#94A3B8" stroke-width="3"/>
+    <circle cx="632" cy="946" r="5" fill="#FFFFFF" stroke="#94A3B8" stroke-width="3"/>
+  </g>
+</svg>
