@@ -457,10 +457,8 @@ def _run_and_notify_telegram(
     _telegram_send_message(chat_id, _telegram_task_result(task_id, title))
 
 
-@app.post("/telegram")
-async def telegram_webhook(request: Request):
-    payload = await request.json()
-    message = payload.get("message") or payload.get("edited_message") or {}
+def process_telegram_message(message: dict) -> dict:
+    """Handle one Telegram message (webhook or long-poll). Returns JSON-safe dict."""
     chat = message.get("chat") or {}
     chat_id = chat.get("id")
     text = str(message.get("text") or "").strip()
@@ -532,6 +530,55 @@ async def telegram_webhook(request: Request):
 
     _telegram_send_message(chat_id, TELEGRAM_HELP_TEXT)
     return {"ok": True}
+
+
+def _telegram_poll_loop() -> None:
+    """Long polling for local/dev — no HTTPS or ngrok required."""
+    from config import TELEGRAM_BOT_TOKEN, TELEGRAM_POLLING
+
+    if not TELEGRAM_POLLING or not TELEGRAM_BOT_TOKEN:
+        return
+
+    base = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+    try:
+        httpx.post(f"{base}/deleteWebhook", json={"drop_pending_updates": False}, timeout=15)
+    except Exception:
+        pass
+
+    offset = 0
+    while True:
+        try:
+            r = httpx.get(
+                f"{base}/getUpdates",
+                params={"timeout": 45, "offset": offset, "allowed_updates": ["message"]},
+                timeout=50,
+            )
+            body = r.json()
+            if not body.get("ok"):
+                time.sleep(2)
+                continue
+            for upd in body.get("result", []):
+                offset = upd["update_id"] + 1
+                msg = upd.get("message") or upd.get("edited_message")
+                if isinstance(msg, dict):
+                    process_telegram_message(msg)
+        except Exception:
+            time.sleep(3)
+
+
+@app.on_event("startup")
+def _start_telegram_long_poll() -> None:
+    from config import TELEGRAM_POLLING, TELEGRAM_BOT_TOKEN
+
+    if TELEGRAM_POLLING and TELEGRAM_BOT_TOKEN:
+        threading.Thread(target=_telegram_poll_loop, name="telegram-poll", daemon=True).start()
+
+
+@app.post("/telegram")
+async def telegram_webhook(request: Request):
+    payload = await request.json()
+    message = payload.get("message") or payload.get("edited_message") or {}
+    return process_telegram_message(message)
 
 
 # ── Code Q&A ──────────────────────────────────────────────────────────────────

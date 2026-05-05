@@ -26,6 +26,8 @@ GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+# If true, bot uses getUpdates long polling (works on localhost; no HTTPS). Do not use with setWebhook.
+TELEGRAM_POLLING = os.getenv("TELEGRAM_POLLING", "").lower() in ("1", "true", "yes")
 
 # ── Embeddings ────────────────────────────────────────────────────────────────
 EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
