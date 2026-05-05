@@ -30,9 +30,9 @@ fi
 
 SAMPLE_REPO="${SAMPLE_REPO_PATH:-$(pwd)/sample-geppetto-repo}"
 
-# Install sample app deps and start Vite dev server in background
+# Install sample app deps and start Vite dev server in background (5173 + strictPort so URL matches SCREENSHOT_APP_URL)
 echo "Starting sample app (Vite)..."
-(cd "$SAMPLE_REPO" && npm install --silent && npm run dev) &
+(cd "$SAMPLE_REPO" && npm install --silent && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort) &
 VITE_PID=$!
 
 # Kill Vite when this script exits

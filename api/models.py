@@ -38,6 +38,13 @@ def _db():
     return conn
 
 
+def reset_local_sqlite() -> None:
+    """Delete all tasks and Telegram dedupe rows. Schema is preserved."""
+    with _db() as conn:
+        conn.execute("DELETE FROM tasks")
+        conn.execute("DELETE FROM telegram_processed")
+
+
 def init_db():
     with _db() as conn:
         conn.execute("""

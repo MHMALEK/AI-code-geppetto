@@ -7,6 +7,7 @@ data/chroma/
 data/tasks.db
 data/*.db
 data/screenshots/
+data/*.lock
 .DS_Store
 
 # local dev docker overrides (contain host paths, not for version control)

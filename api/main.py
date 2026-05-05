@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import re
+import sys
 import threading
 import time
 from io import BytesIO
@@ -20,10 +21,13 @@ from api.models import (
     telegram_try_claim_message,
 )
 from agent.runner import run_agent
-from config import SCREENSHOTS_DIR
+from config import SCREENSHOTS_DIR, SQLITE_PATH
 
 app = FastAPI(title="Geppetto")
 log = logging.getLogger("geppetto.telegram")
+
+# Keeps an exclusive flock alive on Unix so only one process runs getUpdates (Telegram allows one poller per bot).
+_telegram_poll_lock_file: object | None = None
 
 app.mount("/screenshots", StaticFiles(directory=str(SCREENSHOTS_DIR)), name="screenshots")
 _assets = Path(__file__).parent.parent / "dashboard" / "assets"
@@ -840,7 +844,15 @@ def _telegram_poll_loop() -> None:
             body = r.json()
             if not body.get("ok"):
                 desc = body.get("description") or body
-                log.warning("getUpdates not ok: %s", desc)
+                if isinstance(desc, str) and "Conflict" in desc and "getUpdates" in desc:
+                    log.warning(
+                        "getUpdates conflict: another client is already long-polling this bot token. "
+                        "Stop the other process (second run.sh/uvicorn, IDE runner, or cloud worker with TELEGRAM_POLLING). "
+                        "Description: %s",
+                        desc,
+                    )
+                else:
+                    log.warning("getUpdates not ok: %s", desc)
                 time.sleep(2)
                 continue
             for upd in body.get("result", []):
@@ -853,12 +865,44 @@ def _telegram_poll_loop() -> None:
             time.sleep(3)
 
 
+def _try_acquire_telegram_getupdates_lock() -> bool:
+    """
+    On Unix, take a non-blocking exclusive flock so only one process polls Telegram.
+    On Windows, skip locking (single-instance is up to the operator).
+    """
+    global _telegram_poll_lock_file
+    if sys.platform == "win32":
+        return True
+    try:
+        import fcntl
+    except ImportError:
+        return True
+    lock_path = SQLITE_PATH.parent / "telegram_getupdates.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    f = open(lock_path, "a+", encoding="utf-8")
+    try:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        f.close()
+        log.warning(
+            "Telegram long-polling skipped: another process holds %s. "
+            "Only one getUpdates loop is allowed per bot — close the other uvicorn/run.sh or unset TELEGRAM_POLLING on duplicates.",
+            lock_path,
+        )
+        return False
+    _telegram_poll_lock_file = f
+    return True
+
+
 @app.on_event("startup")
 def _start_telegram_long_poll() -> None:
     from config import TELEGRAM_POLLING, TELEGRAM_BOT_TOKEN
 
-    if TELEGRAM_POLLING and TELEGRAM_BOT_TOKEN:
-        threading.Thread(target=_telegram_poll_loop, name="telegram-poll", daemon=True).start()
+    if not (TELEGRAM_POLLING and TELEGRAM_BOT_TOKEN):
+        return
+    if not _try_acquire_telegram_getupdates_lock():
+        return
+    threading.Thread(target=_telegram_poll_loop, name="telegram-poll", daemon=True).start()
 
 
 @app.post("/telegram")
