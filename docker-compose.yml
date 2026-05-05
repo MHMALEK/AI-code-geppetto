@@ -30,10 +30,12 @@ services:
       - "5678:5678"
     volumes:
       - n8n-data:/home/node/.n8n
-      # Auto-import the Geppetto workflow on first start.
+      # Workflow files available inside the container for n8n import:workflow CLI.
       - ./n8n:/home/node/.n8n/workflows:ro
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_USER_MANAGEMENT_DISABLED=true
+      - N8N_DIAGNOSTICS_ENABLED=false
       - WEBHOOK_URL=http://localhost:5678
 
 volumes:
