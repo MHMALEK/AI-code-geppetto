@@ -2,11 +2,13 @@ import asyncio
 import json
 import re
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+import httpx
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.models import (
@@ -278,6 +280,86 @@ def webhook(payload: dict) -> dict:
         "stream_url": f"/tasks/{task.id}/stream",
         "poll_url":   f"/tasks/{task.id}",
     }
+
+
+# ── Slack slash command (/geppetto <task>) ────────────────────────────────────
+
+def _run_and_notify_slack(task_id: str, description: str, response_url: str, title: str):
+    """Run the agent then POST the result back to Slack via response_url."""
+    _run_task(task_id, description, None)
+
+    # Poll until terminal (task updated in-place by _run_task)
+    for _ in range(60):
+        task = get_task(task_id)
+        if task and task.status in ("completed", "failed"):
+            break
+        time.sleep(3)
+
+    task = get_task(task_id)
+    if not task:
+        return
+
+    if task.status == "completed":
+        pr_url = None
+        cost_usd = duration_s = tool_calls = 0
+        for ev in task.events:
+            if ev.get("type") == "tool_result" and ev.get("tool") == "push_and_create_pr":
+                m = re.search(r"https?://\S+", ev.get("result", ""))
+                if m:
+                    pr_url = m.group(0).rstrip(".")
+            if ev.get("type") == "stats":
+                cost_usd   = ev.get("cost_usd", 0.0)
+                duration_s = int(ev.get("duration_s", 0))
+                tool_calls = ev.get("tool_calls", 0)
+
+        lines = [f"✅ *Done!* — {title}",
+                 f"> ⏱ {duration_s}s  ·  💰 ${cost_usd}  ·  🔧 {tool_calls} tool calls"]
+        if pr_url:
+            lines.append(f"> 🔗 <{pr_url}|View Pull Request>")
+        text = "\n".join(lines)
+    else:
+        text = f"❌ *Geppetto hit an error* on: {title}\n> Check the dashboard for details."
+
+    try:
+        httpx.post(response_url, json={"response_type": "in_channel", "text": text}, timeout=10)
+    except Exception:
+        pass
+
+
+@app.post("/slack")
+async def slack_slash_command(request: Request):
+    """
+    Slack slash command endpoint for /geppetto <task>.
+    Slack sends a form-encoded POST; we ACK immediately then run the agent
+    in the background and post the result back via response_url.
+    """
+    form = await request.form()
+    text         = str(form.get("text", "")).strip()
+    response_url = str(form.get("response_url", ""))
+    user_name    = str(form.get("user_name", "unknown"))
+    channel_name = str(form.get("channel_name", "unknown"))
+
+    if not text:
+        return JSONResponse({"response_type": "ephemeral",
+                             "text": "Usage: `/geppetto <task description>`"})
+
+    data = TaskCreate(
+        title=text,
+        description=f"Slack task requested by @{user_name} in #{channel_name}",
+    )
+    task = create_task(data)
+    full_desc = f"Task: {data.title}\n\n{data.description}"
+
+    threading.Thread(
+        target=_run_and_notify_slack,
+        args=(task.id, full_desc, response_url, text),
+        daemon=True,
+    ).start()
+
+    return JSONResponse({
+        "response_type": "in_channel",
+        "text": f"⏳ On it! Running Geppetto on: *{text}*",
+    })
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
