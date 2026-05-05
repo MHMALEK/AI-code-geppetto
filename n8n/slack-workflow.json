@@ -5,7 +5,7 @@
       "id": "sl-1",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [240, 300],
       "parameters": {
         "httpMethod": "POST",
@@ -13,7 +13,7 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "notes": "Point your Slack slash command here:\nPOST http://<your-n8n-host>:5678/webhook/geppetto-slack\n\nSlack sends form-encoded body with: text, response_url, user_name, channel_name"
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     },
     {
       "id": "sl-2",
@@ -31,8 +31,7 @@
         "sendBody": true,
         "contentType": "json",
         "body": "={{ JSON.stringify({ response_type: 'in_channel', text: '⏳ On it! Running Geppetto on: *' + $json.body.text + '*' }) }}"
-      },
-      "notes": "Acknowledges Slack within 3s. Slack requires this to avoid the 'failed with the error: operation_timeout' error."
+      }
     },
     {
       "id": "sl-3",
@@ -50,8 +49,7 @@
         "sendBody": true,
         "contentType": "json",
         "body": "={{ JSON.stringify({ title: $('Webhook Trigger').item.json.body.text, description: 'Slack task requested by @' + $('Webhook Trigger').item.json.body.user_name + ' in #' + $('Webhook Trigger').item.json.body.channel_name }) }}"
-      },
-      "notes": "Uses docker service name 'geppetto'. Change to 'localhost' if running without Docker."
+      }
     },
     {
       "id": "sl-4",
@@ -77,8 +75,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [1120, 300],
-      "parameters": { "amount": 12, "unit": "seconds" },
-      "notes": "Poll every 12s. Geppetto tasks typically take 45–120s."
+      "parameters": { "amount": 12, "unit": "seconds" }
     },
     {
       "id": "sl-6",
@@ -108,8 +105,7 @@
           "combinator": "or"
         },
         "options": {}
-      },
-      "notes": "true → loop back to Wait\nfalse → check completed vs failed"
+      }
     },
     {
       "id": "sl-8",
@@ -213,8 +209,5 @@
   "settings": { "executionOrder": "v1" },
   "staticData": null,
   "meta": { "templateCredsSetupCompleted": true, "instanceId": "geppetto-demo" },
-  "id": "geppetto-slack-workflow-v1",
-  "tags": [{ "id": "1", "name": "geppetto" }],
-  "active": false,
-  "versionId": "1"
+  "tags": [{ "id": "1", "name": "geppetto" }]
 }

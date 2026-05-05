@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sets up the Geppetto workflow in n8n.
+# Sets up the Geppetto workflows in n8n via the REST API.
 # Run after the stack is started: docker compose up -d
 # Usage: ./n8n/setup.sh [--start]
 #   --start  also runs `docker compose up -d` before setup
@@ -26,36 +26,51 @@ until curl -sf "$N8N_URL/healthz" >/dev/null 2>&1; do
 done
 echo " ready."
 
-# ── 2. Import workflows via n8n CLI ──────────────────────────────────────────
-import_workflow() {
+# ── 2. Resolve API key ────────────────────────────────────────────────────────
+if [[ -z "${N8N_API_KEY:-}" ]]; then
+  echo ""
+  echo "  N8N_API_KEY is not set."
+  echo "  To get one: open $N8N_URL → Settings → API → Create API key"
+  echo "  Then re-run:  N8N_API_KEY=<key> ./n8n/setup.sh"
+  echo ""
+  exit 1
+fi
+
+# ── 3. Create + activate workflows via REST API ───────────────────────────────
+create_and_activate() {
   local file="$1" label="$2"
-  echo "Importing $label..."
-  docker compose exec -T n8n \
-    n8n import:workflow --input="/home/node/.n8n/workflows/$file" 2>/dev/null \
-    && echo "  ✓ $label" || echo "  ✗ $label (may already exist — continuing)"
+  echo "Creating $label..."
+
+  # Strip id/active fields so n8n assigns a fresh ID
+  local payload
+  payload=$(python3 -c "
+import json, sys
+with open('$file') as f:
+    wf = json.load(f)
+for k in ['id', 'active', 'versionId', 'meta', 'tags']:
+    wf.pop(k, None)
+print(json.dumps(wf))
+")
+
+  local wid
+  wid=$(curl -sf -X POST "$N8N_URL/api/v1/workflows" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || true)
+
+  if [[ -z "$wid" ]]; then
+    echo "  ✗ $label — failed to create (check API key or workflow JSON)"
+    return
+  fi
+
+  curl -sf -X POST "$N8N_URL/api/v1/workflows/$wid/activate" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" >/dev/null
+
+  echo "  ✓ $label (ID: $wid)"
 }
 
-import_workflow "geppetto-workflow.json"    "Webhook workflow"
-import_workflow "slack-workflow.json"       "Slack slash command workflow"
-
-# ── 3. Activate workflows via REST API ───────────────────────────────────────
-echo "Activating workflows..."
-WORKFLOW_IDS=$(curl -sf "$N8N_URL/api/v1/workflows" \
-  -H "Accept: application/json" | jq -r '.data[].id // empty' 2>/dev/null || true)
-
-if [[ -z "$WORKFLOW_IDS" ]]; then
-  echo ""
-  echo "  Could not read workflow IDs from REST API."
-  echo "  Open $N8N_URL and activate each workflow manually."
-else
-  while IFS= read -r wid; do
-    [[ -z "$wid" ]] && continue
-    curl -sf -X PATCH "$N8N_URL/api/v1/workflows/$wid" \
-      -H "Content-Type: application/json" \
-      -d '{"active":true}' >/dev/null
-    echo "  Activated workflow: $wid"
-  done <<< "$WORKFLOW_IDS"
-fi
+create_and_activate "n8n/geppetto-workflow.json" "Webhook workflow"
+create_and_activate "n8n/slack-workflow.json"    "Slack slash command workflow"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
