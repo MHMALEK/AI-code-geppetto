@@ -9,6 +9,7 @@ Commit convention enforced via system prompt:
 """
 import json
 import os
+import time
 from typing import Callable
 import litellm
 from config import (
@@ -71,12 +72,37 @@ Examples:
 """
 
 
+def _emit_stats(emit: Callable, prompt_tokens: int, completion_tokens: int, tool_calls: int, start_time: float) -> None:
+    total = prompt_tokens + completion_tokens
+    duration = round(time.time() - start_time, 1)
+    try:
+        # LiteLLM cost helper — best-effort, may return 0 for some models
+        cost = litellm.cost_per_token(model=LLM_MODEL, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+        cost_usd = round((cost[0] * prompt_tokens + cost[1] * completion_tokens), 4)
+    except Exception:
+        cost_usd = 0.0
+    emit({
+        "type": "stats",
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total,
+        "tool_calls": tool_calls,
+        "cost_usd": cost_usd,
+        "duration_s": duration,
+    })
+
+
 def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": task},
     ]
     emit({"type": "start", "message": f"Agent started · {LLM_MODEL}"})
+
+    start_time = time.time()
+    prompt_tokens = 0
+    completion_tokens = 0
+    tool_call_count = 0
 
     for _step in range(30):
         try:
@@ -89,8 +115,14 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
                 metadata={"task_id": task_id},
             )
         except Exception as e:
+            _emit_stats(emit, prompt_tokens, completion_tokens, tool_call_count, start_time)
             emit({"type": "error", "message": str(e)})
             return
+
+        # Accumulate token usage
+        if response.usage:
+            prompt_tokens     += response.usage.prompt_tokens or 0
+            completion_tokens += response.usage.completion_tokens or 0
 
         msg = response.choices[0].message
         finish = response.choices[0].finish_reason
@@ -99,6 +131,7 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
             emit({"type": "thinking", "text": msg.content})
 
         if finish in ("stop", "end_turn"):
+            _emit_stats(emit, prompt_tokens, completion_tokens, tool_call_count, start_time)
             emit({"type": "complete", "message": "Task completed successfully"})
             return
 
@@ -109,6 +142,7 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
                 fn_name = tc.function.name
                 fn_args = json.loads(tc.function.arguments)
 
+                tool_call_count += 1
                 emit({"type": "tool_call", "tool": fn_name, "input": fn_args})
 
                 fn = TOOL_MAP.get(fn_name)
@@ -130,7 +164,9 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
             messages.extend(tool_results)
 
         else:
+            _emit_stats(emit, prompt_tokens, completion_tokens, tool_call_count, start_time)
             emit({"type": "complete", "message": f"Stopped: {finish}"})
             return
 
+    _emit_stats(emit, prompt_tokens, completion_tokens, tool_call_count, start_time)
     emit({"type": "error", "message": "Max steps (30) reached"})

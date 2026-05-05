@@ -404,50 +404,62 @@
         <!-- Workers banner -->
         <div id="workers-banner">
 
-          <!-- ── Manager bot (animated in/out) ── -->
+          <!-- ── Geppetto the woodcarver (animated in/out) ── -->
           <svg id="mgr-bot" viewBox="0 0 90 92" width="90" height="92">
-            <!-- Hat brim -->
-            <rect x="22" y="10" width="46" height="5" rx="1.5" fill="#d29922"/>
-            <!-- Hat top -->
-            <rect x="28" y="4" width="34" height="8" rx="3" fill="#d29922"/>
-            <!-- Antenna -->
-            <line x1="45" y1="10" x2="45" y2="3" stroke="#8b949e" stroke-width="1.2"/>
-            <circle cx="45" cy="2" r="2.5" fill="#f85149"/>
-            <!-- Head -->
+            <!-- Craftsman cap -->
+            <rect x="23" y="9"  width="44" height="4" rx="1.5" fill="#7a5c2e"/>
+            <rect x="28" y="4"  width="34" height="7"  rx="3"   fill="#8b6914"/>
+            <!-- Head group — rotates when reading ticket -->
             <g id="mgr-head">
-              <rect x="20" y="15" width="50" height="34" rx="7" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-              <rect x="27" y="19" width="36" height="26" rx="5" fill="#0a0e17"/>
-              <!-- Ears -->
-              <rect x="11" y="23" width="10" height="14" rx="3" fill="#161b22" stroke="#30363d"/>
-              <rect x="69" y="23" width="10" height="14" rx="3" fill="#161b22" stroke="#30363d"/>
-              <!-- Eyes – gold/yellow for PM -->
-              <circle cx="37" cy="31" r="5" fill="#d29922" opacity=".95"/>
-              <circle cx="37" cy="31" r="2" fill="white"/>
-              <circle cx="53" cy="31" r="5" fill="#d29922" opacity=".95"/>
-              <circle cx="53" cy="31" r="2" fill="white"/>
+              <!-- White hair on sides -->
+              <ellipse cx="22" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
+              <ellipse cx="68" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
+              <!-- Face -->
+              <ellipse cx="45" cy="25" rx="22" ry="21" fill="#d4956a"/>
+              <!-- Bushy white eyebrows -->
+              <path d="M26 15 Q31 11 37 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+              <path d="M53 15 Q59 11 64 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+              <!-- Kind eyes -->
+              <ellipse cx="34" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
+              <ellipse cx="56" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
+              <circle  cx="35" cy="21" r="1.2"            fill="white"/>
+              <circle  cx="57" cy="21" r="1.2"            fill="white"/>
+              <!-- Big Geppetto nose -->
+              <ellipse cx="45" cy="30" rx="6" ry="5" fill="#c07855"/>
+              <!-- White bushy mustache -->
+              <path d="M29 37 Q37 33 45 36 Q53 33 61 37" stroke="#e0e0e0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+              <!-- Rosy cheeks -->
+              <ellipse cx="25" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
+              <ellipse cx="65" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
               <!-- Smile -->
-              <path d="M31 40 Q45 47 59 40" stroke="#3fb950" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M35 40 Q45 46 55 40" stroke="#a06040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
             </g>
-            <!-- Body -->
-            <rect x="24" y="51" width="42" height="22" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-            <!-- Chest display -->
-            <rect x="30" y="56" width="30" height="9" rx="2" fill="#0a0e17"/>
-            <rect x="32" y="58" width="10" height="5" rx="1" fill="#d29922" opacity=".8"/>
-            <rect x="44" y="58" width="7"  height="5" rx="1" fill="#3fb950" opacity=".8"/>
-            <!-- Clipboard (right hand) -->
-            <rect x="66" y="47" width="16" height="22" rx="2" fill="#58a6ff" opacity=".85"/>
-            <rect x="68" y="52" width="12" height="2"  rx="1" fill="white" opacity=".7"/>
-            <rect x="68" y="56" width="9"  height="2"  rx="1" fill="white" opacity=".5"/>
-            <rect x="68" y="60" width="11" height="2"  rx="1" fill="white" opacity=".4"/>
+            <!-- Body — dark coat -->
+            <rect x="23" y="48" width="44" height="24" rx="5" fill="#2c3e50"/>
+            <!-- Leather apron -->
+            <path d="M30 49 Q45 46 60 49 L57 72 Q45 75 33 72 Z" fill="#8b7355" opacity=".85"/>
+            <!-- Tools in apron pocket (chisel + pencil) -->
+            <rect x="40" y="56" width="3" height="12" rx="1.5" fill="#d4a820"/>
+            <rect x="46" y="57" width="3" height="11" rx="1.5" fill="#aaaaaa"/>
             <!-- Arms -->
-            <rect id="mgr-arm-l" x="6"  y="54" width="20" height="9" rx="4" fill="#1c2128" stroke="#30363d"/>
-            <rect id="mgr-arm-r" x="64" y="54" width="20" height="9" rx="4" fill="#1c2128" stroke="#30363d"/>
-            <!-- Legs -->
-            <rect x="31" y="73" width="12" height="14" rx="4" fill="#1c2128" stroke="#30363d"/>
-            <rect x="47" y="73" width="12" height="14" rx="4" fill="#1c2128" stroke="#30363d"/>
-            <!-- Feet -->
-            <rect x="28" y="85" width="15" height="7" rx="3" fill="#21262d" stroke="#30363d"/>
-            <rect x="47" y="85" width="15" height="7" rx="3" fill="#21262d" stroke="#30363d"/>
+            <rect id="mgr-arm-l" x="5"  y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
+            <rect id="mgr-arm-r" x="65" y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
+            <!-- Mini Pinocchio puppet held in right hand -->
+            <line x1="73" y1="60" x2="70" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
+            <line x1="75" y1="60" x2="77" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
+            <circle cx="73" cy="72" r="4" fill="#d4956a"/>
+            <line   x1="73" y1="72" x2="82" y2="72" stroke="#a06040" stroke-width="1.5"/>
+            <circle cx="82" cy="72" r="1" fill="#a06040"/>
+            <path d="M69 69 Q73 65 77 69" fill="#3a7a3a"/>
+            <rect x="70" y="76" width="6" height="7" rx="2" fill="#4a8a4a"/>
+            <line x1="71" y1="83" x2="69" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="75" y1="83" x2="77" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
+            <!-- Geppetto's legs -->
+            <rect x="30" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
+            <rect x="48" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
+            <!-- Shoes -->
+            <ellipse cx="36" cy="86" rx="9" ry="5" fill="#111"/>
+            <ellipse cx="54" cy="86" rx="9" ry="5" fill="#111"/>
           </svg>
 
           <!-- Floating ticket card -->
@@ -459,8 +471,8 @@
           </div>
 
           <!-- Speech bubbles -->
-          <div id="bubble-mgr">📋 New task!</div>
-          <div id="bubble-dev">On it! 💪</div>
+          <div id="bubble-mgr">🪄 To work, boys!</div>
+          <div id="bubble-dev">On it! 🤖</div>
 
           <div class="workers-row">
 
@@ -607,6 +619,15 @@
           </div>
         </div>
 
+        <!-- stats strip — filled when stats event arrives -->
+        <div id="trace-stats" style="display:none;padding:5px 24px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;gap:20px;flex-shrink:0;align-items:center;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);">Run Stats</span>
+          <span id="stat-tokens" style="font-size:11px;color:var(--muted);font-family:monospace;">— tokens</span>
+          <span id="stat-cost"   style="font-size:11px;color:var(--muted);font-family:monospace;">—</span>
+          <span id="stat-dur"    style="font-size:11px;color:var(--muted);font-family:monospace;">— s</span>
+          <span id="stat-tools"  style="font-size:11px;color:var(--muted);font-family:monospace;">— tool calls</span>
+        </div>
+
         <!-- trace body -->
         <div id="trace-body">
           <div id="thinking">
@@ -730,6 +751,7 @@ async function selectTask(taskId) {
   selTask = task;
   showView('trace');
   id('events').innerHTML = '';
+  id('trace-stats').style.display = 'none';
   renderEvts(task.events);
   updateTrHdr(task);
   subscribe(taskId, task.events.length, task.status);
@@ -774,9 +796,19 @@ function updateTrHdr(task) {
   else { setWorkers('idle'); }
 }
 
+function updateStats(ev) {
+  const strip = id('trace-stats');
+  strip.style.display = 'flex';
+  id('stat-tokens').textContent = `🔢 ${ev.total_tokens?.toLocaleString() ?? '—'} tokens  (↑${ev.prompt_tokens?.toLocaleString()} · ↓${ev.completion_tokens?.toLocaleString()})`;
+  id('stat-cost').textContent   = ev.cost_usd > 0 ? `💰 $${ev.cost_usd.toFixed(4)}` : '💰 —';
+  id('stat-dur').textContent    = `⏱ ${ev.duration_s}s`;
+  id('stat-tools').textContent  = `⚡ ${ev.tool_calls} tool calls`;
+}
+
 function renderEvts(evts)   { evts.forEach(e=>appendEvt(e,false)); }
 function appendEvt(ev,anim) {
   if (ev.type==='ping') return;
+  if (ev.type==='stats') { updateStats(ev); return; }
   hideTh();
   const c=id('events'), card=buildCard(ev,anim);
   if (card) { c.appendChild(card); id('trace-body').scrollTop=99999; }
