@@ -250,29 +250,7 @@
     .worker-card.wg2.active { border-color: var(--orange); box-shadow: 0 0 0 2px #d2992220, 0 0 28px #d2992218, 0 6px 20px rgba(0,0,0,.5); background: #d2992208; }
     .worker-card.wg3.active { border-color: var(--purple); box-shadow: 0 0 0 2px #bc8cff20, 0 0 28px #bc8cff18, 0 6px 20px rgba(0,0,0,.5); background: #bc8cff08; }
 
-    /* active spark overlay */
-    .worker-spark { position: absolute; top: 0; left: 0; right: 0; height: 60px; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .3s; }
-    .worker-card.active .worker-spark { opacity: 1; }
-    .worker-spark::before {
-      content: '✦';
-      position: absolute;
-      font-size: 8px;
-      left: 25%; top: 8px;
-      animation: spark-float 1.8s ease-in infinite;
-      color: var(--blue);
-    }
-    .worker-spark::after {
-      content: '✦';
-      position: absolute;
-      font-size: 6px;
-      left: 65%; top: 14px;
-      animation: spark-float 1.8s ease-in .6s infinite;
-      color: var(--blue);
-    }
-    .worker-card.wg2.active .worker-spark::before,
-    .worker-card.wg2.active .worker-spark::after { color: var(--orange); }
-    .worker-card.wg3.active .worker-spark::before,
-    .worker-card.wg3.active .worker-spark::after { color: var(--purple); }
+    .worker-spark { display: none; }
 
     .worker-info { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .worker-name { font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.3px; transition: color .3s; }
@@ -283,7 +261,7 @@
     .worker-role { font-size: 9px; color: var(--muted2); background: var(--surface2); padding: 2px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.5px; }
     .worker-status { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted2); transition: background .3s, box-shadow .3s; flex-shrink: 0; }
-    .worker-card.active .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 1.2s infinite; }
+    .worker-card.active .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
     .status-text { font-size: 10px; color: var(--muted2); font-weight: 600; transition: color .3s; min-width: 52px; text-align: center; }
     .worker-card.active .status-text { color: var(--green); font-weight: 700; }
 
@@ -514,10 +492,7 @@
     .bot-thinking .td3  { animation: td-pulse 1s .66s infinite; transform-box:fill-box; transform-origin:center; }
 
     /* ── WORKING ── */
-    .bot-working .bot-unit  { animation: bot-float 1s ease-in-out infinite; }
-    .bot-working .eye-l     { animation: eye-scan .85s ease-in-out infinite; transform-box:fill-box; }
-    .bot-working .eye-r     { animation: eye-scan .85s .1s ease-in-out infinite; transform-box:fill-box; }
-    .bot-working .ring-fill { opacity:1; animation: ring-dash 1.8s linear infinite; }
+    .bot-working .ring-fill { opacity:1; stroke-dashoffset:0; }
     .bot-working.active     { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow), 0 0 28px var(--accent-glow), 0 6px 20px rgba(0,0,0,.15); }
 
     /* ── DONE ── */
@@ -528,7 +503,7 @@
     .bot-label { display:flex; align-items:center; gap:5px; margin-top:5px; font-size:10px; color:var(--muted); font-weight:600; letter-spacing:.2px; min-height:16px; }
     .bat-dot   { width:5px; height:5px; border-radius:50%; background:var(--muted2); flex-shrink:0; transition:background .3s; }
     .bat-text  { transition: opacity .2s; }
-    .bot-working .bat-dot  { background: var(--accent); animation: pulse-dot 1s infinite; }
+    .bot-working .bat-dot  { background: var(--accent); }
     .bot-thinking .bat-dot { background: var(--muted2); }
     .bot-done .bat-dot     { background: #3fb950; }
 
