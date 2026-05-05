@@ -264,6 +264,19 @@
     .chg-milestone { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; font-size: 11px; display: flex; align-items: center; gap: 8px; animation: slideIn .2s ease; }
     .chg-empty { padding: 56px; text-align: center; color: var(--muted2); font-size: 12px; }
 
+    /* ── REVIEW PANEL ── */
+    #review-panel { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; }
+    #review-panel::-webkit-scrollbar { width: 3px; }
+    #review-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .review-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .review-shot { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .review-shot-hdr { padding: 7px 12px; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+    .review-shot-hdr.before { background: #f8514910; color: var(--red); border-bottom: 1px solid #f8514930; }
+    .review-shot-hdr.after  { background: #3fb95010; color: var(--green); border-bottom: 1px solid #3fb95030; }
+    .review-shot img { width: 100%; display: block; }
+    .review-shot-empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 11px; background: var(--surface); }
+    .review-section-lbl { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; }
+
     /* ── SCREENSHOT ── */
     .ev-screenshot { background: #1f6feb08; border-color: #1f6feb33; }
     .ev-screenshot .ev-type { color: var(--blue); }
@@ -855,6 +868,7 @@
           <div id="tab-bar" style="display:none;gap:0;align-items:center;">
             <button class="tab-btn active" id="tab-log"     onclick="switchTab('log')">Log</button>
             <button class="tab-btn"        id="tab-changes" onclick="switchTab('changes')">Changes <span class="tab-cnt" id="change-count">0</span></button>
+            <button class="tab-btn"        id="tab-review"  onclick="switchTab('review')">Review</button>
           </div>
         </div>
 
@@ -898,6 +912,9 @@
           <div class="chg-empty">No file changes yet</div>
         </div>
 
+        <!-- review panel -->
+        <div id="review-panel"></div>
+
       </div><!-- agent-trace -->
     </div><!-- m-body -->
   </div><!-- main -->
@@ -924,7 +941,7 @@
 </div>
 
 <script>
-let selTicket=null, selTask=null, es=null, ptimer=null, prog=0, changesData=[];
+let selTicket=null, selTask=null, es=null, ptimer=null, prog=0, changesData=[], screenshots={};
 loadJira(); loadTasks();
 setInterval(loadTasks, 4000);
 
@@ -965,12 +982,67 @@ function setWorkers(mode, active) {
 
 /* ── Changes panel ── */
 function switchTab(tab) {
-  id('tab-log').classList.toggle('active', tab==='log');
-  id('tab-changes').classList.toggle('active', tab==='changes');
-  id('trace-body').style.display     = tab==='log'     ? 'block' : 'none';
-  id('changes-panel').style.display  = tab==='changes' ? 'block' : 'none';
+  ['log','changes','review'].forEach(t => {
+    const btn = id('tab-'+t); if (btn) btn.classList.toggle('active', t===tab);
+  });
+  id('trace-body').style.display    = tab==='log'     ? 'block' : 'none';
+  id('changes-panel').style.display = tab==='changes' ? 'block' : 'none';
+  id('review-panel').style.display  = tab==='review'  ? 'block' : 'none';
+  if (tab==='review') renderReview();
 }
+function renderReview() {
+  const panel = id('review-panel');
+  const before = screenshots.before, after = screenshots.after;
+  const shotHTML = `
+    <div class="review-section-lbl">Visual diff</div>
+    <div class="review-shots">
+      <div class="review-shot">
+        <div class="review-shot-hdr before">◀ Before</div>
+        ${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-shot-empty">No screenshot yet</div>'}
+      </div>
+      <div class="review-shot">
+        <div class="review-shot-hdr after">After ▶</div>
+        ${after  ? `<img src="${esc(after)}"  alt="after"/>` : '<div class="review-shot-empty">Not taken yet</div>'}
+      </div>
+    </div>`;
+
+  const fileChanges = changesData.filter(c=>c.type==='edit'||c.type==='create');
+  let diffHTML = '';
+  if (fileChanges.length) {
+    diffHTML = `<div class="review-section-lbl" style="margin-top:4px;">Code changes</div>`;
+    for (const c of fileChanges) {
+      let diff = '<div class="diff">';
+      if (c.type === 'edit') {
+        for (const l of c.old.split('\n')) diff += `<div class="dl del">- ${esc(l)}</div>`;
+        for (const l of c.new.split('\n')) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      } else {
+        for (const l of (c.content||'').split('\n').slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      }
+      diff += '</div>';
+      const icon = c.type==='create' ? '✨' : '📝';
+      diffHTML += `<div class="chg-file" style="margin-bottom:10px;"><div class="chg-file-hdr">${icon} ${esc(c.path)}</div>${diff}</div>`;
+    }
+  }
+
+  const milestones = changesData.filter(c=>c.type==='branch'||c.type==='commit');
+  let mHTML = '';
+  for (const m of milestones) {
+    if (m.type==='branch') mHTML += `<div class="chg-milestone"><span style="color:var(--purple);">🌿</span><span style="font-family:'JetBrains Mono',monospace;color:var(--purple);">${esc(m.name)}</span></div>`;
+    if (m.type==='commit') mHTML += `<div class="chg-milestone"><span style="color:var(--green);">✅</span><span style="font-family:'JetBrains Mono',monospace;">${esc(m.message)}</span></div>`;
+  }
+
+  panel.innerHTML = shotHTML + diffHTML + mHTML ||
+    '<div class="chg-empty">Nothing to review yet — run a task first.</div>';
+}
+
 function addToChanges(ev) {
+  if (ev.type === 'screenshot') {
+    const lbl = (ev.label||'').toLowerCase();
+    if (lbl.includes('before')) screenshots.before = ev.url;
+    else                         screenshots.after  = ev.url;
+    if (id('review-panel').style.display === 'block') renderReview();
+    return;
+  }
   if (ev.type !== 'tool_call') return;
   const t = ev.tool, inp = ev.input || {};
   if (t === 'edit_file'   && inp.path) changesData.push({type:'edit',   path:inp.path, old:inp.old_str||'', new:inp.new_str||''});
@@ -1072,7 +1144,9 @@ async function selectTask(taskId) {
   id('events').innerHTML = '';
   id('trace-stats').style.display = 'none';
   changesData = [];
+  screenshots = {};
   renderChanges();
+  id('review-panel').innerHTML = '';
   id('tab-bar').style.display = 'flex';
   switchTab('log');
   renderEvts(task.events);
@@ -1139,7 +1213,8 @@ function appendEvt(ev,anim) {
     const r = ev.result || '';
     if (r.startsWith('screenshot:')) {
       const url = r.slice('screenshot:'.length);
-      appendEvt({type:'screenshot', url, label: ev.tool}, anim);
+      const label = url.includes('before') ? 'before' : 'after';
+      appendEvt({type:'screenshot', url, label}, anim);
       return;
     }
     if (r.startsWith('tests:PASSED')) {
