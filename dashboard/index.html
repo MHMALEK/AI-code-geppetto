@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Geppetto · AI Coding Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -12,25 +15,39 @@
       --text: #e6edf3; --muted: #8b949e; --muted2: #6e7681;
       --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --purple: #bc8cff; --red: #f85149;
     }
-    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
-    code, pre, .mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; }
-    #app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Nunito', -apple-system, sans-serif; font-size: 14px; }
+    code, pre, .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+    /* ── dot-grid background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 0;
+    }
+    #app { position: relative; z-index: 1; display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
 
     /* ── SIDEBAR ── */
     #sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: var(--bg2); }
     #sb-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .logo-name { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; }
-    .logo-sub  { font-size: 10px; color: var(--muted2); font-family: monospace; margin-top: 1px; }
+    .logo-name { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
+    .logo-sub  { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
     #sb-body { flex: 1; overflow-y: auto; }
     #sb-body::-webkit-scrollbar { width: 3px; }
     #sb-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .sec-label { padding: 14px 16px 6px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted2); }
+    #sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .new-task-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 10px; padding: 9px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .2s; }
+    .new-task-btn:hover { border-color: var(--blue); color: var(--blue); background: #1f6feb0a; }
 
+    .sec-label { padding: 14px 16px 6px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted2); }
     .ticket-item { padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
     .ticket-item:hover { background: var(--surface2); }
     .ticket-item.active { background: var(--surface2); border-left-color: var(--blue); }
     .t-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-    .t-key { font-size: 11px; font-weight: 700; color: var(--blue); font-family: monospace; }
+    .t-key { font-size: 11px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; }
     .t-sum { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .task-item { padding: 8px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
@@ -39,7 +56,7 @@
     .task-row { display: flex; align-items: center; gap: 6px; }
     .task-title { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
 
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
     .b-todo { background: var(--surface3); color: var(--muted); }
     .b-prog { background: #b7791022; color: var(--orange); border: 1px solid #b7791044; }
     .b-rev  { background: #1f6feb22; color: var(--blue);   border: 1px solid #1f6feb44; }
@@ -55,10 +72,14 @@
     #m-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
     /* ── WELCOME ── */
-    #welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
-    .welcome-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; background: linear-gradient(135deg, var(--text) 40%, var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .welcome-sub { color: var(--muted); font-size: 13px; max-width: 400px; text-align: center; line-height: 1.7; }
-    .welcome-hint { margin-top: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted2); background: var(--surface); border: 1px solid var(--border); padding: 8px 18px; border-radius: 999px; }
+    #welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; gap: 0; }
+    .welcome-title { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 10px; background: linear-gradient(135deg, var(--text) 40%, var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .welcome-sub { color: var(--muted); font-size: 13px; max-width: 420px; text-align: center; line-height: 1.7; }
+    .welcome-hint { margin-top: 18px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted2); background: var(--surface); border: 1px solid var(--border); padding: 8px 18px; border-radius: 999px; font-weight: 600; }
+
+    .crew-row { display: flex; gap: 16px; margin-top: 24px; }
+    .crew-chip { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 5px 14px 5px 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
+    .crew-chip .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
 
     /* ── TICKET DETAIL ── */
     #ticket-detail { flex: 1; overflow-y: auto; padding: 28px; display: none; }
@@ -66,40 +87,125 @@
     #ticket-detail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
     .td-hero { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
     .td-icon-box { width: 48px; height: 48px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-    .td-key { font-size: 12px; font-weight: 700; color: var(--blue); font-family: monospace; margin-bottom: 4px; }
-    .td-title { font-size: 21px; font-weight: 700; line-height: 1.3; }
+    .td-key { font-size: 12px; font-weight: 700; color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+    .td-title { font-size: 21px; font-weight: 800; line-height: 1.3; }
     .td-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
     .td-desc { color: var(--muted); font-size: 13px; line-height: 1.8; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px; white-space: pre-wrap; }
-    .run-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 11px 26px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; box-shadow: 0 4px 20px #3fb95033; }
-    .run-btn:hover { background: #52d966; transform: translateY(-1px); box-shadow: 0 6px 24px #3fb95055; }
+    .run-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 11px 26px; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; box-shadow: 0 4px 20px #3fb95033; }
+    .run-btn:hover { background: #52d966; transform: translateY(-2px); box-shadow: 0 8px 28px #3fb95055; }
 
     /* ── AGENT TRACE ── */
     #agent-trace { flex: 1; overflow: hidden; display: none; flex-direction: column; }
 
-    /* Workers banner */
-    #workers-banner { padding: 12px 24px 8px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--surface) 0%, var(--bg2) 100%); display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; overflow: hidden; }
-    .workers-row { display: flex; gap: 24px; align-items: flex-end; flex: 1; justify-content: center; }
-    .worker-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .worker-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); transition: color .3s; }
-    .worker-slot.active .worker-lbl { color: var(--blue); }
-    .worker-slot.wg2.active .worker-lbl { color: var(--orange); }
-    .worker-slot.wg3.active .worker-lbl { color: var(--purple); }
+    /* ── WORKERS BANNER ── */
+    #workers-banner {
+      padding: 16px 24px 14px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface2) 0%, var(--bg2) 100%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: visible;
+      min-height: 196px;
+    }
+    .workers-row { display: flex; gap: 18px; align-items: flex-end; flex: 1; justify-content: center; }
+
+    /* Worker card */
+    .worker-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 14px 10px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1.5px solid var(--border2);
+      transition: all .3s cubic-bezier(.34,1.56,.64,1);
+      min-width: 148px;
+      overflow: hidden;
+    }
+    /* color shimmer on top edge */
+    .worker-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 15%; right: 15%; height: 1.5px;
+      background: linear-gradient(90deg, transparent, #58a6ff66, transparent);
+      border-radius: 0 0 4px 4px;
+    }
+    .worker-card.wg2::after { background: linear-gradient(90deg, transparent, #d2992266, transparent); }
+    .worker-card.wg3::after { background: linear-gradient(90deg, transparent, #bc8cff66, transparent); }
+
+    .worker-card.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px #58a6ff20, 0 0 28px #58a6ff18, 0 6px 20px rgba(0,0,0,.5);
+      transform: translateY(-4px) scale(1.03);
+      background: #1f6feb0c;
+    }
+    .worker-card.wg2.active { border-color: var(--orange); box-shadow: 0 0 0 2px #d2992220, 0 0 28px #d2992218, 0 6px 20px rgba(0,0,0,.5); background: #d2992208; }
+    .worker-card.wg3.active { border-color: var(--purple); box-shadow: 0 0 0 2px #bc8cff20, 0 0 28px #bc8cff18, 0 6px 20px rgba(0,0,0,.5); background: #bc8cff08; }
+
+    /* active spark overlay */
+    .worker-spark { position: absolute; top: 0; left: 0; right: 0; height: 60px; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .3s; }
+    .worker-card.active .worker-spark { opacity: 1; }
+    .worker-spark::before {
+      content: '✦';
+      position: absolute;
+      font-size: 8px;
+      left: 25%; top: 8px;
+      animation: spark-float 1.8s ease-in infinite;
+      color: var(--blue);
+    }
+    .worker-spark::after {
+      content: '✦';
+      position: absolute;
+      font-size: 6px;
+      left: 65%; top: 14px;
+      animation: spark-float 1.8s ease-in .6s infinite;
+      color: var(--blue);
+    }
+    .worker-card.wg2.active .worker-spark::before,
+    .worker-card.wg2.active .worker-spark::after { color: var(--orange); }
+    .worker-card.wg3.active .worker-spark::before,
+    .worker-card.wg3.active .worker-spark::after { color: var(--purple); }
+
+    .worker-info { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .worker-name { font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.3px; transition: color .3s; }
+    .worker-card.active .worker-name { color: var(--blue); }
+    .worker-card.wg2.active .worker-name { color: var(--orange); }
+    .worker-card.wg3.active .worker-name { color: var(--purple); }
+
+    .worker-role { font-size: 9px; color: var(--muted2); background: var(--surface2); padding: 2px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.5px; }
+    .worker-status { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted2); transition: background .3s, box-shadow .3s; flex-shrink: 0; }
+    .worker-card.active .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 1.2s infinite; }
+    .status-text { font-size: 10px; color: var(--muted2); font-weight: 600; transition: color .3s; min-width: 52px; text-align: center; }
+    .worker-card.active .status-text { color: var(--green); font-weight: 700; }
 
     #trace-hdr { padding: 10px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--bg2); }
     #trace-body { flex: 1; overflow-y: auto; padding: 14px 24px; }
     #trace-body::-webkit-scrollbar { width: 3px; }
     #trace-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    #thinking { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+    /* stat cards */
+    #trace-stats { padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--bg); display: flex; gap: 10px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+    .stat-card { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 14px; }
+    .sc-icon { font-size: 14px; }
+    .sc-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .sc-lbl { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
+
+    #thinking { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
     .think-dots { display: flex; gap: 4px; }
     .think-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: bounce 1.3s infinite ease-in-out; }
     .think-dot:nth-child(2) { animation-delay: .2s; }
     .think-dot:nth-child(3) { animation-delay: .4s; }
 
-    .ev { margin-bottom: 7px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; animation: slideIn .2s ease; }
+    .ev { margin-bottom: 7px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; animation: slideIn .2s ease; }
     .ev-hdr { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; user-select: none; }
     .ev-icon { font-size: 13px; flex-shrink: 0; }
-    .ev-type { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+    .ev-type { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
     .ev-sub { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ev-tog { color: var(--muted2); font-size: 11px; margin-left: auto; flex-shrink: 0; }
     .ev-body { padding: 10px 12px; border-top: 1px solid var(--border); display: none; }
@@ -111,46 +217,89 @@
     .ev-complete  { background: #3fb95008; border-color: #3fb95033; } .ev-complete .ev-type  { color: var(--green); }
     .ev-error     { background: #f8514908; border-color: #f8514933; } .ev-error .ev-type     { color: var(--red); }
     pre.epre { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; line-height: 1.6; color: var(--muted); }
-    .diff { font-family: monospace; font-size: 11.5px; line-height: 1.6; border-radius: 6px; overflow: hidden; }
+    .diff { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; border-radius: 6px; overflow: hidden; }
     .dl { padding: 1px 8px; white-space: pre-wrap; word-break: break-word; }
     .dl.add { background: #23863620; color: var(--green); } .dl.del { background: #da363320; color: var(--red); } .dl.ctx { color: var(--muted2); }
     .cmt-card { background: var(--surface); border: 1px solid var(--green); border-radius: 8px; padding: 12px 16px; margin-top: 4px; }
-    .cmt-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--green); margin-bottom: 6px; text-transform: uppercase; }
-    .cmt-msg { font-family: monospace; font-size: 13px; color: var(--text); }
+    .cmt-lbl { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: var(--green); margin-bottom: 6px; text-transform: uppercase; }
+    .cmt-msg { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); }
     .jira-sync { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
     .jsync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
 
-    /* Modal */
-    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    #modal.open { display: flex; }
-    .mbox { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 28px; width: 520px; max-width: 95vw; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
-    .mbox-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
-    .mlbl { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: block; }
-    .minput { width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; outline: none; transition: border-color .15s, box-shadow .15s; margin-bottom: 14px; }
+    /* ── MODAL ── */
+    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+    #modal.open { display: flex; animation: fadeIn .2s ease; }
+    .mbox { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 28px; width: 520px; max-width: 95vw; box-shadow: 0 32px 80px rgba(0,0,0,.7); animation: slideUp .25s cubic-bezier(.34,1.56,.64,1); }
+    .mbox-title { font-size: 18px; font-weight: 900; margin-bottom: 20px; }
+    .mlbl { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: block; }
+    .minput { width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s; margin-bottom: 14px; }
     .minput:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #58a6ff18; }
-    textarea.minput { resize: vertical; min-height: 90px; font-family: inherit; }
+    textarea.minput { resize: vertical; min-height: 90px; }
     .mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-    .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit; }
     .btn-p { background: var(--green); color: #000; }
     .btn-p:hover { background: #52d966; transform: translateY(-1px); }
     .btn-g { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
     .btn-g:hover { color: var(--text); background: var(--surface2); }
     .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
 
-    /* ── SVG ANIMATIONS ── */
+    /* ── TOAST ── */
+    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: var(--surface); border: 1px solid var(--border2); border-left-width: 3px; border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); transform: translateX(130%); transition: transform .35s cubic-bezier(.34,1.56,.64,1); pointer-events: all; font-family: 'Nunito', sans-serif; }
+    .toast.show { transform: translateX(0); }
+
+    /* ── CONFETTI ── */
+    .confetti-piece { position: fixed; top: -20px; pointer-events: none; z-index: 100; animation: confetti-fall linear forwards; border-radius: 2px; }
+
+    /* ── MANAGER BOT + ANIMATION OVERLAYS ── */
+    #mgr-bot { position: absolute; bottom: 14px; left: 0; opacity: 0; pointer-events: none; z-index: 6; }
+    #ticket-card {
+      position: absolute; bottom: 20px; left: 0;
+      background: #1c2128; border: 1.5px solid #58a6ff;
+      border-radius: 8px; padding: 7px 11px; width: 82px;
+      opacity: 0; pointer-events: none; z-index: 7;
+    }
+    #tc-key { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #58a6ff; font-weight: 700; }
+    .tc-line { height: 2px; border-radius: 1px; margin-top: 4px; background: #e6edf3; }
+    #bubble-mgr, #bubble-dev {
+      position: absolute; top: 10px;
+      background: #1f6feb; color: white;
+      font-size: 11px; font-weight: 800;
+      padding: 5px 10px; border-radius: 8px;
+      opacity: 0; pointer-events: none; white-space: nowrap; z-index: 8;
+      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+      font-family: 'Nunito', sans-serif;
+    }
+    #bubble-mgr { left: 14px; }
+    #bubble-dev { background: #238636; left: 50%; }
+    #bubble-mgr::after, #bubble-dev::after {
+      content: ''; position: absolute; bottom: -5px; left: 12px;
+      width: 0; height: 0;
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid #1f6feb;
+    }
+    #bubble-dev::after { border-top-color: #238636; }
+
+    /* ── KEYFRAMES ── */
     @keyframes bounce      { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
     @keyframes blink       { 0%,100%{opacity:1} 50%{opacity:.3} }
     @keyframes slideIn     { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    @keyframes fadeIn      { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp     { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:none} }
     @keyframes bob         { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
     @keyframes bob-fast    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
     @keyframes eye-blink   { 0%,88%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.1)} }
     @keyframes ant-glow    { 0%,100%{opacity:.5} 50%{opacity:1} }
     @keyframes type-left   { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(-8deg) translateY(2px)} }
     @keyframes type-right  { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(8deg) translateY(2px)} }
-    @keyframes screen-scan { 0%{transform:translateY(0);opacity:.8} 100%{transform:translateY(26px);opacity:0} }
+    @keyframes screen-scan { 0%{transform:translateY(0);opacity:.8} 100%{transform:translateY(30px);opacity:0} }
     @keyframes float-card  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
     @keyframes sparkle     { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.4);opacity:1} }
     @keyframes cursor-blink{ 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes pulse-dot   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6)} }
+    @keyframes spark-float { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-36px) translateX(4px);opacity:0} }
+    @keyframes confetti-fall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 80%{opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+    @keyframes complete-burst { 0%{transform:scale(0);opacity:1} 100%{transform:scale(3);opacity:0} }
 
     /* idle robot */
     .rb-idle .robot-torso  { animation: bob 3.5s ease-in-out infinite; }
@@ -179,43 +328,18 @@
     .sp2 { animation: sparkle 2s .7s infinite; }
     .sp3 { animation: sparkle 2s 1.4s infinite; }
     .cursor-blink { animation: cursor-blink .9s step-end infinite; }
-    /* ── MANAGER BOT + ANIMATION OVERLAYS ── */
-    #mgr-bot { position: absolute; bottom: 20px; left: 0; opacity: 0; pointer-events: none; z-index: 6; }
-    #ticket-card {
-      position: absolute; bottom: 24px; left: 0;
-      background: #1c2128; border: 1.5px solid #58a6ff;
-      border-radius: 8px; padding: 7px 11px; width: 82px;
-      opacity: 0; pointer-events: none; z-index: 7;
-    }
-    #tc-key { font-size: 10px; font-family: monospace; color: #58a6ff; font-weight: 700; }
-    .tc-line { height: 2px; border-radius: 1px; margin-top: 4px; background: #e6edf3; }
-    #bubble-mgr, #bubble-dev {
-      position: absolute; top: 6px;
-      background: #1f6feb; color: white;
-      font-size: 11px; font-weight: 700;
-      padding: 5px 10px; border-radius: 8px;
-      opacity: 0; pointer-events: none; white-space: nowrap; z-index: 8;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
-    }
-    #bubble-mgr { left: 14px; }
-    #bubble-dev { background: #238636; left: 50%; }
-    #bubble-mgr::after, #bubble-dev::after {
-      content: ''; position: absolute; bottom: -5px; left: 12px;
-      width: 0; height: 0;
-      border-left: 5px solid transparent; border-right: 5px solid transparent;
-      border-top: 6px solid #1f6feb;
-    }
-    #bubble-dev::after { border-top-color: #238636; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
 <body>
+
+<div id="toast-container"></div>
+
 <div id="app">
 
   <!-- ═══════════════════════════════════════ SIDEBAR ═══ -->
   <aside id="sidebar">
     <div id="sb-header">
-      <!-- Mini robot logo -->
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
         <rect x="4" y="6" width="24" height="18" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
         <rect x="7" y="9" width="18" height="12" rx="3" fill="#0a0e17"/>
@@ -237,7 +361,7 @@
         <div class="logo-name">Geppetto</div>
         <div class="logo-sub">AI Coding Agent</div>
       </div>
-      <span id="model-tag" style="margin-left:auto;font-size:9px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;font-family:monospace;flex-shrink:0;">Gemini 2.5</span>
+      <span id="model-tag" style="margin-left:auto;font-size:9px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">Gemini 2.5</span>
     </div>
 
     <div id="sb-body">
@@ -245,6 +369,13 @@
       <div id="jira-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">Loading…</div></div>
       <div class="sec-label" style="margin-top:6px;">Agent Tasks</div>
       <div id="task-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tasks yet</div></div>
+    </div>
+
+    <div id="sb-footer">
+      <button class="new-task-btn" onclick="openModal()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/></svg>
+        New Task
+      </button>
     </div>
   </aside>
 
@@ -255,8 +386,8 @@
     <div id="m-header">
       <span id="hd-icon" style="font-size:18px;display:none;"></span>
       <div style="flex:1;min-width:0;">
-        <div id="hd-key" style="font-size:11px;font-family:monospace;color:var(--blue);display:none;"></div>
-        <div id="hd-title" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
+        <div id="hd-key" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--blue);display:none;"></div>
+        <div id="hd-title" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
       </div>
       <div id="hd-actions" style="display:flex;gap:8px;flex-shrink:0;"></div>
     </div>
@@ -264,11 +395,9 @@
     <div id="m-body">
 
       <!-- ─── WELCOME ─── -->
-      <div id="welcome" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;">
+      <div id="welcome">
 
-        <!-- Main illustration -->
-        <svg class="wb" viewBox="0 0 380 220" width="380" height="220" style="margin-bottom:28px;">
-
+        <svg class="wb" viewBox="0 0 380 220" width="380" height="220" style="margin-bottom:24px;">
           <!-- Floating code cards -->
           <g class="fc1" transform="translate(0,25)">
             <rect width="88" height="32" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
@@ -292,24 +421,19 @@
             <rect x="8" y="8"  width="50" height="3" rx="1.5" fill="#3fb950" opacity=".6"/>
             <rect x="8" y="16" width="30" height="3" rx="1.5" fill="#d29922" opacity=".45"/>
           </g>
-
           <!-- Sparkles -->
           <circle class="sp1" cx="105" cy="30"  r="3" fill="#58a6ff"/>
           <circle class="sp2" cx="268" cy="55"  r="2.5" fill="#bc8cff"/>
           <circle class="sp3" cx="82"  cy="165" r="2" fill="#3fb950"/>
           <circle class="sp1" cx="290" cy="145" r="2" fill="#d29922"/>
-
-          <!-- ── DESK ── -->
+          <!-- Desk -->
           <rect x="62" y="162" width="256" height="10" rx="3" fill="#21262d"/>
           <rect x="80"  y="172" width="10" height="40" rx="3" fill="#161b22"/>
           <rect x="290" y="172" width="10" height="40" rx="3" fill="#161b22"/>
-
-          <!-- ── MONITOR ── -->
+          <!-- Monitor -->
           <rect x="108" y="82" width="164" height="84" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
           <rect x="113" y="87" width="154" height="74" rx="3" fill="#0a0e17"/>
-          <!-- scan line -->
           <rect class="scan-line" x="113" y="87" width="154" height="3" rx="1" fill="#58a6ff" opacity=".12"/>
-          <!-- code lines on screen -->
           <rect x="120" y="95"  width="55" height="3" rx="1.5" fill="#58a6ff"  opacity=".75"/>
           <rect x="120" y="103" width="90" height="3" rx="1.5" fill="#3fb950"  opacity=".65"/>
           <rect x="126" y="111" width="48" height="3" rx="1.5" fill="#bc8cff"  opacity=".6"/>
@@ -317,13 +441,10 @@
           <rect x="120" y="127" width="38" height="3" rx="1.5" fill="#58a6ff"  opacity=".5"/>
           <rect x="120" y="135" width="80" height="3" rx="1.5" fill="#3fb950"  opacity=".45"/>
           <rect x="120" y="143" width="45" height="3" rx="1.5" fill="#f85149"  opacity=".4"/>
-          <!-- cursor -->
           <rect class="cursor-blink" x="168" y="95" width="2" height="10" rx="1" fill="#58a6ff"/>
-          <!-- monitor stand -->
           <rect x="183" y="166" width="14" height="8"  rx="2" fill="#21262d"/>
           <rect x="172" y="173" width="36" height="5"  rx="2" fill="#21262d"/>
-
-          <!-- ── KEYBOARD ── -->
+          <!-- Keyboard -->
           <rect x="118" y="166" width="144" height="16" rx="3" fill="#161b22" stroke="#21262d"/>
           <rect x="124" y="169" width="12" height="7" rx="2" fill="#21262d"/>
           <rect x="140" y="169" width="12" height="7" rx="2" fill="#21262d"/>
@@ -332,34 +453,24 @@
           <rect x="188" y="169" width="36" height="7" rx="2" fill="#21262d"/>
           <rect x="228" y="169" width="12" height="7" rx="2" fill="#21262d"/>
           <rect x="244" y="169" width="12" height="7" rx="2" fill="#21262d"/>
-
-          <!-- ── ROBOT (welcome, big) ── -->
+          <!-- Robot -->
           <g transform="translate(190,60)">
-            <!-- torso -->
             <g class="robot-torso">
               <rect x="-22" y="60" width="44" height="32" rx="6" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
-              <!-- chest panel -->
               <rect x="-16" y="70" width="32" height="10" rx="3" fill="#0a0e17"/>
               <rect x="-14" y="72" width="10" height="6" rx="2" fill="#58a6ff" opacity=".8"/>
               <rect x="-2"  y="72" width="8"  height="6" rx="2" fill="#3fb950" opacity=".8"/>
               <rect x="8"   y="72" width="6"  height="6" rx="2" fill="#bc8cff" opacity=".6"/>
-              <!-- arms -->
               <rect class="arm-l" x="-44" y="65" width="24" height="12" rx="5" fill="#1c2128" stroke="#30363d"/>
               <rect class="arm-r" x="20"  y="65" width="24" height="12" rx="5" fill="#1c2128" stroke="#30363d"/>
             </g>
-            <!-- head -->
             <g class="robot-head">
-              <!-- antenna -->
               <line x1="0" y1="58" x2="0" y2="44" stroke="#6e7681" stroke-width="1.5"/>
               <circle class="ant-dot" cx="0" cy="41" r="4" fill="#f85149"/>
-              <!-- head shell -->
               <rect x="-26" y="8" width="52" height="50" rx="9" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
-              <!-- face screen -->
               <rect x="-20" y="14" width="40" height="38" rx="6" fill="#0a0e17"/>
-              <!-- ears -->
               <rect x="-36" y="22" width="11" height="18" rx="4" fill="#161b22" stroke="#30363d"/>
               <rect x="25"  y="22" width="11" height="18" rx="4" fill="#161b22" stroke="#30363d"/>
-              <!-- eyes -->
               <g class="eye-l" transform="translate(-10,32)">
                 <circle r="7" fill="#58a6ff" opacity=".9"/>
                 <circle r="3" fill="white"/>
@@ -370,15 +481,21 @@
                 <circle r="3" fill="white"/>
                 <circle r="1.5" cx="1" cy="-1" fill="#0a0e17"/>
               </g>
-              <!-- smile -->
               <path d="M-10 44 Q0 51 10 44" stroke="#3fb950" stroke-width="2.5" fill="none" stroke-linecap="round"/>
             </g>
           </g>
         </svg>
 
-        <div class="welcome-title" style="text-align:center;">Geppetto is ready to work</div>
-        <div class="welcome-sub">Pick a Jira ticket from the sidebar. The crew will search your codebase with RAG, write the code, commit with conventional format, and sync Jira.</div>
-        <div class="welcome-hint">← Select a ticket to begin</div>
+        <div class="welcome-title">Geppetto is ready to work</div>
+        <div class="welcome-sub">Pick a Jira ticket — the crew will RAG-search your codebase, write the code, open a PR, and sync Jira automatically.</div>
+
+        <div class="crew-row">
+          <div class="crew-chip"><span class="cdot"></span>🔍 Ragna · RAG</div>
+          <div class="crew-chip"><span class="cdot"></span>✏️ Codie · Edit</div>
+          <div class="crew-chip"><span class="cdot"></span>🌿 Gitty · Git</div>
+        </div>
+
+        <div class="welcome-hint" style="margin-top:18px;">← Select a ticket to begin</div>
       </div>
 
       <!-- ─── TICKET DETAIL ─── -->
@@ -404,47 +521,32 @@
         <!-- Workers banner -->
         <div id="workers-banner">
 
-          <!-- ── Geppetto the woodcarver (animated in/out) ── -->
+          <!-- Geppetto character -->
           <svg id="mgr-bot" viewBox="0 0 90 92" width="90" height="92">
-            <!-- Craftsman cap -->
             <rect x="23" y="9"  width="44" height="4" rx="1.5" fill="#7a5c2e"/>
             <rect x="28" y="4"  width="34" height="7"  rx="3"   fill="#8b6914"/>
-            <!-- Head group — rotates when reading ticket -->
             <g id="mgr-head">
-              <!-- White hair on sides -->
               <ellipse cx="22" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
               <ellipse cx="68" cy="23" rx="7"  ry="12" fill="#d4d4d4"/>
-              <!-- Face -->
               <ellipse cx="45" cy="25" rx="22" ry="21" fill="#d4956a"/>
-              <!-- Bushy white eyebrows -->
               <path d="M26 15 Q31 11 37 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
               <path d="M53 15 Q59 11 64 15" stroke="#c8c8c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-              <!-- Kind eyes -->
               <ellipse cx="34" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
               <ellipse cx="56" cy="22" rx="3.5" ry="3"   fill="#3a2518"/>
               <circle  cx="35" cy="21" r="1.2"            fill="white"/>
               <circle  cx="57" cy="21" r="1.2"            fill="white"/>
-              <!-- Big Geppetto nose -->
               <ellipse cx="45" cy="30" rx="6" ry="5" fill="#c07855"/>
-              <!-- White bushy mustache -->
               <path d="M29 37 Q37 33 45 36 Q53 33 61 37" stroke="#e0e0e0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-              <!-- Rosy cheeks -->
               <ellipse cx="25" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
               <ellipse cx="65" cy="29" rx="5" ry="4" fill="#e08080" opacity=".3"/>
-              <!-- Smile -->
               <path d="M35 40 Q45 46 55 40" stroke="#a06040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
             </g>
-            <!-- Body — dark coat -->
             <rect x="23" y="48" width="44" height="24" rx="5" fill="#2c3e50"/>
-            <!-- Leather apron -->
             <path d="M30 49 Q45 46 60 49 L57 72 Q45 75 33 72 Z" fill="#8b7355" opacity=".85"/>
-            <!-- Tools in apron pocket (chisel + pencil) -->
             <rect x="40" y="56" width="3" height="12" rx="1.5" fill="#d4a820"/>
             <rect x="46" y="57" width="3" height="11" rx="1.5" fill="#aaaaaa"/>
-            <!-- Arms -->
             <rect id="mgr-arm-l" x="5"  y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
             <rect id="mgr-arm-r" x="65" y="51" width="20" height="9" rx="4" fill="#2c3e50"/>
-            <!-- Mini Pinocchio puppet held in right hand -->
             <line x1="73" y1="60" x2="70" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
             <line x1="75" y1="60" x2="77" y2="69" stroke="#c8a060" stroke-width="0.9" opacity=".8"/>
             <circle cx="73" cy="72" r="4" fill="#d4956a"/>
@@ -454,15 +556,12 @@
             <rect x="70" y="76" width="6" height="7" rx="2" fill="#4a8a4a"/>
             <line x1="71" y1="83" x2="69" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
             <line x1="75" y1="83" x2="77" y2="91" stroke="#3a5a3a" stroke-width="1.8" stroke-linecap="round"/>
-            <!-- Geppetto's legs -->
             <rect x="30" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
             <rect x="48" y="72" width="12" height="13" rx="4" fill="#1e2d3d"/>
-            <!-- Shoes -->
             <ellipse cx="36" cy="86" rx="9" ry="5" fill="#111"/>
             <ellipse cx="54" cy="86" rx="9" ry="5" fill="#111"/>
           </svg>
 
-          <!-- Floating ticket card -->
           <div id="ticket-card">
             <div id="tc-key">SCRUM-X</div>
             <div class="tc-line" style="width:54px;opacity:.6;"></div>
@@ -470,162 +569,291 @@
             <div class="tc-line" style="width:50px;opacity:.3;margin-top:3px;"></div>
           </div>
 
-          <!-- Speech bubbles -->
           <div id="bubble-mgr">🪄 To work, boys!</div>
           <div id="bubble-dev">On it! 🤖</div>
 
           <div class="workers-row">
 
-            <!-- Worker 1: RAG Search (blue) -->
-            <div class="worker-slot wg1 rb-idle" id="wg1">
-              <svg viewBox="0 0 90 82" width="90" height="82">
+            <!-- Worker 1: Ragna · RAG Search (blue) -->
+            <div class="worker-card wg1 rb-idle" id="wg1">
+              <div class="worker-spark"></div>
+              <svg viewBox="0 0 120 108" width="120" height="108">
                 <!-- desk -->
-                <rect x="2"  y="68" width="86" height="6"  rx="2" fill="#21262d"/>
-                <rect x="8"  y="74" width="7"  height="14" rx="2" fill="#161b22"/>
-                <rect x="75" y="74" width="7"  height="14" rx="2" fill="#161b22"/>
+                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
+                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <!-- coffee cup prop -->
+                <rect x="8" y="80" width="13" height="11" rx="2" fill="#2d333b"/>
+                <path d="M21 83 Q27 83 27 87 Q27 91 21 91" fill="none" stroke="#2d333b" stroke-width="2.5"/>
+                <rect x="9" y="78" width="11" height="3" rx="1" fill="#58a6ff" opacity=".5"/>
                 <!-- monitor -->
-                <rect x="18" y="36" width="54" height="34" rx="3" fill="#161b22" stroke="#21262d" stroke-width="1"/>
-                <rect x="22" y="40" width="46" height="26" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="22" y="40" width="46" height="2" rx="1" fill="#58a6ff" opacity=".15"/>
-                <rect x="26" y="44" width="18" height="2" rx="1" fill="#58a6ff" opacity=".7"/>
-                <rect x="26" y="49" width="30" height="2" rx="1" fill="#3fb950" opacity=".6"/>
-                <rect x="26" y="54" width="22" height="2" rx="1" fill="#bc8cff" opacity=".5"/>
-                <rect x="26" y="59" width="26" height="2" rx="1" fill="#d29922" opacity=".4"/>
-                <rect x="42" y="70" width="6"  height="4"  rx="1" fill="#21262d"/>
+                <rect x="24" y="42" width="72" height="50" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
+                <rect x="28" y="46" width="64" height="42" rx="2" fill="#0a0e17"/>
+                <rect class="scan-line" x="28" y="46" width="64" height="2" rx="1" fill="#58a6ff" opacity=".15"/>
+                <!-- search bar -->
+                <rect x="30" y="50" width="52" height="5" rx="2" fill="#21262d"/>
+                <rect x="32" y="51" width="28" height="3" rx="1" fill="#58a6ff" opacity=".5"/>
+                <rect x="77" y="51" width="4"  height="3" rx="1" fill="#58a6ff" opacity=".8"/>
+                <!-- results -->
+                <rect x="30" y="60" width="58" height="3" rx="1.5" fill="#58a6ff" opacity=".85"/>
+                <rect x="30" y="65" width="38" height="2" rx="1" fill="#e6edf3" opacity=".2"/>
+                <rect x="30" y="71" width="58" height="3" rx="1.5" fill="#3fb950" opacity=".65"/>
+                <rect x="30" y="76" width="28" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
+                <rect x="30" y="82" width="50" height="3" rx="1.5" fill="#bc8cff" opacity=".5"/>
+                <!-- stand -->
+                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
                 <!-- keyboard -->
-                <rect x="14" y="63" width="62" height="7" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="18" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="28" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="38" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="48" y="65" width="18" height="3" rx="1" fill="#21262d"/>
-                <!-- robot -->
-                <g class="robot-torso" transform="translate(45,28)">
-                  <rect x="-14" y="0"  width="28" height="19" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect x="-10" y="5"  width="20" height="6"  rx="2" fill="#0a0e17"/>
-                  <rect x="-8"  y="7"  width="7"  height="2"  rx="1" fill="#58a6ff" opacity=".8"/>
-                  <rect x="1"   y="7"  width="5"  height="2"  rx="1" fill="#3fb950" opacity=".8"/>
-                  <rect class="arm-l" x="-26" y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="13"  y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
+                <rect x="16" y="82" width="88" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
+                <rect x="20" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="31" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="42" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="53" y="84" width="22" height="4" rx="1" fill="#21262d"/>
+                <rect x="78" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="89" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <!-- robot torso -->
+                <g class="robot-torso" transform="translate(60,36)">
+                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
+                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#58a6ff" opacity=".9"/>
+                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#3fb950" opacity=".7"/>
+                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
                 </g>
-                <g class="robot-head" transform="translate(45,28)">
-                  <line x1="0" y1="-22" x2="0" y2="-30" stroke="#6e7681" stroke-width="1.2"/>
-                  <circle class="ant-dot" cx="0" cy="-32" r="2.5" fill="#f85149"/>
-                  <rect x="-16" y="-22" width="32" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="-18" width="24" height="16" rx="3" fill="#0a0e17"/>
-                  <rect x="-24" y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <rect x="15"  y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <g class="eye-l" transform="translate(-5,-10)"><circle r="4" fill="#58a6ff" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <g class="eye-r" transform="translate(5,-10)"> <circle r="4" fill="#58a6ff" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <path d="M-5 -3 Q0 1 5 -3" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <!-- robot head -->
+                <g class="robot-head" transform="translate(60,36)">
+                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
+                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#f85149"/>
+                  <rect x="-29" y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
+                  <rect x="18"  y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
+                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
+                  <g class="eye-l" transform="translate(-7,-12)">
+                    <circle r="6" fill="#58a6ff" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                    <circle r="0.7" cx="2" cy="-1" fill="white"/>
+                  </g>
+                  <g class="eye-r" transform="translate(7,-12)">
+                    <circle r="6" fill="#58a6ff" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                    <circle r="0.7" cx="2" cy="-1" fill="white"/>
+                  </g>
+                  <path d="M-5 -2 Q0 3 5 -2" stroke="#3fb950" stroke-width="2" fill="none" stroke-linecap="round"/>
                 </g>
               </svg>
-              <span class="worker-lbl">RAG Search</span>
+              <div class="worker-info">
+                <span class="worker-name">RAGNA</span>
+                <span class="worker-role">🔍 RAG Search</span>
+                <div class="worker-status">
+                  <span class="status-dot"></span>
+                  <span class="status-text" id="wg1-status">idle</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Worker 2: Code Edit (orange) -->
-            <div class="worker-slot wg2 rb-idle" id="wg2">
-              <svg viewBox="0 0 90 82" width="90" height="82">
-                <rect x="2"  y="68" width="86" height="6"  rx="2" fill="#21262d"/>
-                <rect x="8"  y="74" width="7"  height="14" rx="2" fill="#161b22"/>
-                <rect x="75" y="74" width="7"  height="14" rx="2" fill="#161b22"/>
-                <rect x="18" y="36" width="54" height="34" rx="3" fill="#161b22" stroke="#21262d" stroke-width="1"/>
-                <rect x="22" y="40" width="46" height="26" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="22" y="40" width="46" height="2" rx="1" fill="#d29922" opacity=".15"/>
-                <rect x="26" y="44" width="30" height="2" rx="1" fill="#d29922" opacity=".7"/>
-                <rect x="26" y="49" width="20" height="2" rx="1" fill="#f85149" opacity=".5"/>
-                <rect x="26" y="54" width="38" height="2" rx="1" fill="#3fb950" opacity=".7"/>
-                <rect x="26" y="59" width="16" height="2" rx="1" fill="#58a6ff" opacity=".5"/>
-                <rect x="42" y="70" width="6"  height="4"  rx="1" fill="#21262d"/>
-                <rect x="14" y="63" width="62" height="7" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="18" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="28" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="38" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="48" y="65" width="18" height="3" rx="1" fill="#21262d"/>
-                <g class="robot-torso" transform="translate(45,28)">
-                  <rect x="-14" y="0"  width="28" height="19" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect x="-10" y="5"  width="20" height="6"  rx="2" fill="#0a0e17"/>
-                  <rect x="-8"  y="7"  width="7"  height="2"  rx="1" fill="#d29922" opacity=".8"/>
-                  <rect x="1"   y="7"  width="5"  height="2"  rx="1" fill="#f85149" opacity=".7"/>
-                  <rect class="arm-l" x="-26" y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="13"  y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
+            <!-- Worker 2: Codie · Code Edit (orange) -->
+            <div class="worker-card wg2 rb-idle" id="wg2">
+              <div class="worker-spark"></div>
+              <svg viewBox="0 0 120 108" width="120" height="108">
+                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
+                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <!-- mug prop -->
+                <rect x="97" y="78" width="15" height="13" rx="2" fill="#2d333b"/>
+                <path d="M112 81 Q118 81 118 85 Q118 89 112 89" fill="none" stroke="#2d333b" stroke-width="2.5"/>
+                <rect x="98" y="76" width="13" height="3" rx="1" fill="#d29922" opacity=".6"/>
+                <!-- monitor (diff view) -->
+                <rect x="20" y="40" width="80" height="52" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
+                <rect x="24" y="44" width="72" height="44" rx="2" fill="#0a0e17"/>
+                <rect class="scan-line" x="24" y="44" width="72" height="2" rx="1" fill="#d29922" opacity=".15"/>
+                <!-- diff gutter -->
+                <rect x="24" y="48" width="2" height="4" fill="#f85149" opacity=".8"/>
+                <rect x="24" y="54" width="2" height="4" fill="#3fb950" opacity=".8"/>
+                <rect x="24" y="60" width="2" height="4" fill="#3fb950" opacity=".7"/>
+                <rect x="24" y="66" width="2" height="4" fill="#f85149" opacity=".6"/>
+                <rect x="24" y="72" width="2" height="4" fill="#3fb950" opacity=".8"/>
+                <rect x="24" y="78" width="2" height="4" fill="#3fb950" opacity=".5"/>
+                <!-- diff lines -->
+                <rect x="29" y="48" width="58" height="3" rx="1" fill="#f85149" opacity=".65"/>
+                <rect x="29" y="54" width="66" height="3" rx="1" fill="#3fb950" opacity=".75"/>
+                <rect x="29" y="60" width="44" height="3" rx="1" fill="#3fb950" opacity=".6"/>
+                <rect x="29" y="66" width="52" height="3" rx="1" fill="#f85149" opacity=".5"/>
+                <rect x="29" y="72" width="60" height="3" rx="1" fill="#3fb950" opacity=".65"/>
+                <rect x="29" y="78" width="36" height="3" rx="1" fill="#d29922" opacity=".5"/>
+                <!-- stand -->
+                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
+                <!-- keyboard -->
+                <rect x="14" y="82" width="92" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
+                <rect x="18" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="29" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="40" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="51" y="84" width="26" height="4" rx="1" fill="#21262d"/>
+                <rect x="80" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="91" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <!-- robot torso -->
+                <g class="robot-torso" transform="translate(60,36)">
+                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
+                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#d29922" opacity=".9"/>
+                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#f85149" opacity=".7"/>
+                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
                 </g>
-                <g class="robot-head" transform="translate(45,28)">
-                  <line x1="0" y1="-22" x2="0" y2="-30" stroke="#6e7681" stroke-width="1.2"/>
-                  <circle class="ant-dot" cx="0" cy="-32" r="2.5" fill="#d29922"/>
-                  <rect x="-16" y="-22" width="32" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="-18" width="24" height="16" rx="3" fill="#0a0e17"/>
-                  <rect x="-24" y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <rect x="15"  y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <g class="eye-l" transform="translate(-5,-10)"><circle r="4" fill="#d29922" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <g class="eye-r" transform="translate(5,-10)"> <circle r="4" fill="#d29922" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <path d="M-5 -3 Q0 1 5 -3" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <!-- robot head -->
+                <g class="robot-head" transform="translate(60,36)">
+                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
+                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#d29922"/>
+                  <rect x="-29" y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
+                  <rect x="18"  y="-23" width="11" height="15" rx="4" fill="#161b22" stroke="#30363d"/>
+                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
+                  <g class="eye-l" transform="translate(-7,-12)">
+                    <circle r="6" fill="#d29922" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                  </g>
+                  <g class="eye-r" transform="translate(7,-12)">
+                    <circle r="6" fill="#d29922" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                  </g>
+                  <!-- focused expression (straight mouth) -->
+                  <rect x="-4" y="-2" width="8" height="1.5" rx="0.75" fill="#d29922" opacity=".5"/>
                 </g>
               </svg>
-              <span class="worker-lbl">Code Edit</span>
+              <div class="worker-info">
+                <span class="worker-name">CODIE</span>
+                <span class="worker-role">✏️ Code Edit</span>
+                <div class="worker-status">
+                  <span class="status-dot"></span>
+                  <span class="status-text" id="wg2-status">idle</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Worker 3: Git Bot (purple) -->
-            <div class="worker-slot wg3 rb-idle" id="wg3">
-              <svg viewBox="0 0 90 82" width="90" height="82">
-                <rect x="2"  y="68" width="86" height="6"  rx="2" fill="#21262d"/>
-                <rect x="8"  y="74" width="7"  height="14" rx="2" fill="#161b22"/>
-                <rect x="75" y="74" width="7"  height="14" rx="2" fill="#161b22"/>
-                <rect x="18" y="36" width="54" height="34" rx="3" fill="#161b22" stroke="#21262d" stroke-width="1"/>
-                <rect x="22" y="40" width="46" height="26" rx="2" fill="#0a0e17"/>
-                <rect class="scan-line" x="22" y="40" width="46" height="2" rx="1" fill="#bc8cff" opacity=".15"/>
-                <rect x="26" y="44" width="14" height="2" rx="1" fill="#bc8cff" opacity=".8"/>
-                <rect x="26" y="49" width="28" height="2" rx="1" fill="#58a6ff" opacity=".6"/>
-                <rect x="26" y="54" width="20" height="2" rx="1" fill="#3fb950" opacity=".8"/>
-                <rect x="26" y="59" width="34" height="2" rx="1" fill="#bc8cff" opacity=".4"/>
-                <rect x="42" y="70" width="6"  height="4"  rx="1" fill="#21262d"/>
-                <rect x="14" y="63" width="62" height="7" rx="2" fill="#161b22" stroke="#21262d"/>
-                <rect x="18" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="28" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="38" y="65" width="7" height="3" rx="1" fill="#21262d"/>
-                <rect x="48" y="65" width="18" height="3" rx="1" fill="#21262d"/>
-                <g class="robot-torso" transform="translate(45,28)">
-                  <rect x="-14" y="0"  width="28" height="19" rx="4" fill="#1c2128" stroke="#30363d"/>
-                  <rect x="-10" y="5"  width="20" height="6"  rx="2" fill="#0a0e17"/>
-                  <rect x="-8"  y="7"  width="7"  height="2"  rx="1" fill="#bc8cff" opacity=".8"/>
-                  <rect x="1"   y="7"  width="5"  height="2"  rx="1" fill="#3fb950" opacity=".7"/>
-                  <rect class="arm-l" x="-26" y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
-                  <rect class="arm-r" x="13"  y="3" width="13" height="8" rx="3" fill="#1c2128" stroke="#30363d"/>
+            <!-- Worker 3: Gitty · Git Bot (purple) -->
+            <div class="worker-card wg3 rb-idle" id="wg3">
+              <div class="worker-spark"></div>
+              <svg viewBox="0 0 120 108" width="120" height="108">
+                <rect x="4" y="90" width="112" height="8" rx="3" fill="#21262d"/>
+                <rect x="8"   y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <rect x="103" y="98" width="9" height="16" rx="2" fill="#1c2128"/>
+                <!-- git graph paper prop -->
+                <rect x="7" y="76" width="18" height="15" rx="2" fill="#21262d"/>
+                <line x1="13" y1="80" x2="13" y2="88" stroke="#bc8cff" stroke-width="1.5" opacity=".7"/>
+                <circle cx="13" cy="80" r="2.5" fill="#bc8cff" opacity=".9"/>
+                <circle cx="13" cy="86" r="2.5" fill="#bc8cff" opacity=".7"/>
+                <line x1="13" y1="83" x2="19" y2="80" stroke="#3fb950" stroke-width="1.2" opacity=".7"/>
+                <circle cx="19" cy="80" r="2" fill="#3fb950" opacity=".8"/>
+                <!-- monitor (git graph) -->
+                <rect x="22" y="40" width="76" height="52" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1.2"/>
+                <rect x="26" y="44" width="68" height="44" rx="2" fill="#0a0e17"/>
+                <rect class="scan-line" x="26" y="44" width="68" height="2" rx="1" fill="#bc8cff" opacity=".15"/>
+                <!-- git branch graph on screen -->
+                <line x1="36" y1="48" x2="36" y2="84" stroke="#bc8cff" stroke-width="1.5" opacity=".7"/>
+                <circle cx="36" cy="50" r="3.5" fill="#bc8cff"/>
+                <circle cx="36" cy="60" r="3.5" fill="#bc8cff" opacity=".85"/>
+                <circle cx="36" cy="70" r="3.5" fill="#bc8cff"/>
+                <circle cx="36" cy="80" r="3.5" fill="#bc8cff" opacity=".7"/>
+                <line x1="36" y1="60" x2="54" y2="65" stroke="#3fb950" stroke-width="1.5" opacity=".6"/>
+                <line x1="54" y1="65" x2="54" y2="75" stroke="#3fb950" stroke-width="1.5" opacity=".6"/>
+                <line x1="54" y1="75" x2="36" y2="80" stroke="#3fb950" stroke-width="1.5" opacity=".5"/>
+                <circle cx="54" cy="65" r="3" fill="#3fb950" opacity=".85"/>
+                <circle cx="54" cy="75" r="3" fill="#3fb950" opacity=".85"/>
+                <rect x="42" y="48" width="42" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
+                <rect x="42" y="58" width="30" height="2" rx="1" fill="#e6edf3" opacity=".15"/>
+                <rect x="60" y="63" width="24" height="2" rx="1" fill="#3fb950" opacity=".3"/>
+                <rect x="42" y="78" width="40" height="2" rx="1" fill="#e6edf3" opacity=".18"/>
+                <!-- stand -->
+                <rect x="57" y="92" width="6" height="4" rx="1" fill="#21262d"/>
+                <!-- keyboard -->
+                <rect x="16" y="82" width="88" height="9" rx="2" fill="#161b22" stroke="#21262d"/>
+                <rect x="20" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="31" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="42" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="53" y="84" width="22" height="4" rx="1" fill="#21262d"/>
+                <rect x="78" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <rect x="89" y="84" width="8" height="4" rx="1" fill="#21262d"/>
+                <!-- robot torso -->
+                <g class="robot-torso" transform="translate(60,36)">
+                  <rect x="-17" y="0" width="34" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-12" y="6" width="24" height="9" rx="2" fill="#0a0e17"/>
+                  <rect x="-10" y="8" width="9"  height="5" rx="1" fill="#bc8cff" opacity=".9"/>
+                  <rect x="1"   y="8" width="6"  height="5" rx="1" fill="#3fb950" opacity=".7"/>
+                  <rect class="arm-l" x="-32" y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
+                  <rect class="arm-r" x="16"  y="5" width="16" height="10" rx="4" fill="#1c2128" stroke="#30363d"/>
                 </g>
-                <g class="robot-head" transform="translate(45,28)">
-                  <line x1="0" y1="-22" x2="0" y2="-30" stroke="#6e7681" stroke-width="1.2"/>
-                  <circle class="ant-dot" cx="0" cy="-32" r="2.5" fill="#bc8cff"/>
-                  <rect x="-16" y="-22" width="32" height="24" rx="5" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
-                  <rect x="-12" y="-18" width="24" height="16" rx="3" fill="#0a0e17"/>
-                  <rect x="-24" y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <rect x="15"  y="-16" width="9"  height="12" rx="3" fill="#161b22" stroke="#30363d"/>
-                  <g class="eye-l" transform="translate(-5,-10)"><circle r="4" fill="#bc8cff" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <g class="eye-r" transform="translate(5,-10)"> <circle r="4" fill="#bc8cff" opacity=".9"/><circle r="1.6" fill="white"/></g>
-                  <path d="M-5 -3 Q0 1 5 -3" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <!-- robot head with headset -->
+                <g class="robot-head" transform="translate(60,36)">
+                  <line x1="0" y1="-24" x2="0" y2="-35" stroke="#6e7681" stroke-width="1.5"/>
+                  <circle class="ant-dot" cx="0" cy="-38" r="3.5" fill="#bc8cff"/>
+                  <!-- headset arc -->
+                  <path d="M-24 -20 Q-24 -40 0 -40 Q24 -40 24 -20" fill="none" stroke="#bc8cff" stroke-width="2.5" opacity=".55"/>
+                  <!-- ear cups (with purple border for headset) -->
+                  <rect x="-31" y="-24" width="11" height="15" rx="4" fill="#161b22" stroke="#bc8cff" stroke-width="1.2"/>
+                  <rect x="20"  y="-24" width="11" height="15" rx="4" fill="#161b22" stroke="#bc8cff" stroke-width="1.2"/>
+                  <rect x="-20" y="-27" width="40" height="30" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.2"/>
+                  <rect x="-16" y="-23" width="32" height="22" rx="5" fill="#0a0e17"/>
+                  <g class="eye-l" transform="translate(-7,-12)">
+                    <circle r="6" fill="#bc8cff" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                  </g>
+                  <g class="eye-r" transform="translate(7,-12)">
+                    <circle r="6" fill="#bc8cff" opacity=".95"/>
+                    <circle r="3.2" fill="white"/>
+                    <circle r="1.6" cx="1" cy="-0.5" fill="#0a0e17"/>
+                  </g>
+                  <!-- surprised O mouth -->
+                  <circle cx="0" cy="-2" r="2.8" fill="none" stroke="#bc8cff" stroke-width="1.5" opacity=".6"/>
                 </g>
               </svg>
-              <span class="worker-lbl">Git Bot</span>
+              <div class="worker-info">
+                <span class="worker-name">GITTY</span>
+                <span class="worker-role">🌿 Git Bot</span>
+                <div class="worker-status">
+                  <span class="status-dot"></span>
+                  <span class="status-text" id="wg3-status">idle</span>
+                </div>
+              </div>
             </div>
 
           </div><!-- workers-row -->
-          <div id="tr-jira" class="jira-sync" style="display:none;margin-left:16px;flex-shrink:0;"><span class="jsync-dot"></span>Jira updated</div>
+          <div id="tr-jira" class="jira-sync" style="display:none;margin-left:12px;flex-shrink:0;"><span class="jsync-dot"></span>Jira updated</div>
         </div><!-- workers-banner -->
 
         <!-- trace header -->
         <div id="trace-hdr">
           <span id="tr-icon" style="font-size:16px;"></span>
           <div style="flex:1;">
-            <div id="tr-title" style="font-weight:600;font-size:13px;"></div>
+            <div id="tr-title" style="font-weight:700;font-size:13px;"></div>
             <div id="tr-sub"   style="font-size:11px;color:var(--muted);"></div>
           </div>
         </div>
 
-        <!-- stats strip — filled when stats event arrives -->
-        <div id="trace-stats" style="display:none;padding:5px 24px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;gap:20px;flex-shrink:0;align-items:center;">
-          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);">Run Stats</span>
-          <span id="stat-tokens" style="font-size:11px;color:var(--muted);font-family:monospace;">— tokens</span>
-          <span id="stat-cost"   style="font-size:11px;color:var(--muted);font-family:monospace;">—</span>
-          <span id="stat-dur"    style="font-size:11px;color:var(--muted);font-family:monospace;">— s</span>
-          <span id="stat-tools"  style="font-size:11px;color:var(--muted);font-family:monospace;">— tool calls</span>
+        <!-- stats strip -->
+        <div id="trace-stats" style="display:none;">
+          <div class="stat-card">
+            <span class="sc-icon">🔢</span>
+            <span class="sc-val" id="stat-tokens">—</span>
+            <span class="sc-lbl">tokens</span>
+          </div>
+          <div class="stat-card">
+            <span class="sc-icon">💰</span>
+            <span class="sc-val" id="stat-cost">—</span>
+            <span class="sc-lbl">cost</span>
+          </div>
+          <div class="stat-card">
+            <span class="sc-icon">⏱</span>
+            <span class="sc-val" id="stat-dur">—</span>
+            <span class="sc-lbl">duration</span>
+          </div>
+          <div class="stat-card">
+            <span class="sc-icon">⚡</span>
+            <span class="sc-val" id="stat-tools">—</span>
+            <span class="sc-lbl">tool calls</span>
+          </div>
         </div>
 
         <!-- trace body -->
@@ -675,17 +903,29 @@ const TOOL_WORKER = {
   edit_file:'wg2', create_file:'wg2', write_file:'wg2',
   commit_changes:'wg3', push_and_create_pr:'wg3', create_branch:'wg3', git_diff:'wg3', git_status:'wg3',
 };
+const TOOL_TEXT = {
+  search_code:'searching…', read_file:'reading…', lookup_symbol:'looking up…',
+  edit_file:'editing…', create_file:'creating…', write_file:'writing…',
+  commit_changes:'committing…', push_and_create_pr:'pushing PR…',
+  create_branch:'branching…', git_diff:'diffing…', git_status:'checking…',
+};
+function setWorkerStatusText(wId, text) {
+  const el = document.getElementById(wId + '-status');
+  if (el) el.textContent = text;
+}
 function setWorkers(mode, active) {
-  ['wg1','wg2','wg3'].forEach(id => {
-    const el = document.getElementById(id);
+  ['wg1','wg2','wg3'].forEach(wid => {
+    const el = document.getElementById(wid);
     if (!el) return;
     el.classList.remove('rb-active','rb-idle','active');
     if (mode === 'running') {
       const isActive = el.id === active;
       el.classList.add(isActive ? 'rb-active' : 'rb-idle');
-      if (isActive) el.classList.add('active');
+      if (isActive) { el.classList.add('active'); setWorkerStatusText(wid, '…'); }
+      else setWorkerStatusText(wid, 'standby');
     } else {
       el.classList.add('rb-idle');
+      setWorkerStatusText(wid, 'idle');
     }
   });
 }
@@ -740,7 +980,7 @@ function renderTasks(tasks) {
   el.innerHTML = tasks.map(t=>`
     <div class="task-item ${selTask?.id===t.id?'active':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
       <div class="task-row">
-        ${t.jira_id?`<span style="font-size:10px;font-family:monospace;color:var(--blue);">${t.jira_id}</span>`:''}
+        ${t.jira_id?`<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--blue);">${t.jira_id}</span>`:''}
         <span class="badge ${tkBadge(t.status)}">${t.status}</span>
       </div>
       <div class="task-title">${esc(t.title)}</div>
@@ -760,7 +1000,7 @@ async function selectTask(taskId) {
 
 /* ── Modal ── */
 function openModal() {
-  if (!selTicket) return;
+  if (!selTicket) { showToast('Select a Jira ticket first', 'info'); return; }
   id('m-jira').value  = selTicket.key;
   id('m-title').value = selTicket.summary;
   id('m-desc').value  = selTicket.description||'';
@@ -778,6 +1018,7 @@ async function submitTask() {
   closeModal();
   btn.disabled = false;
   btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg> Run Agent';
+  showToast('🚀 Agent started!', 'info');
   await loadTasks(); selectTask(task.id); playTaskStartAnimation(jira_id || 'TASK'); loadJira();
 }
 
@@ -797,12 +1038,11 @@ function updateTrHdr(task) {
 }
 
 function updateStats(ev) {
-  const strip = id('trace-stats');
-  strip.style.display = 'flex';
-  id('stat-tokens').textContent = `🔢 ${ev.total_tokens?.toLocaleString() ?? '—'} tokens  (↑${ev.prompt_tokens?.toLocaleString()} · ↓${ev.completion_tokens?.toLocaleString()})`;
-  id('stat-cost').textContent   = ev.cost_usd > 0 ? `💰 $${ev.cost_usd.toFixed(4)}` : '💰 —';
-  id('stat-dur').textContent    = `⏱ ${ev.duration_s}s`;
-  id('stat-tools').textContent  = `⚡ ${ev.tool_calls} tool calls`;
+  id('trace-stats').style.display = 'flex';
+  id('stat-tokens').textContent = (ev.total_tokens||0).toLocaleString();
+  id('stat-cost').textContent   = ev.cost_usd > 0 ? `$${ev.cost_usd.toFixed(4)}` : '—';
+  id('stat-dur').textContent    = `${ev.duration_s}s`;
+  id('stat-tools').textContent  = String(ev.tool_calls || 0);
 }
 
 function renderEvts(evts)   { evts.forEach(e=>appendEvt(e,false)); }
@@ -828,7 +1068,9 @@ function buildCard(ev, anim=true) {
   const cfg = MAP[ev.type]; if (!cfg) return null;
 
   if (ev.type==='tool_call' && ev.tool) {
-    setWorkers('running', TOOL_WORKER[ev.tool]||'wg2');
+    const wId = TOOL_WORKER[ev.tool] || 'wg2';
+    setWorkers('running', wId);
+    setWorkerStatusText(wId, TOOL_TEXT[ev.tool] || 'working…');
   }
 
   const sub = getSub(ev), body = getBody(ev);
@@ -859,7 +1101,7 @@ function getBody(ev) {
   if (ev.type==='tool_call') {
     if (ev.tool==='edit_file'&&ev.input?.old_str&&ev.input?.new_str) return buildInlineDiff(ev.input.old_str,ev.input.new_str,ev.input.path);
     if (ev.tool==='commit_changes'&&ev.input?.message) return `<div class="cmt-card"><div class="cmt-lbl">Commit · Conventional Format</div><div class="cmt-msg">${esc(ev.input.message)}</div></div>`;
-    if (ev.tool==='create_branch'&&ev.input?.branch_name) return `<div style="font-size:12px;color:var(--blue);font-family:monospace;padding:4px 0;">🌿 ${esc(ev.input.branch_name)}</div>`;
+    if (ev.tool==='create_branch'&&ev.input?.branch_name) return `<div style="font-size:12px;color:var(--blue);font-family:'JetBrains Mono',monospace;padding:4px 0;">🌿 ${esc(ev.input.branch_name)}</div>`;
     return `<pre class="epre">${esc(JSON.stringify(ev.input,null,2))}</pre>`;
   }
   if (ev.type==='tool_result') {
@@ -867,12 +1109,12 @@ function getBody(ev) {
     const t = ev.result?.slice(0,1500)||'';
     return `<pre class="epre">${esc(t)}${(ev.result?.length||0)>1500?'\n…truncated':''}</pre>`;
   }
-  if (ev.type==='complete') return `<div style="color:var(--green);font-size:13px;font-weight:600;">${esc(ev.message)}</div>`;
+  if (ev.type==='complete') return `<div style="color:var(--green);font-size:13px;font-weight:700;">${esc(ev.message)}</div>`;
   if (ev.type==='error')    return `<div style="color:var(--red);font-size:12px;">${esc(ev.message)}</div>`;
   return `<pre class="epre">${esc(JSON.stringify(ev,null,2))}</pre>`;
 }
 function buildInlineDiff(o,n,path) {
-  let h=`<div style="font-size:10px;color:var(--muted2);margin-bottom:4px;font-family:monospace;">${esc(path||'')}</div><div class="diff">`;
+  let h=`<div style="font-size:10px;color:var(--muted2);margin-bottom:4px;font-family:'JetBrains Mono',monospace;">${esc(path||'')}</div><div class="diff">`;
   for (const l of o.split('\n')) h+=`<div class="dl del">- ${esc(l)}</div>`;
   for (const l of n.split('\n')) h+=`<div class="dl add">+ ${esc(l)}</div>`;
   return h+'</div>';
@@ -904,7 +1146,13 @@ function subscribe(taskId, seen0, status) {
       hideTh(); es.close(); stopProg(); setProg(100);
       loadTasks(); loadJira(); setWorkers('idle');
       id('tr-icon').textContent = ev.type==='complete'?'✅':'❌';
-      if (ev.type==='complete') id('tr-jira').style.display='flex';
+      if (ev.type==='complete') {
+        id('tr-jira').style.display='flex';
+        spawnConfetti();
+        showToast('✅ Task completed successfully!', 'success');
+      } else {
+        showToast('❌ Task failed — check the trace', 'error');
+      }
     }
   };
   es.onerror = () => { hideTh(); es.close(); setWorkers('idle'); };
@@ -913,33 +1161,22 @@ function subscribe(taskId, seen0, status) {
 /* ── Task start animation ── */
 function playTaskStartAnimation(ticketKey) {
   if (typeof gsap === 'undefined') return;
-
   const tcKey = document.getElementById('tc-key');
   if (tcKey) tcKey.textContent = ticketKey || 'TASK';
-
   const banner = document.getElementById('workers-banner');
   const wg2el  = document.getElementById('wg2');
   if (!banner || !wg2el) return;
-
-  // Calculate where wg2 sits relative to the banner
   const br   = banner.getBoundingClientRect();
   const w2r  = wg2el.getBoundingClientRect();
   const wg2cx = w2r.left - br.left + w2r.width / 2;
-  const ticketTargetX = wg2cx - 41; // centre ticket over wg2
-
-  // Position "On it!" bubble over wg2
+  const ticketTargetX = wg2cx - 41;
   gsap.set('#bubble-dev', { left: Math.max(10, wg2cx - 38) });
-
-  // Kill any leftover tweens from a previous run
   gsap.killTweensOf(['#mgr-bot','#mgr-head','#mgr-arm-r','#ticket-card','#bubble-mgr','#bubble-dev','#wg1','#wg2','#wg3']);
-
-  // Reset everything to start state
   gsap.set('#mgr-bot',    { x: -120, opacity: 0 });
   gsap.set('#mgr-head',   { rotation: 0, clearProps: 'transform' });
   gsap.set('#mgr-arm-r',  { rotation: 0, clearProps: 'transform' });
   gsap.set('#ticket-card',{ x: 10, y: 0, opacity: 0, scale: 0.5 });
   gsap.set(['#bubble-mgr','#bubble-dev'], { opacity: 0, y: 0 });
-
   const tl = gsap.timeline({
     onComplete() {
       gsap.set('#mgr-bot',    { opacity: 0, x: -120 });
@@ -948,45 +1185,50 @@ function playTaskStartAnimation(ticketKey) {
       gsap.set(['#wg1','#wg2','#wg3'],    { clearProps: 'all' });
     }
   });
-
-  // 1 ▸ Manager walks in from left
-  tl.to('#mgr-bot', { x: 10, opacity: 1, duration: 0.5, ease: 'power2.out' });
-
-  // 2 ▸ Ticket appears in manager's hands
-  tl.to('#ticket-card', { opacity: 1, scale: 1, duration: 0.22, ease: 'back.out(2)' }, '+=0.05');
-
-  // 3 ▸ Manager reads ticket (head tilts left → right → centre)
-  tl.to('#mgr-head', { rotation: 13, svgOrigin: '45 49', duration: 0.22, ease: 'power1.inOut' })
-    .to('#mgr-head', { rotation: -9,  duration: 0.18 })
-    .to('#mgr-head', { rotation: 5,   duration: 0.14 })
-    .to('#mgr-head', { rotation: 0,   duration: 0.14 });
-
-  // 4 ▸ "New task!" bubble
+  tl.to('#mgr-bot',    { x: 10, opacity: 1, duration: 0.5, ease: 'power2.out' });
+  tl.to('#ticket-card',{ opacity: 1, scale: 1, duration: 0.22, ease: 'back.out(2)' }, '+=0.05');
+  tl.to('#mgr-head',   { rotation: 13, svgOrigin: '45 49', duration: 0.22, ease: 'power1.inOut' })
+    .to('#mgr-head',   { rotation: -9,  duration: 0.18 })
+    .to('#mgr-head',   { rotation: 5,   duration: 0.14 })
+    .to('#mgr-head',   { rotation: 0,   duration: 0.14 });
   tl.to('#bubble-mgr', { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
   tl.to('#bubble-mgr', { opacity: 0, duration: 0.2 }, '+=0.55');
-
-  // 5 ▸ Ticket slides toward wg2
-  tl.to('#ticket-card', { x: ticketTargetX, y: -6, duration: 0.55, ease: 'power2.inOut' }, '-=0.1');
-
-  // 6 ▸ Workers bounce (catch it!)
+  tl.to('#ticket-card',{ x: ticketTargetX, y: -6, duration: 0.55, ease: 'power2.inOut' }, '-=0.1');
   tl.to(['#wg1','#wg2','#wg3'], { y: -7, duration: 0.12, stagger: 0.07, ease: 'power2.out' });
   tl.to(['#wg1','#wg2','#wg3'], { y: 0,  duration: 0.22, stagger: 0.07, ease: 'bounce.out' });
-
-  // 7 ▸ Ticket absorbed (scale-down fade)
   tl.to('#ticket-card', { opacity: 0, scale: 0.6, duration: 0.18 }, '-=0.15');
-
-  // 8 ▸ "On it!" bubble over wg2
-  tl.to('#bubble-dev', { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
-  tl.to('#bubble-dev', { opacity: 0, duration: 0.2 }, '+=0.45');
-
-  // 9 ▸ Manager waves goodbye (arm rotates up and down twice)
+  tl.to('#bubble-dev',  { opacity: 1, y: -3, duration: 0.15, ease: 'back.out(1.5)' });
+  tl.to('#bubble-dev',  { opacity: 0, duration: 0.2 }, '+=0.45');
   tl.to('#mgr-arm-r', { rotation: -55, svgOrigin: '64 58', duration: 0.18, ease: 'power1.out' }, '-=0.35');
   tl.to('#mgr-arm-r', { rotation: 0,   duration: 0.14 });
   tl.to('#mgr-arm-r', { rotation: -55, duration: 0.13 });
   tl.to('#mgr-arm-r', { rotation: 0,   duration: 0.14 });
+  tl.to('#mgr-bot',   { x: -120, opacity: 0, duration: 0.35, ease: 'power2.in' }, '-=0.05');
+}
 
-  // 10 ▸ Manager exits left
-  tl.to('#mgr-bot', { x: -120, opacity: 0, duration: 0.35, ease: 'power2.in' }, '-=0.05');
+/* ── Confetti ── */
+function spawnConfetti() {
+  const colors = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f85149'];
+  for (let i = 0; i < 55; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = 5 + Math.random() * 7;
+    el.style.cssText = `left:${10+Math.random()*80}%;background:${colors[i%5]};width:${size}px;height:${size}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.7}s;animation-duration:${1.4+Math.random()*.8}s;`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 2600);
+  }
+}
+
+/* ── Toast notifications ── */
+function showToast(msg, type='info') {
+  const colors = {info:'var(--blue)', success:'var(--green)', error:'var(--red)'};
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.style.borderLeftColor = colors[type] || colors.info;
+  toast.textContent = msg;
+  id('toast-container').appendChild(toast);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>toast.classList.add('show')));
+  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>toast.remove(), 400); }, 3200);
 }
 
 /* ── Views ── */
@@ -1015,6 +1257,9 @@ function sbCls(k)  { return {new:'b-todo',indeterminate:'b-prog',done:'b-done'}[
 function tkBadge(s){ return {pending:'b-todo',running:'b-run',completed:'b-done',failed:'b-fail'}[s]??'b-todo'; }
 function tIcon(t)  { return {Story:'📖',Feature:'✨',Bug:'🐛',Subtask:'🔧',Task:'📋'}[t]??'📌'; }
 function fmtT(iso) { return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+/* ── keyboard shortcut: Escape closes modal ── */
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
 </script>
 </body>
 </html>
