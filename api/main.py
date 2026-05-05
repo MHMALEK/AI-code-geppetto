@@ -2,6 +2,7 @@ import asyncio
 import json
 import threading
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -117,6 +118,103 @@ def jira_issue(key: str):
         return get_issue(key)
     except Exception as e:
         raise HTTPException(502, f"Jira error: {e}")
+
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
+
+@app.get("/stats")
+def get_stats() -> dict[str, Any]:
+    """Aggregate metrics across all task runs."""
+    tasks = list_tasks()
+    total = len(tasks)
+
+    by_status: dict[str, int] = {}
+    total_tokens = 0
+    total_cost = 0.0
+    total_duration = 0.0
+    total_tool_calls = 0
+    tool_freq: dict[str, int] = {}
+
+    for task in tasks:
+        by_status[task.status] = by_status.get(task.status, 0) + 1
+        for ev in task.events:
+            if ev.get("type") == "stats":
+                total_tokens    += ev.get("total_tokens", 0)
+                total_cost      += ev.get("cost_usd", 0.0)
+                total_duration  += ev.get("duration_s", 0.0)
+                total_tool_calls += ev.get("tool_calls", 0)
+            if ev.get("type") == "tool_call":
+                t = ev.get("tool", "unknown")
+                tool_freq[t] = tool_freq.get(t, 0) + 1
+
+    completed = by_status.get("completed", 0)
+    return {
+        "total_tasks":     total,
+        "by_status":       by_status,
+        "success_rate":    round(completed / total * 100, 1) if total else 0,
+        "total_tokens":    total_tokens,
+        "total_cost_usd":  round(total_cost, 4),
+        "total_duration_s": round(total_duration, 1),
+        "avg_duration_s":  round(total_duration / completed, 1) if completed else 0,
+        "total_tool_calls": total_tool_calls,
+        "tool_frequency":  dict(sorted(tool_freq.items(), key=lambda x: -x[1])),
+        "recent_tasks": [
+            {
+                "id":         t.id,
+                "title":      t.title,
+                "status":     t.status,
+                "jira_id":    t.jira_id,
+                "created_at": t.created_at,
+            }
+            for t in tasks[:20]
+        ],
+    }
+
+
+# ── Generic webhook (n8n / Jira / any HTTP caller) ────────────────────────────
+
+@app.post("/webhook", status_code=201)
+def webhook(payload: dict) -> dict:
+    """
+    Accepts task triggers from n8n, Jira webhooks, or any HTTP caller.
+
+    Supported payload shapes
+    ────────────────────────
+    Generic:   {"title": "...", "description": "...", "jira_id": "PROJ-123"}
+    Jira:      {"issue": {"key": "PROJ-123", "fields": {"summary": "...", "description": "..."}}}
+    n8n pass:  any of the above wrapped by an n8n HTTP Request node
+    """
+    if "issue" in payload:
+        # Jira webhook format
+        issue  = payload["issue"]
+        fields = issue.get("fields") or {}
+        desc   = fields.get("description") or ""
+        if isinstance(desc, dict):
+            # Jira description is sometimes Atlassian Document Format (ADF)
+            desc = desc.get("text") or str(desc)
+        title   = fields.get("summary") or "Jira Task"
+        jira_id = issue.get("key") or None
+    else:
+        title   = payload.get("title") or "Webhook Task"
+        desc    = payload.get("description") or ""
+        jira_id = payload.get("jira_id") or None
+
+    data = TaskCreate(title=title, description=desc, jira_id=jira_id)
+    task = create_task(data)
+    full_desc = f"Task: {data.title}\n\n{data.description}"
+    if data.jira_id:
+        full_desc = f"[{data.jira_id}] {full_desc}"
+
+    threading.Thread(
+        target=_run_task, args=(task.id, full_desc, data.jira_id), daemon=True
+    ).start()
+
+    return {
+        "task_id":    task.id,
+        "status":     "queued",
+        "stream_url": f"/tasks/{task.id}/stream",
+        "poll_url":   f"/tasks/{task.id}",
+    }
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
