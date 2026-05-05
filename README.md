@@ -1,16 +1,18 @@
-# 🪄 Geppetto
+# Geppetto
 
-> An AI coding agent that reads a task, searches your codebase with RAG, writes the code, and opens a PR — while you watch it think in real time.
+An AI coding agent that reads a task, searches your codebase with RAG, edits the code, runs tests, captures screenshots when needed, and opens a pull request — with a live trace in the dashboard.
 
 ---
 
 ## What it does
 
-1. You POST a task (title + description + optional Jira ID) via `curl` or the dashboard
-2. The agent **searches the indexed codebase** to understand existing patterns
-3. It **reads relevant files**, creates a branch, makes precise edits, and commits
-4. A **PR is opened** with a clear description
-5. Every step streams live to the **dashboard**
+1. You create a task (dashboard, `POST /tasks`, generic **`POST /webhook`** (n8n / Jira payload shapes), **Slack** `/geppetto`, or **Telegram**).
+2. The agent **searches the indexed codebase** (semantic + symbol lookup).
+3. It **reads and edits files**, branches, commits, and runs **`npm test`** in the target repo when appropriate.
+4. It can **`take_screenshot`** of the running dev app (Playwright) for before/after review.
+5. **`push_and_create_pr`** pushes the branch and opens a GitHub PR (via `gh`; needs a token — see below).
+6. Optional **Jira**: transitions and comments when tasks complete; create/list issues via API.
+7. Every step streams to the **dashboard** (SSE).
 
 ---
 
@@ -18,91 +20,61 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Geppetto                                │
-│                                                                 │
-│  curl / Dashboard                                               │
-│       │                                                         │
-│       ▼                                                         │
-│  ┌─────────────┐     ┌──────────────────────────────────────┐  │
-│  │  FastAPI    │────▶│           Agent Loop                 │  │
-│  │  + SQLite   │     │  (LiteLLM → Gemini / Claude / Ollama)│  │
-│  └─────────────┘     └────────────────┬─────────────────────┘  │
-│       │                               │                         │
-│       │ SSE stream                    │ tools                   │
-│       ▼                               ▼                         │
-│  ┌─────────────┐     ┌──────────────────────────────────────┐  │
-│  │  Dashboard  │     │  search_code  read_file  edit_file   │  │
-│  │  (live feed)│     │  create_branch  commit  push_pr      │  │
-│  └─────────────┘     └────────────┬─────────────────────────┘  │
-│                                   │                             │
-│                     ┌─────────────▼────────────┐               │
-│                     │       RAG Index           │               │
-│                     │  tree-sitter AST parser   │               │
-│                     │  + ChromaDB + OpenAI emb  │               │
-│                     └──────────────────────────┘               │
-│                                                                 │
-│  Langfuse  ◀──── every LLM call traced automatically           │
+│                         Geppetto                                 │
+│                                                                  │
+│  Dashboard · curl · /webhook · Slack · Telegram · /telegram       │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────┐     ┌──────────────────────────────────────┐   │
+│  │  FastAPI    │────▶│           Agent loop                  │   │
+│  │  + SQLite   │     │  (LiteLLM → Gemini / Vertex / Claude)  │   │
+│  └─────────────┘     └────────────────┬─────────────────────┘   │
+│       │ SSE                            │ tools                     │
+│       ▼                                ▼                           │
+│  ┌─────────────┐     ┌──────────────────────────────────────┐   │
+│  │  Dashboard  │     │  search · read · edit · git · PR      │   │
+│  │  + /screenshots      screenshot · npm test                 │   │
+│  └─────────────┘     └────────────┬────────────────────────────┘   │
+│                                   │                                │
+│                     ┌─────────────▼────────────┐                  │
+│                     │  RAG index               │                  │
+│                     │  tree-sitter + ChromaDB  │                  │
+│                     └──────────────────────────┘                  │
+│                                                                  │
+│  Langfuse (optional) · Jira REST · Telegram Bot API              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Tech Stack
+## Tech stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| **LLM** | [LiteLLM](https://github.com/BerriAI/litellm) | unified interface — swap Gemini ↔ Claude ↔ Ollama via `.env` |
-| **Default model** | Gemini 2.5 Pro (Vertex AI) | top-tier code quality, GCP billing |
-| **Code parsing** | [tree-sitter](https://tree-sitter.github.io/) | AST-based chunking at function/class boundaries |
-| **Embeddings** | OpenAI `text-embedding-3-small` | fast, cheap, high quality |
-| **Vector DB** | [ChromaDB](https://www.trychroma.com/) | embedded, zero infra, persistent |
-| **Observability** | [Langfuse](https://langfuse.com/) | full LLM traces, token costs, latency |
-| **API** | FastAPI + SSE | real-time streaming to dashboard |
-| **Task store** | SQLite | simple, no infra |
-| **Dashboard** | Vanilla JS + Tailwind | zero build step, ships as static HTML |
-| **Git ops** | subprocess + gh CLI | branch, commit, push, PR |
-
----
-
-## RAG: How Code Indexing Works
-
-Most RAG systems chunk code by character count — this produces useless fragments. Geppetto does it properly:
-
-### 1. AST-based chunking (tree-sitter)
-Each `.ts` / `.tsx` file is parsed into an Abstract Syntax Tree. Chunks are extracted at **semantic boundaries**:
-- React components (`const MyComponent = () => ...`)
-- Custom hooks (`useSupplierData`, `useAuth`)
-- Functions, classes, methods
-- TypeScript interfaces and type aliases
-
-### 2. Metadata-enriched embeddings
-Each chunk is embedded with its context prepended:
-```
-// File: src/components/SupplierTable.tsx | Type: component | Name: SupplierTable
-// Imports: import { useQuery } from '@tanstack/react-query'; ...
-
-const SupplierTable = ({ filters }: Props) => {
-  ...
-}
-```
-This makes semantic search dramatically more accurate — the model knows *what kind* of thing it's reading.
-
-### 3. Two-tier retrieval
-When the agent calls `search_code`:
-- **Semantic search** — find conceptually related code via vector similarity
-- **Exact symbol lookup** — if the task mentions `SupplierTable`, fetch it directly by name
+| Layer | Technology | Notes |
+|-------|------------|--------|
+| **LLM** | [LiteLLM](https://github.com/BerriAI/litellm) | Switch models in `.env` (`LLM_MODEL=…`) |
+| **Default model** | `gemini/gemini-2.5-pro` (Google AI Studio) | Set `GEMINI_API_KEY`; use `vertex_ai/…` for GCP |
+| **Embeddings** | Configurable (`EMBED_MODEL`) | Often OpenAI or Vertex embedding model |
+| **Vector DB** | ChromaDB | Persisted under `CHROMA_PATH` |
+| **Code chunks** | tree-sitter | TS/TSX/JS chunks at function/component boundaries |
+| **API** | FastAPI + SSE | Tasks, Jira helpers, `/ask` RAG Q&A, static dashboard |
+| **Tasks** | SQLite | `tasks` + `telegram_processed` (dedupe) |
+| **Git / PR** | git + [GitHub CLI](https://cli.github.com/) `gh` | `GITHUB_TOKEN` or `GH_TOKEN` for non-interactive PRs |
+| **Screenshots** | Playwright | Headless Chromium; dev app must match `SCREENSHOT_APP_URL` |
+| **Dashboard** | Single `index.html` | Served at `/` |
 
 ---
 
-## Supported LLM Backends
+## RAG: how indexing works
 
-Change `LLM_MODEL` in `.env` — no code changes needed:
+1. **AST-based chunking** — tree-sitter splits `.ts` / `.tsx` (and friends) at components, hooks, functions, types.
+2. **Enriched text** — each chunk is embedded with file path, kind, name, and imports so search is context-aware.
+3. **Two-tier retrieval** — semantic similarity plus exact symbol hints when the task names a component.
+
+Re-index after large code changes:
 
 ```bash
-LLM_MODEL=vertex_ai/gemini-2.5-pro       # GCP Vertex AI (default)
-LLM_MODEL=vertex_ai/gemini-2.0-flash     # cheaper/faster
-LLM_MODEL=anthropic/claude-sonnet-4-6    # Anthropic API
-LLM_MODEL=ollama/qwen2.5-coder:32b       # local Ollama
+python -m indexer.index
+python -m indexer.index --stats
 ```
 
 ---
@@ -112,121 +84,180 @@ LLM_MODEL=ollama/qwen2.5-coder:32b       # local Ollama
 ### 1. Clone and configure
 
 ```bash
-cd ~/tract-projects/tract-geppetto
+cd code-geppetto
 cp .env.template .env
-# Edit .env with your keys
+# Edit .env — at minimum: LLM keys, OPENAI (embeddings), SAMPLE_REPO_PATH, TARGET_REPO_URL for PRs
 ```
 
-### 2. Authenticate GCP (for Vertex AI)
+### 2. LLM backends
+
+Examples (see `.env.template`):
 
 ```bash
-gcloud auth application-default login
-gcloud config set project YOUR_PROJECT_ID
+LLM_MODEL=gemini/gemini-2.5-pro
+GEMINI_API_KEY=...
+
+# Or Vertex:
+# LLM_MODEL=vertex_ai/gemini-2.5-pro
+# VERTEXAI_PROJECT=...  + gcloud auth application-default login
+
+# Or Claude / Ollama — set the matching API env vars.
 ```
 
-### 3. Run
+### 3. GitHub PRs (`push_and_create_pr`)
+
+The agent runs `gh pr create`. For CI, headless servers, or Cursor agents, set **one** of:
+
+```bash
+GITHUB_TOKEN=ghp_...   # recommended; copied to GH_TOKEN inside the tool
+# GH_TOKEN=ghp_...     # alternative
+```
+
+Do **not** embed tokens in `git remote` URLs. Prefer SSH: `git@github.com:org/repo.git`.
+
+### 4. Run locally
 
 ```bash
 ./run.sh
 ```
 
-On first run this will:
-- Create a Python virtualenv
-- Install dependencies
-- Index the sample repo (tree-sitter parse → embed → store in ChromaDB)
-- Start the API at `http://localhost:8000`
+This installs deps, ensures the venv, indexes Chroma if empty, starts the **sample app** with Vite on **port 5173** (`--strictPort` from `run.sh`), and starts **uvicorn** on **port 8000**.
+
+- Dashboard: `http://127.0.0.1:8000`
+- Sample UI (for screenshots): must match `SCREENSHOT_APP_URL` (default `http://127.0.0.1:5173`)
+
+If Vite fails with “port in use”, free **5173** or set `SCREENSHOT_APP_URL` to the URL Vite prints.
+
+---
+
+## Configuration highlights
+
+| Variable | Purpose |
+|----------|---------|
+| `SAMPLE_REPO_PATH` | Repo the agent edits and tests |
+| `TARGET_REPO_URL` | Git remote for clone/push (see `.env.template` / Fly) |
+| `PUBLIC_BASE_URL` | Browser base for dashboard deep links (e.g. Telegram “watch live”) |
+| `SCREENSHOT_APP_URL` | URL Playwright opens for `take_screenshot` |
+| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_POLLING` | Long-poll on localhost; use **one** poller per bot (webhook vs poll — don’t mix active webhook + poll) |
+| `JIRA_*` | REST URL, email, API token, project key; transition IDs in `config.py` if your workflow differs |
+
+Copy **`.env.template`** and fill in values; never commit `.env`.
 
 ---
 
 ## Usage
 
 ### Dashboard
-Open `http://localhost:8000` — click **New Task** or use the curl command below.
 
-### curl (simulates a Jira webhook)
+Open `PUBLIC_BASE_URL` (default `http://127.0.0.1:8000`). Create tasks, attach optional Jira keys, watch the stream.
+
+### curl
 
 ```bash
-curl -X POST http://localhost:8000/tasks \
+curl -X POST http://127.0.0.1:8000/tasks \
   -H "Content-Type: application/json" \
   -d '{
-    "jira_id": "DEV-1234",
-    "title": "Add loading spinner to SupplierTable",
-    "description": "When the table is fetching data, show a loading spinner instead of an empty table. Use the existing Spinner component if available."
+    "jira_id": "SCRUM-4",
+    "title": "Add button at bottom of page",
+    "description": "Match existing button styles; keep layout responsive."
   }'
 ```
 
-### Watch progress
-```bash
-# Stream events in terminal
-curl http://localhost:8000/tasks/{task_id}/stream
+### Stream
 
-# Or just open the dashboard
-open http://localhost:8000
+```bash
+curl http://127.0.0.1:8000/tasks/{task_id}/stream
 ```
 
-### Re-index after code changes
-```bash
-python -m indexer.index
+### Generic webhook (`POST /webhook`)
 
-# Check index stats
-python -m indexer.index --stats
+For **n8n**, **Jira webhooks**, or any HTTP caller. Supports a flat body `{"title","description","jira_id"}` or a Jira-style `{"issue":{"key","fields":{…}}}` payload — see docstring in `api/main.py`.
+
+### Slack (optional)
+
+`POST /slack` — slash command integration; configure your Slack app to post form data to this URL (see `api/main.py`).
+
+### Jira helpers
+
+- `GET /jira/issues`, `GET /jira/issues/{key}`, `POST /jira/issues` (create issue only; start the agent via `/tasks` or dashboard with `jira_id`).
+
+### Telegram (optional)
+
+- **Webhook:** `POST /telegram` with the standard Bot API update JSON (HTTPS in production).
+- **Local polling:** `TELEGRAM_POLLING=true` — deletes webhook on startup; only **one** process may call `getUpdates` for that bot (second local process skips polling if the flock lock is held; another machine or bot client still causes Telegram conflicts).
+
+Voice notes can be transcribed with Whisper if `OPENAI_API_KEY` is set (see `.env.template`).
+
+### Reset local SQLite + move Jira issues to “To Do”
+
+```bash
+python scripts/reset_db_and_jira.py
 ```
+
+Clears tasks and Telegram dedupe rows; if Jira env is set, walks project issues toward the **new** status category (typical backlog / To Do). Adjust workflow in Jira if some states have no path backward.
 
 ---
 
-## Observability with Langfuse
+## Observability (Langfuse)
 
-Sign up free at [cloud.langfuse.com](https://cloud.langfuse.com), add keys to `.env`:
-
-```bash
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-```
-
-Every task automatically becomes a Langfuse trace with:
-- Full tool call history
-- Token usage per step
-- Latency breakdown
-- Cost per task
+Optional — add `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` in `.env`. Traces include tool calls, latency, and usage when the agent is wired to emit spans.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
-tract-geppetto/
-├── indexer/
-│   ├── parser.py       # tree-sitter AST parser (TS/TSX/JS)
-│   ├── store.py        # ChromaDB vector store + two-tier retrieval
-│   └── index.py        # CLI: python -m indexer.index
+code-geppetto/
 ├── agent/
-│   ├── tools.py        # 11 tools: search, read, edit, git, PR
-│   └── runner.py       # LiteLLM agent loop with Langfuse tracing
+│   ├── tools.py        # search, edit, git, PR, screenshot, tests
+│   └── runner.py       # agent loop + LiteLLM
 ├── api/
-│   ├── models.py       # SQLite task store + Pydantic models
-│   └── main.py         # FastAPI + SSE streaming
+│   ├── main.py         # FastAPI, SSE, Telegram, Jira, /ask
+│   ├── models.py       # SQLite tasks + telegram dedupe
+│   └── jira.py         # Jira REST client
+├── indexer/            # tree-sitter + Chroma
 ├── dashboard/
-│   └── index.html      # real-time task dashboard
-├── sample-repo/        # target codebase (tract frontend)
+│   └── index.html
+├── scripts/
+│   └── reset_db_and_jira.py
+├── data/               # chroma, tasks.db, screenshots (gitignored pieces)
 ├── config.py
-├── requirements.txt
-└── run.sh
+├── run.sh
+├── entrypoint.sh       # container-style uvicorn
+└── requirements.txt
 ```
+
+The demo target app path defaults to **`sample-geppetto-repo`** (configure with `SAMPLE_REPO_PATH`). That folder may be a separate git repo in your workspace.
 
 ---
 
-## Agent Tools
+## Agent tools
 
 | Tool | Description |
-|---|---|
-| `search_code` | Semantic + symbol search across the RAG index |
+|------|-------------|
+| `search_code` | Semantic + symbol-aware search |
 | `read_file` | Read file with line numbers |
-| `list_files` | Glob files by pattern |
-| `grep_code` | Literal/regex search |
-| `edit_file` | Exact-string replacement (safe, precise) |
-| `create_file` | Create new file |
-| `git_status` | Show modified files |
-| `git_diff` | Show current diff |
-| `create_branch` | Create and checkout branch |
-| `commit_changes` | Stage all + commit |
-| `push_and_create_pr` | Push + open GitHub PR |
+| `list_files` | Glob paths |
+| `grep_code` | Regex search |
+| `edit_file` | Exact-string replacement |
+| `create_file` | Add a new file |
+| `git_status` / `git_diff` | Working tree |
+| `create_branch` | Checkout new branch |
+| `commit_changes` | Stage + commit |
+| `push_and_create_pr` | Push + `gh pr create` (needs token) |
+| `take_screenshot` | Playwright capture of `SCREENSHOT_APP_URL` |
+| `run_tests` | `npm test` in the sample repo |
+
+---
+
+## Deployment notes
+
+- Set **`PUBLIC_BASE_URL`** to the public URL of this API (Telegram links, webhooks).
+- For Telegram in production, prefer **webhook** over polling; set `TELEGRAM_POLLING=false`.
+- Ensure **`GITHUB_TOKEN`** (or `GH_TOKEN`) is available in the environment if the agent should open PRs.
+
+---
+
+## License / upstream
+
+Treat this repo as your integration shell; adjust `SAMPLE_REPO_PATH`, Jira transition IDs, and team conventions to match your project.
