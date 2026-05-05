@@ -12,51 +12,71 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #F7F7F9;
-      --surface:  #FFFFFF;
-      --surface2: #F0F0F4;
-      --surface3: #E8E8EE;
-      --border:   #E2E2EA;
-      --border2:  #D0D0DC;
-      --text:     #111118;
-      --muted:    #6C6C82;
-      --muted2:   #9898B0;
-      --accent:   #4F46E5;
-      --accent-bg:#EEF2FF;
-      --accent-dim:#6366F1;
-      --green:    #10B981;
-      --green-bg: #ECFDF5;
-      --red:      #EF4444;
-      --red-bg:   #FEF2F2;
-      --amber:    #F59E0B;
-      --amber-bg: #FFFBEB;
-      --shadow:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-      --shadow-md:0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+      --bg:       #070A12;
+      --surface:  #101827;
+      --surface2: #162235;
+      --surface3: #20304A;
+      --border:   #2A3B58;
+      --border2:  #3D5578;
+      --text:     #F7FAFF;
+      --muted:    #B8C7DD;
+      --muted2:   #7F93B2;
+      --accent:   #22D3EE;
+      --accent-bg:rgba(34,211,238,.14);
+      --accent-dim:#0891B2;
+      --green:    #4ADE80;
+      --green-bg: rgba(74,222,128,.15);
+      --red:      #FB7185;
+      --red-bg:   rgba(251,113,133,.16);
+      --amber:    #FBBF24;
+      --amber-bg: rgba(251,191,36,.16);
+      --violet:   #A78BFA;
+      --violet-bg:rgba(167,139,250,.16);
+      --blue:     #60A5FA;
+      --blue-bg:  rgba(96,165,250,.16);
+      --event-start: #22D3EE;
+      --event-thinking: #A78BFA;
+      --event-tool-call: #FBBF24;
+      --event-tool-result: #60A5FA;
+      --event-complete: #4ADE80;
+      --event-error: #FB7185;
+      --shadow:   0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.35);
+      --shadow-md:0 18px 60px rgba(0,0,0,.42), 0 2px 10px rgba(0,0,0,.35);
       --radius:   8px;
       --radius-lg:12px;
     }
 
-    [data-theme="dark"] {
-      --bg:       #0B0B10;
-      --surface:  #131319;
-      --surface2: #1C1C24;
-      --surface3: #24242E;
-      --border:   #2A2A38;
-      --border2:  #363648;
-      --text:     #EEEEF5;
-      --muted:    #8888A4;
-      --muted2:   #5A5A78;
-      --accent:   #818CF8;
-      --accent-bg:#1E1B4B;
-      --accent-dim:#6366F1;
-      --green:    #34D399;
-      --green-bg: #022C22;
-      --red:      #F87171;
-      --red-bg:   #2D0B0B;
-      --amber:    #FCD34D;
-      --amber-bg: #2D1B00;
-      --shadow:   0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
-      --shadow-md:0 4px 24px rgba(0,0,0,.4), 0 1px 4px rgba(0,0,0,.3);
+    [data-theme="light"] {
+      --bg:       #F6F7F9;
+      --surface:  #FFFFFF;
+      --surface2: #EEF1F5;
+      --surface3: #E2E7EE;
+      --border:   #D9E0EA;
+      --border2:  #B8C4D4;
+      --text:     #111827;
+      --muted:    #4B5563;
+      --muted2:   #7A8697;
+      --accent:   #2563EB;
+      --accent-bg:rgba(37,99,235,.10);
+      --accent-dim:#1D4ED8;
+      --green:    #15803D;
+      --green-bg: rgba(21,128,61,.10);
+      --red:      #DC2626;
+      --red-bg:   rgba(220,38,38,.10);
+      --amber:    #B45309;
+      --amber-bg: rgba(180,83,9,.11);
+      --violet:   #7C3AED;
+      --violet-bg:rgba(124,58,237,.10);
+      --blue:     #2563EB;
+      --blue-bg:  rgba(37,99,235,.10);
+      --event-start: #0891B2;
+      --event-thinking: #7C3AED;
+      --event-tool-call: #B45309;
+      --event-tool-result: #2563EB;
+      --event-complete: #15803D;
+      --event-error: #DC2626;
+      --shadow:   0 1px 3px rgba(15,23,42,.10), 0 1px 2px rgba(15,23,42,.08);
+      --shadow-md:0 18px 48px rgba(15,23,42,.16), 0 2px 10px rgba(15,23,42,.08);
     }
 
     html, body {
@@ -67,6 +87,7 @@
       -webkit-font-smoothing: antialiased;
     }
     code, pre, .mono { font-family: 'DM Mono', 'Fira Code', monospace; }
+    .view-enter { animation: viewFade .24s ease both; }
 
     /* ── App shell ── */
     #app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
@@ -75,9 +96,9 @@
     #topbar {
       grid-column: 1 / -1;
       display: flex; align-items: center; gap: 0;
-      background: var(--surface); border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 92%, transparent); border-bottom: 1px solid var(--border);
       padding: 0 16px;
-      position: relative; z-index: 10;
+      position: relative; z-index: 10; box-shadow: 0 1px 2px rgba(15,23,42,.04);
     }
     .tb-logo {
       display: flex; align-items: center; gap: 10px;
@@ -87,8 +108,8 @@
     }
     .tb-logo-mark {
       width: 28px; height: 28px; border-radius: 7px;
-      background: var(--accent); display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0;
+      background: var(--text); display: flex; align-items: center; justify-content: center;
+      color: var(--surface); font-size: 14px; font-weight: 700; flex-shrink: 0;
     }
     .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 12px; flex-shrink: 0; }
     .tb-nav { display: flex; align-items: center; gap: 2px; flex: 1; overflow-x: auto; }
@@ -111,9 +132,9 @@
       padding: 6px 14px; border-radius: 6px; border: none;
       background: var(--accent); color: #fff;
       font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
-      transition: all .15s; flex-shrink: 0;
+      transition: all .15s; flex-shrink: 0; box-shadow: var(--shadow);
     }
-    .primary-btn:hover { opacity: .9; }
+    .primary-btn:hover { transform: translateY(-1px); filter: brightness(.96); }
 
     /* ── Split panels ── */
     .split-view {
@@ -155,10 +176,10 @@
     .ticket-row {
       display: flex; align-items: flex-start; gap: 10px;
       padding: 11px 10px; border-radius: var(--radius); cursor: pointer;
-      border: 1px solid transparent; transition: all .12s; margin-bottom: 3px;
+      border: 1px solid transparent; transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease; margin-bottom: 3px;
     }
-    .ticket-row:hover { background: var(--surface2); }
-    .ticket-row.active { background: var(--accent-bg); border-color: rgba(99,102,241,.25); }
+    .ticket-row:hover { background: var(--surface2); transform: translateX(3px); }
+    .ticket-row.active { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 48%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
     .t-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
     .t-body { flex: 1; min-width: 0; }
     .t-key { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent); font-weight: 600; margin-bottom: 3px; }
@@ -169,10 +190,14 @@
     .task-row-item {
       display: flex; align-items: center; gap: 9px;
       padding: 10px 10px; border-radius: var(--radius); cursor: pointer;
-      transition: all .12s; margin-bottom: 3px; border: 1px solid transparent;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease; margin-bottom: 3px; border: 1px solid transparent;
     }
-    .task-row-item:hover { background: var(--surface2); }
-    .task-row-item.active { background: var(--accent-bg); border-color: rgba(99,102,241,.25); }
+    .task-row-item:hover { background: var(--surface2); transform: translateX(3px); }
+    .task-row-item.active { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 48%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+    .task-row-item.is-running {
+      animation: runningGlow 1.8s ease-in-out infinite;
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    }
     .task-row-item .task-title { font-size: 13px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
     .task-row-item.active .task-title { color: var(--accent); }
 
@@ -186,7 +211,7 @@
     .pill-inprogress { background: var(--accent-bg); color: var(--accent); }
     .pill-inreview { background: var(--amber-bg); color: var(--amber); }
     .pill-done     { background: var(--green-bg); color: var(--green); }
-    .run-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pulse-dot 1.4s infinite; }
+    .run-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: pulseGlow 1.2s infinite; }
 
     /* ── Main panel ── */
     #main { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
@@ -200,8 +225,8 @@
       flex: 1; display: flex; align-items: center; justify-content: center;
       overflow: hidden; position: relative; padding: 56px;
       background:
-        radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 26%),
-        radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--amber) 15%, transparent), transparent 28%),
+        radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 28%),
+        radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--amber) 8%, transparent), transparent 30%),
         linear-gradient(135deg, var(--bg) 0%, var(--surface2) 100%);
     }
     #view-home::before {
@@ -231,10 +256,32 @@
     .home-copy { max-width: 580px; font-size: 17px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
     .home-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .home-card {
-      border: 1px solid var(--border); border-radius: 28px; padding: 26px;
-      background: color-mix(in srgb, var(--surface) 80%, transparent);
-      box-shadow: 0 24px 80px rgba(0,0,0,.12); backdrop-filter: blur(18px);
+      border-radius: 28px; padding: 26px; position: relative;
     }
+    .bot-intro {
+      position: relative; width: min(340px, 76vw); margin: 0 auto -18px;
+      padding: 14px 16px; border: 1px solid var(--border);
+      border-radius: 18px 18px 18px 6px;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(10px);
+      z-index: 2; animation: botBubbleIn .48s cubic-bezier(.2,.9,.2,1) .18s both;
+    }
+    .bot-intro::after {
+      content: ""; position: absolute; left: 22px; bottom: -9px;
+      width: 16px; height: 16px; border-left: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      transform: rotate(-45deg);
+    }
+    .bot-line {
+      display: block; width: 0; max-width: max-content; overflow: hidden;
+      white-space: nowrap; color: var(--text); font-size: 13px; line-height: 1.55;
+      animation: botType 1.35s steps(34, end) forwards;
+    }
+    .bot-line + .bot-line { margin-top: 2px; color: var(--muted); }
+    .bot-line:nth-child(2) { animation-delay: 1.45s; }
+    .bot-line:nth-child(3) { animation-delay: 2.95s; }
     .home-lottie {
       display: block; width: min(360px, 70vw); height: min(360px, 70vw);
       margin: 0 auto 12px; filter: drop-shadow(0 20px 35px rgba(79,70,229,.18));
@@ -260,11 +307,10 @@
     .trace-header {
       padding: 12px 20px; border-bottom: 1px solid var(--border);
       display: flex; align-items: center; gap: 12px; flex-shrink: 0;
-      background: var(--surface);
+      background: var(--surface); position: relative;
     }
     .tr-title { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tr-sub { font-size: 12px; color: var(--muted); }
-
     /* Workflow stepper */
     .workflow-steps {
       display: flex; align-items: center; padding: 10px 20px;
@@ -276,19 +322,39 @@
       display: flex; align-items: center; gap: 0; flex-shrink: 0;
     }
     .wf-step-inner {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border-radius: 6px;
+      position: relative; display: flex; align-items: center; gap: 6px;
+      padding: 6px 11px; border-radius: 999px; overflow: hidden;
       font-size: 11px; font-weight: 600; color: var(--muted2);
-      border: 1px solid transparent; transition: all .25s;
+      border: 1px solid transparent; transition: color .25s ease, background .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease;
     }
-    .wf-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: all .25s; flex-shrink: 0; }
-    .wf-step.done .wf-step-inner  { color: var(--green); }
-    .wf-step.done .wf-step-dot    { background: var(--green); }
-    .wf-step.active .wf-step-inner{ color: var(--accent); background: var(--accent-bg); border-color: rgba(99,102,241,.2); }
-    .wf-step.active .wf-step-dot  { background: var(--accent); animation: pulse-dot 1s infinite; }
-    .wf-connector { width: 24px; height: 1px; background: var(--border2); flex-shrink: 0; margin: 0 -1px; }
+    .wf-step-inner::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.55) 45%, transparent 70%);
+      transform: translateX(-120%); opacity: 0; pointer-events: none;
+    }
+    .wf-step-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border2); transition: all .25s ease; flex-shrink: 0; }
+    .wf-step.done .wf-step-inner  { color: var(--green); background: var(--green-bg); border-color: color-mix(in srgb, var(--green) 22%, var(--border)); }
+    .wf-step.done .wf-step-dot    { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 14%, transparent); }
+    .wf-step.active .wf-step-inner{
+      color: var(--accent); background: #fff;
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      transform: translateY(-1px); box-shadow: 0 8px 18px rgba(37,99,235,.12), 0 0 0 3px var(--accent-bg);
+      animation: stepPop .28s ease;
+    }
+    .wf-step.active .wf-step-inner::after { opacity: 1; animation: stepShine 1.8s ease-in-out infinite; }
+    .wf-step.active .wf-step-dot  { background: var(--accent); animation: pulseGlow 1s infinite; box-shadow: 0 0 0 4px var(--accent-bg); }
+    .wf-connector {
+      width: 24px; height: 2px; background: var(--border2); flex-shrink: 0; margin: 0 -1px;
+      background-image: linear-gradient(90deg, var(--green), var(--accent));
+      background-size: 0% 100%; background-repeat: no-repeat;
+      transition: background-size .38s ease, box-shadow .38s ease;
+    }
     .wf-step.done + .wf-step .wf-connector,
     .wf-connector.done { background: var(--green); }
+    .wf-connector.filled {
+      background-size: 100% 100%;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 8%, transparent);
+    }
 
     /* Stats strip — always shown for running/done tasks */
     .stat-strip {
@@ -316,29 +382,78 @@
     #trace-log::-webkit-scrollbar { width: 3px; }
     #trace-log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    .ev-item { margin-bottom: 6px; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; animation: fadeUp .2s ease; }
-    .ev-hdr { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; }
-    .ev-tag { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+    #events { position: relative; padding-left: 24px; }
+    #events::before {
+      content: ""; position: absolute; left: 7px; top: 4px; bottom: 4px;
+      width: 1px; background: linear-gradient(var(--border), transparent);
+    }
+    .ev-item {
+      position: relative; margin-bottom: 10px; animation: eventSlideIn .26s cubic-bezier(.2,.8,.2,1) both;
+    }
+    .ev-item::before {
+      content: ""; position: absolute; left: -21px; top: 17px; width: 9px; height: 9px;
+      border-radius: 50%; background: var(--surface); border: 2px solid var(--border2);
+    }
+    .ev-hdr { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+    .ev-tag { font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; flex-shrink: 0; }
     .ev-sub { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'DM Mono', monospace; }
-    .ev-chevron { color: var(--muted2); font-size: 10px; flex-shrink: 0; transition: transform .15s; }
+    .ev-chevron { color: var(--muted2); font-size: 11px; flex-shrink: 0; transition: transform .15s; }
     .ev-chevron.open { transform: rotate(180deg); }
-    .ev-body { padding: 10px 12px; border-top: 1px solid var(--border); display: none; }
+    .ev-body { padding: 8px 0 0 0; display: none; }
     .ev-body.open { display: block; }
+    .ev-card { background: transparent; overflow: visible; }
+    .ev-thinking .ev-card {
+      display: inline-flex; align-items: center; gap: 10px; max-width: min(680px, 100%);
+      padding: 9px 12px; background: var(--surface2); color: var(--muted);
+      border-radius: 16px;
+    }
+    .ev-thinking .think-dots { flex-shrink: 0; }
+    .ev-tool_call { margin-top: 18px; }
+    .ev-tool_call::before { border-color: var(--event-tool-call); }
+    .ev-tool_call .ev-card {
+      width: min(860px, 100%); padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.04);
+    }
+    .ev-tool-title { display: flex; align-items: center; gap: 10px; padding: 0; cursor: pointer; }
+    .ev-tool-name { font-size: 14px; font-weight: 800; color: var(--text); font-family: 'DM Mono', monospace; }
+    .ev-tool-kind { background: var(--amber-bg); color: var(--event-tool-call); }
+    .ev-tool-title .ev-sub { margin-left: auto; text-align: right; font-family: 'DM Sans', sans-serif; }
+    .ev-args {
+      margin: 10px 0 0; padding: 10px 12px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px; color: var(--muted);
+      font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.55;
+      white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto;
+    }
+    .ev-tool_result { margin-left: 34px; margin-top: -2px; margin-bottom: 18px; }
+    .ev-tool_result::before { left: -55px; top: 15px; width: 7px; height: 7px; border-color: var(--event-tool-result); }
+    .ev-tool_result .ev-card {
+      display: inline-block; max-width: min(820px, 100%);
+      padding: 4px 12px; border-radius: 14px;
+      background: color-mix(in srgb, var(--blue-bg) 55%, var(--surface));
+    }
+    .ev-tool_result .ev-tag { background: var(--blue-bg); color: var(--event-tool-result); }
+    .ev-tool_result .ev-sub {
+      display: inline-block; flex: 0 1 auto; width: 0;
+      max-width: min(620px, 58vw);
+      animation: resultType 1.2s steps(52, end) forwards;
+    }
+    .ev-start .ev-card {
+      display: inline-flex; padding: 8px 12px; border-radius: 999px;
+      border-color: color-mix(in srgb, var(--event-start) 25%, var(--border));
+      color: var(--event-start); background: color-mix(in srgb, var(--event-start) 8%, var(--surface));
+      font-size: 12px; font-weight: 700;
+    }
+    .ev-complete::before { border-color: var(--event-complete); }
+    .ev-error::before { border-color: var(--event-error); }
+    .ev-banner {
+      width: 100%; padding: 12px 14px; border-radius: 12px; font-weight: 800;
+      border: 1px solid; display: flex; align-items: center; gap: 10px;
+    }
+    .ev-complete .ev-banner { background: var(--green-bg); color: var(--event-complete); border-color: color-mix(in srgb, var(--event-complete) 30%, var(--border)); }
+    .ev-error .ev-banner { background: var(--red-bg); color: var(--event-error); border-color: color-mix(in srgb, var(--event-error) 30%, var(--border)); }
 
-    .ev-start       { border-color: var(--accent-bg); }
-    .ev-start       .ev-tag { background: var(--accent-bg); color: var(--accent); }
-    .ev-thinking    { background: var(--surface); }
-    .ev-thinking    .ev-tag { background: var(--surface2); color: var(--muted); }
-    .ev-tool_call   { background: var(--surface); border-left: 3px solid var(--amber); }
-    .ev-tool_call   .ev-tag { background: var(--amber-bg); color: var(--amber); }
-    .ev-tool_result { background: var(--surface2); }
-    .ev-tool_result .ev-tag { background: var(--surface3); color: var(--muted2); }
-    .ev-complete    { border-left: 3px solid var(--green); }
-    .ev-complete    .ev-tag { background: var(--green-bg); color: var(--green); }
-    .ev-error       { border-left: 3px solid var(--red); }
-    .ev-error       .ev-tag { background: var(--red-bg); color: var(--red); }
-
-    pre.epre { white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.6; color: var(--muted); }
+    pre.epre { white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.6; color: var(--muted); margin: 0; max-height: 320px; overflow: auto; }
     .diff { font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.6; border-radius: 6px; overflow: hidden; }
     .dl { padding: 1px 8px; white-space: pre-wrap; word-break: break-word; }
     .dl.add { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green); }
@@ -346,11 +461,17 @@
     .dl.ctx { color: var(--muted2); }
 
     /* Thinking indicator */
-    .thinking-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; }
     .think-dots { display: flex; gap: 4px; }
     .think-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: bounce 1.3s infinite ease-in-out; }
     .think-dot:nth-child(2) { animation-delay: .15s; }
     .think-dot:nth-child(3) { animation-delay: .3s; }
+    .thinking-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .thinking-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+    .thinking-sub { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--muted); }
+    .task-typewriter {
+      display: inline-block; width: 0; max-width: max-content; overflow: hidden;
+      white-space: nowrap; animation: taskType 2.2s steps(28, end) infinite;
+    }
 
     /* Changes panel */
     #trace-changes { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 0; display: none; }
@@ -372,6 +493,55 @@
     .review-shot-hdr.after  { background: var(--green-bg); color: var(--green); border-bottom: 1px solid color-mix(in srgb, var(--green) 20%, transparent); }
     .review-shot img { width: 100%; display: block; }
     .review-empty { padding: 32px; text-align: center; color: var(--muted2); font-size: 12px; background: var(--surface); }
+    .review-regression {
+      display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(220px, .85fr);
+      gap: 12px; margin-bottom: 22px;
+    }
+    .vr-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow);
+    }
+    .vr-hdr {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface2);
+    }
+    .vr-title { font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+    .vr-metric { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent); white-space: nowrap; }
+    .vr-compare {
+      --split: 50%;
+      position: relative; background: var(--surface3); min-height: 260px; overflow: hidden;
+    }
+    .vr-compare img {
+      width: 100%; display: block; user-select: none; -webkit-user-drag: none;
+    }
+    .vr-after {
+      position: absolute; inset: 0; overflow: hidden;
+      clip-path: inset(0 calc(100% - var(--split)) 0 0);
+    }
+    .vr-compare::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: var(--split);
+      width: 2px; background: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+    }
+    .vr-after img { width: 100%; height: 100%; object-fit: cover; }
+    .vr-scrubber {
+      position: absolute; left: 0; right: 0; bottom: 10px; width: calc(100% - 24px);
+      margin: 0 12px; accent-color: var(--accent);
+    }
+    .vr-labels {
+      position: absolute; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; pointer-events: none;
+    }
+    .vr-labels span {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 84%, transparent);
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .vr-diff-wrap { padding: 12px; }
+    .vr-diff {
+      width: 100%; display: block; min-height: 180px; border-radius: var(--radius);
+      background: var(--surface3); border: 1px solid var(--border);
+    }
+    .vr-note { margin-top: 8px; font-size: 11px; color: var(--muted2); line-height: 1.45; }
 
     /* ── Ask Code View ── */
     #view-ask { flex: 1; display: none; flex-direction: column; overflow: hidden; min-height: 0; }
@@ -470,6 +640,35 @@
     @keyframes scaleIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
     @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes viewFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    @keyframes eventSlideIn { from { opacity:0; transform:translateX(-18px); } to { opacity:1; transform:none; } }
+    @keyframes runningGlow {
+      0%,100% { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 rgba(37,99,235,0); }
+      50% { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+    }
+    @keyframes pulseGlow {
+      0%,100% { opacity:1; box-shadow:0 0 0 transparent; transform:scale(1); }
+      50% { opacity:.72; box-shadow:0 0 12px currentColor; transform:scale(1.25); }
+    }
+    @keyframes stepPop { from { transform:translateY(2px) scale(.96); } to { transform:translateY(-1px) scale(1); } }
+    @keyframes stepShine { 0% { transform:translateX(-120%); } 55%,100% { transform:translateX(120%); } }
+    @keyframes botBubbleIn { from { opacity:0; transform:translateY(12px) scale(.96); } to { opacity:1; transform:none; } }
+    @keyframes botType { from { width:0; } to { width:100%; } }
+    @keyframes taskType {
+      0% { width: 0; }
+      55%,82% { width: 100%; }
+      100% { width: 0; }
+    }
+    @keyframes resultType { from { width: 0; } to { width: 100%; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
 
     /* ── Screenshot ── */
     .screenshot-img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border); margin-top: 6px; }
@@ -490,6 +689,7 @@
       .trace-header { padding: 12px 16px; }
       .stat-strip { overflow-x: auto; }
       .review-shots { grid-template-columns: 1fr; }
+      .review-regression { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       #view-stats { padding: 16px; }
     }
@@ -557,6 +757,11 @@
           </div>
         </div>
         <div class="home-card">
+          <div class="bot-intro" aria-label="codeGeppetto introduction">
+            <span class="bot-line">Hi, I’m codeGeppetto.</span>
+            <span class="bot-line">Give me a ticket and I’ll get to work.</span>
+            <span class="bot-line">Reading, editing, testing, PRs.</span>
+          </div>
           <dotlottie-wc
             class="home-lottie"
             src="https://lottie.host/b565193e-fec4-4f3c-a798-99404d79c287/JvUPQ05bEW.lottie"
@@ -664,10 +869,6 @@
       </div>
 
       <div id="trace-log">
-        <div id="thinking-row" class="thinking-row" style="display:none;">
-          <div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>
-          <span style="font-size:12px;color:var(--muted);">Agent is thinking…</span>
-        </div>
         <div id="events"></div>
       </div>
       <div id="trace-changes"><div style="padding:32px;text-align:center;color:var(--muted2);font-size:12px;">No file changes yet</div></div>
@@ -741,7 +942,7 @@
 <script>
 /* ─── State ─── */
 let selTicket = null, selTask = null, es = null;
-let prog = 0, ptimer = null, changesData = [], screenshots = {};
+let prog = 0, ptimer = null, changesData = [], screenshots = {}, pendingScreenshotLabels = [];
 let chatHistory = [];
 let askAbort = null;
 let currentView = 'home';
@@ -783,19 +984,30 @@ function setView(view) {
 
   if (view === 'home') {
     views.home.style.display = 'flex';
+    animateView(views.home);
   } else if (view === 'tasks') {
     views.tasks.style.display = 'grid';
+    animateView(views.tasks);
     showTaskPanel(selTask ? 'trace' : 'empty');
   } else if (view === 'jira') {
     views.jira.style.display = 'grid';
+    animateView(views.jira);
     showJiraPanel(selTicket ? 'detail' : 'empty');
   } else if (view === 'ask') {
     views.ask.style.display = 'flex';
+    animateView(views.ask);
   } else if (view === 'stats') {
     views.stats.style.display = 'block';
+    animateView(views.stats);
   }
 }
 
+function animateView(el) {
+  if (!el) return;
+  el.classList.remove('view-enter');
+  void el.offsetWidth;
+  el.classList.add('view-enter');
+}
 function showPanel(name) {
   if (name === 'trace') showTaskPanel('trace');
   if (name === 'detail') showJiraPanel('detail');
@@ -803,10 +1015,12 @@ function showPanel(name) {
 function showTaskPanel(name) {
   $('task-empty').style.display = name === 'empty' ? 'flex' : 'none';
   $('view-trace').style.display = name === 'trace' ? 'flex' : 'none';
+  animateView(name === 'empty' ? $('task-empty') : $('view-trace'));
 }
 function showJiraPanel(name) {
   $('jira-empty').style.display = name === 'empty' ? 'flex' : 'none';
   $('view-detail').style.display = name === 'detail' ? 'block' : 'none';
+  animateView(name === 'empty' ? $('jira-empty') : $('view-detail'));
 }
 
 /* ─── Progress bar ─── */
@@ -904,7 +1118,7 @@ async function loadTasks() {
 function renderTasks(tasks) {
   if (!tasks.length) { $('task-list').innerHTML = '<div style="padding:8px 6px;color:var(--muted2);font-size:12px;">No tasks yet</div>'; return; }
   $('task-list').innerHTML = tasks.slice(0, 30).map(t => `
-    <div class="task-row-item ${selTask?.id===t.id?'active':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
+    <div class="task-row-item ${selTask?.id===t.id?'active':''} ${t.status==='running'?'is-running':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
       ${pillHtml(t.status)}
       <span class="task-title">${esc(t.title)}</span>
     </div>`).join('');
@@ -914,7 +1128,7 @@ async function selectTask(taskId) {
   selTask = task; selTicket = null;
   document.querySelectorAll('.task-row-item').forEach(el => el.classList.toggle('active', el.dataset.id === taskId));
   document.querySelectorAll('.ticket-row').forEach(el => el.classList.remove('active'));
-  changesData = []; screenshots = {}; liveToolCalls = 0;
+  changesData = []; screenshots = {}; pendingScreenshotLabels = []; liveToolCalls = 0;
   $('events').innerHTML = '';
   initStepper();
   renderChangesPanel();
@@ -975,6 +1189,7 @@ function initStepper() {
   STEP_ORDER.forEach(s => {
     const el = $(STEP_ELEM[s]); if (el) { el.classList.remove('active','done'); }
   });
+  for (let i = 1; i <= 6; i++) { $('wc-'+i)?.classList.remove('filled'); }
 }
 function advanceStepper(tool) {
   const step = TOOL_STEP[tool];
@@ -988,14 +1203,14 @@ function advanceStepper(tool) {
     else if (doneSteps.has(s)) el.classList.add('done');
     // connector after each step
     const conn = $('wc-' + (i+1));
-    if (conn) conn.style.background = doneSteps.has(s) ? 'var(--green)' : '';
+    if (conn) conn.classList.toggle('filled', doneSteps.has(s));
   });
 }
 function finishStepper() {
   STEP_ORDER.forEach(s => {
     const el = $(STEP_ELEM[s]); if (el) { el.classList.remove('active'); el.classList.add('done'); }
   });
-  for (let i = 1; i <= 6; i++) { const c = $('wc-'+i); if (c) c.style.background = 'var(--green)'; }
+  for (let i = 1; i <= 6; i++) { $('wc-'+i)?.classList.add('filled'); }
 }
 
 /* ─── Trace header ─── */
@@ -1009,7 +1224,7 @@ function updateTraceHeader(task) {
   $('tr-sub').innerHTML = (task.jira_id ? `<span style="font-family:'DM Mono',monospace;color:var(--accent);margin-right:6px;">${esc(task.jira_id)}</span>` : '') + esc(task.status) + ' · ' + fmtT(task.created_at);
   if (task.status === 'running') {
     startProg();
-    hideThinking(false);
+    hideThinking(true);
     // Measure elapsed from NOW so we never show stale seconds
     const t0 = Date.now();
     clearInterval(durTimer);
@@ -1025,7 +1240,8 @@ function updateTraceHeader(task) {
   if (task.status === 'pending') { hideThinking(true); }
 }
 function hideThinking(hide) {
-  $('thinking-row').style.display = hide ? 'none' : 'flex';
+  const row = $('thinking-row');
+  if (row) row.style.display = hide ? 'none' : 'flex';
 }
 
 /* ─── Stats strip ─── */
@@ -1048,23 +1264,31 @@ function switchTab(tab) {
 
 /* ─── Event rendering ─── */
 const EV_ICONS = { start:'▶', thinking:'···', tool_call:'⚙', tool_result:'↩', complete:'✓', error:'✕' };
-function renderEvents(evts) { evts.forEach(e => appendEvent(e, false)); }
+function renderEvents(evts) {
+  pendingScreenshotLabels = [];
+  evts.forEach(e => appendEvent(e, false));
+}
+function toolInputSummary(input) {
+  if (!input || typeof input !== 'object') return 'No args';
+  if (input.path) return input.path;
+  if (input.label) return input.label;
+  if (input.branch_name) return input.branch_name;
+  if (input.message) return String(input.message).slice(0, 80);
+  const keys = Object.keys(input);
+  return keys.length ? keys.slice(0, 3).join(', ') : 'No args';
+}
 function appendEvent(ev, animate) {
   if (ev.type === 'ping') return;
   if (ev.type === 'stats') { updateStats(ev); return; }
-  hideThinking(true);
+  if (ev.type === 'complete' || ev.type === 'error' || !selTask || selTask.status !== 'running') hideThinking(true);
   trackChanges(ev);
 
-  if (ev.type === 'tool_result') {
-    const r = ev.result || '';
-    if (r.startsWith('screenshot:')) {
-      const url = r.slice('screenshot:'.length);
-      const lbl = (ev.label||url).toLowerCase();
-      if (lbl.includes('before')) screenshots.before = url;
-      else screenshots.after = url;
-      appendScreenshotEv(url, lbl.includes('before') ? 'Before' : 'After', animate);
-      return;
-    }
+  if (ev.type === 'tool_call' && ev.tool === 'take_screenshot') {
+    pendingScreenshotLabels.push(ev.input?.label || '');
+  }
+
+  if (ev.type === 'tool_result' && recordScreenshotResult(ev, animate)) {
+    return;
   }
 
   // Advance stepper and live tool count
@@ -1076,51 +1300,115 @@ function appendEvent(ev, animate) {
 
   const el = document.createElement('div');
   el.className = `ev-item ev-${ev.type}`;
-  const icon = EV_ICONS[ev.type] || '·';
-  let sub = '';
-  if (ev.type === 'tool_call')   sub = `${esc(ev.tool)} — ${esc(JSON.stringify(ev.input || {}).slice(0,80))}`;
-  else if (ev.type === 'tool_result') sub = esc((ev.result||'').slice(0,120));
-  else if (ev.type === 'thinking')    sub = esc((ev.text||'').slice(0,120));
-  else if (ev.type === 'start')       sub = esc(ev.message || '');
-  else if (ev.type === 'complete')    sub = esc(ev.message || 'Done');
-  else if (ev.type === 'error')       sub = esc(ev.message || 'Error');
-
-  const hasBody = ev.type === 'thinking' || ev.type === 'tool_result' || ev.type === 'tool_call';
-  let bodyHtml = '';
-  if (ev.type === 'thinking')     bodyHtml = `<pre class="epre">${esc(ev.text||'')}</pre>`;
-  else if (ev.type === 'tool_call') bodyHtml = `<pre class="epre">${esc(JSON.stringify(ev.input||{}, null, 2))}</pre>`;
-  else if (ev.type === 'tool_result') {
-    const r = ev.result || '';
+  if (ev.type === 'thinking') {
+    el.innerHTML = `
+      <div class="ev-card">
+        <span>${esc(ev.text || 'Thinking through the next step')}</span>
+      </div>`;
+  } else if (ev.type === 'tool_call') {
+    const input = ev.input || {};
+    const args = JSON.stringify(input, null, 2);
+    el.innerHTML = `
+      <div class="ev-card">
+        <div class="ev-tool-title" onclick="toggleEvBody(this)">
+          <span class="ev-tag ev-tool-kind">tool call</span>
+          <span class="ev-tool-name">${esc(ev.tool || 'tool')}</span>
+          <span class="ev-sub">${esc(toolInputSummary(input))}</span>
+          <span class="ev-chevron">▾</span>
+        </div>
+        <div class="ev-body"><pre class="ev-args">${esc(args)}</pre></div>
+      </div>`;
+  } else if (ev.type === 'tool_result') {
+    const r = resultText(ev.result);
+    let bodyHtml = '';
     if (ev.tool === 'edit_file' || ev.tool === 'git_diff') {
       bodyHtml = buildDiff(r);
     } else {
       bodyHtml = `<pre class="epre">${esc(r)}</pre>`;
     }
+    el.innerHTML = `
+      <div class="ev-card">
+        <div class="ev-hdr" onclick="toggleEvBody(this)">
+          <span class="ev-tag">result</span>
+          <span class="ev-sub">${esc(r.slice(0, 140) || 'Tool returned no output')}</span>
+          <span class="ev-chevron">▾</span>
+        </div>
+        <div class="ev-body">${bodyHtml}</div>
+      </div>`;
+  } else if (ev.type === 'complete' || ev.type === 'error') {
+    const ok = ev.type === 'complete';
+    el.innerHTML = `<div class="ev-banner">${ok ? '✓' : '✕'} ${esc(ev.message || (ok ? 'Task complete' : 'Task failed'))}</div>`;
+  } else {
+    el.innerHTML = `<div class="ev-card">${esc(ev.message || EV_ICONS[ev.type] || ev.type)}</div>`;
   }
-
-  el.innerHTML = `
-    <div class="ev-hdr" onclick="toggleEvBody(this)">
-      <span class="ev-tag">${icon} ${esc(ev.type)}</span>
-      <span class="ev-sub">${sub}</span>
-      ${hasBody ? '<span class="ev-chevron">▾</span>' : ''}
-    </div>
-    ${hasBody ? `<div class="ev-body">${bodyHtml}</div>` : ''}`;
 
   $('events').appendChild(el);
   el.scrollIntoView({ block: 'nearest' });
+}
+function resultText(result) {
+  if (result === undefined || result === null) return '';
+  return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+}
+function findScreenshotUrl(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') {
+    const match = value.match(/screenshot:\s*([^\s"'<>)]*)/i);
+    return match ? match[1].replace(/[.,;]+$/, '') : '';
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const url = findScreenshotUrl(item);
+      if (url) return url;
+    }
+    return '';
+  }
+  if (typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      const url = findScreenshotUrl(item);
+      if (url) return url;
+    }
+  }
+  return '';
+}
+function classifyScreenshot(ev, url, fallbackLabel = '') {
+  const candidates = [
+    ev?.label,
+    ev?.input?.label,
+    fallbackLabel,
+    url,
+    resultText(ev?.result),
+  ].filter(Boolean).join(' ').toLowerCase();
+  if (candidates.includes('before')) return 'before';
+  if (candidates.includes('after')) return 'after';
+  return screenshots.before ? 'after' : 'before';
+}
+function recordScreenshotResult(ev, animate) {
+  if (ev.tool && ev.tool !== 'take_screenshot') return false;
+  const queuedLabel = ev.tool === 'take_screenshot' ? (pendingScreenshotLabels.shift() || '') : '';
+  const url = findScreenshotUrl(ev.result);
+  if (!url) return false;
+
+  const slot = classifyScreenshot(ev, url, queuedLabel);
+  screenshots[slot] = url;
+  appendScreenshotEv(url, slot === 'before' ? 'Before' : 'After', animate);
+  if ($('tab-review')?.classList.contains('active')) renderReviewPanel();
+  return true;
 }
 function appendScreenshotEv(url, label, animate) {
   const el = document.createElement('div');
   el.className = 'ev-item ev-tool_result';
   el.innerHTML = `
-    <div class="ev-hdr" onclick="toggleEvBody(this)">
-      <span class="ev-tag">📷 screenshot</span>
-      <span class="ev-sub">${esc(label)}</span>
-      <span class="ev-chevron">▾</span>
+    <div class="ev-card">
+      <div class="ev-hdr" onclick="toggleEvBody(this)">
+        <span class="ev-tag">screenshot</span>
+        <span class="ev-sub">${esc(label)}</span>
+        <span class="ev-chevron">▾</span>
+      </div>
+      <div class="ev-body">
+        <img class="screenshot-img" src="${esc(url)}" alt="${esc(label)}"/>
+      </div>
     </div>
-    <div class="ev-body">
-      <img class="screenshot-img" src="${esc(url)}" alt="${esc(label)}"/>
-    </div>`;
+  `;
   $('events').appendChild(el);
 }
 function toggleEvBody(hdr) {
@@ -1180,13 +1468,16 @@ function renderChangesPanel() {
 }
 function renderReviewPanel() {
   const panel = $('trace-review');
-  const before = screenshots.before, after = screenshots.after;
+  const eventScreenshots = collectScreenshots(selTask?.events || []);
+  const before = screenshots.before || eventScreenshots.before;
+  const after = screenshots.after || eventScreenshots.after;
   const files = changesData.filter(c => c.type==='edit'||c.type==='create');
   let html = `
     <div class="review-shots">
       <div class="review-shot"><div class="review-shot-hdr before">Before</div>${before ? `<img src="${esc(before)}" alt="before"/>` : '<div class="review-empty">No screenshot</div>'}</div>
       <div class="review-shot"><div class="review-shot-hdr after">After</div>${after ? `<img src="${esc(after)}" alt="after"/>` : '<div class="review-empty">Not yet</div>'}</div>
     </div>`;
+  html += renderVisualRegression(before, after);
   if (files.length) {
     html += '<div class="stats-section-title" style="margin-bottom:10px;">Code Changes</div>';
     for (const c of files) {
@@ -1197,6 +1488,145 @@ function renderReviewPanel() {
     }
   }
   panel.innerHTML = html || '<div class="review-empty" style="padding:40px;text-align:center;color:var(--muted2);">Nothing to review yet</div>';
+  initVisualRegression(before, after);
+}
+function renderVisualRegression(before, after) {
+  if (!before || !after) {
+    return `
+      <div class="vr-card" style="margin-bottom:22px;">
+        <div class="vr-hdr">
+          <div class="vr-title">Visual Regression</div>
+          <div class="vr-metric">waiting for pair</div>
+        </div>
+        <div class="review-empty">Capture both before and after screenshots to compare visual changes.</div>
+      </div>`;
+  }
+  return `
+    <div class="review-regression">
+      <div class="vr-card">
+        <div class="vr-hdr">
+          <div class="vr-title">Visual Regression</div>
+          <div class="vr-metric" id="vr-split-label">50 / 50</div>
+        </div>
+        <div class="vr-compare" id="vr-compare">
+          <img src="${esc(before)}" alt="before screenshot"/>
+          <div class="vr-after"><img src="${esc(after)}" alt="after screenshot"/></div>
+          <div class="vr-labels"><span>Before</span><span>After</span></div>
+          <input class="vr-scrubber" id="vr-scrubber" type="range" min="0" max="100" value="50" aria-label="Visual comparison slider"/>
+        </div>
+      </div>
+      <div class="vr-card">
+        <div class="vr-hdr">
+          <div class="vr-title">Diff Heatmap</div>
+          <div class="vr-metric" id="vr-diff-metric">calculating...</div>
+        </div>
+        <div class="vr-diff-wrap">
+          <canvas class="vr-diff" id="vr-diff" width="640" height="400"></canvas>
+          <div class="vr-note" id="vr-diff-note">Red marks changed pixels; muted pixels are unchanged regions from the after screenshot.</div>
+        </div>
+      </div>
+    </div>`;
+}
+function initVisualRegression(before, after) {
+  const compare = $('vr-compare');
+  const scrubber = $('vr-scrubber');
+  const splitLabel = $('vr-split-label');
+  if (compare && scrubber) {
+    const setSplit = () => {
+      compare.style.setProperty('--split', `${scrubber.value}%`);
+      if (splitLabel) splitLabel.textContent = `${scrubber.value} / ${100 - Number(scrubber.value)}`;
+    };
+    scrubber.addEventListener('input', setSplit);
+    setSplit();
+  }
+  if (before && after) drawVisualDiff(before, after);
+}
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+async function drawVisualDiff(before, after) {
+  const canvas = $('vr-diff');
+  const metric = $('vr-diff-metric');
+  const note = $('vr-diff-note');
+  if (!canvas) return;
+  try {
+    const [beforeImg, afterImg] = await Promise.all([loadImage(before), loadImage(after)]);
+    const maxWidth = 640;
+    const maxHeight = 400;
+    const scale = Math.min(1, maxWidth / beforeImg.naturalWidth, maxHeight / beforeImg.naturalHeight);
+    const width = Math.max(1, Math.round(beforeImg.naturalWidth * scale));
+    const height = Math.max(1, Math.round(beforeImg.naturalHeight * scale));
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    const beforeCanvas = document.createElement('canvas');
+    const afterCanvas = document.createElement('canvas');
+    beforeCanvas.width = afterCanvas.width = width;
+    beforeCanvas.height = afterCanvas.height = height;
+    const beforeCtx = beforeCanvas.getContext('2d');
+    const afterCtx = afterCanvas.getContext('2d');
+    beforeCtx.drawImage(beforeImg, 0, 0, width, height);
+    afterCtx.drawImage(afterImg, 0, 0, width, height);
+
+    const beforeData = beforeCtx.getImageData(0, 0, width, height);
+    const afterData = afterCtx.getImageData(0, 0, width, height);
+    const diffData = ctx.createImageData(width, height);
+    let changed = 0;
+    const threshold = 28;
+
+    for (let i = 0; i < beforeData.data.length; i += 4) {
+      const dr = Math.abs(beforeData.data[i] - afterData.data[i]);
+      const dg = Math.abs(beforeData.data[i + 1] - afterData.data[i + 1]);
+      const db = Math.abs(beforeData.data[i + 2] - afterData.data[i + 2]);
+      const delta = dr + dg + db;
+      if (delta > threshold) {
+        changed++;
+        diffData.data[i] = 251;
+        diffData.data[i + 1] = 113;
+        diffData.data[i + 2] = 133;
+        diffData.data[i + 3] = 255;
+      } else {
+        diffData.data[i] = Math.round(afterData.data[i] * .35);
+        diffData.data[i + 1] = Math.round(afterData.data[i + 1] * .35);
+        diffData.data[i + 2] = Math.round(afterData.data[i + 2] * .35);
+        diffData.data[i + 3] = 210;
+      }
+    }
+
+    ctx.putImageData(diffData, 0, 0);
+    const pct = changed / (width * height) * 100;
+    if (metric) metric.textContent = `${pct.toFixed(pct < 1 ? 2 : 1)}% changed`;
+    if (note) note.textContent = `${changed.toLocaleString()} of ${(width * height).toLocaleString()} sampled pixels changed.`;
+  } catch (e) {
+    if (metric) metric.textContent = 'diff unavailable';
+    if (note) note.textContent = 'Could not read one of the screenshots for pixel comparison.';
+  }
+}
+function collectScreenshots(events) {
+  const found = {};
+  const queuedLabels = [];
+  for (const ev of events) {
+    if (ev.type === 'tool_call' && ev.tool === 'take_screenshot') {
+      queuedLabels.push(ev.input?.label || '');
+      continue;
+    }
+    if (ev.type !== 'tool_result' || (ev.tool && ev.tool !== 'take_screenshot')) continue;
+    const queuedLabel = ev.tool === 'take_screenshot' ? (queuedLabels.shift() || '') : '';
+    const url = findScreenshotUrl(ev.result);
+    if (!url) continue;
+    const previous = screenshots;
+    screenshots = found;
+    const slot = classifyScreenshot(ev, url, queuedLabel);
+    screenshots = previous;
+    found[slot] = url;
+  }
+  return found;
 }
 
 /* ─── Unified diff ─── */
@@ -1227,8 +1657,8 @@ function subscribe(taskId, skip, status) {
   es.onmessage = e => {
     const ev = JSON.parse(e.data);
     if (idx++ < skip) return;
+    if (selTask?.id === taskId) selTask.events.push(ev);
     appendEvent(ev, true);
-    if (ev.type === 'thinking') hideThinking(false);
     if (ev.type === 'complete' || ev.type === 'error') {
       const finalStatus = ev.type === 'complete' ? 'completed' : 'failed';
       updateTraceHeader({ ...selTask, status: finalStatus });
