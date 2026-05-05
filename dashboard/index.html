@@ -4,351 +4,463 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Geppetto</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { color-scheme: dark; }
-    body { background: #0d1117; color: #e6edf3; font-family: 'SF Mono', 'Fira Code', monospace; }
-    .scrollbar::-webkit-scrollbar { width: 6px; }
-    .scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-    pre { white-space: pre-wrap; word-break: break-word; }
-    .event-enter { animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
-    .pulse { animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --surface:#161b22; --surface2:#1c2128;
+      --border:#21262d; --border2:#30363d;
+      --text:#e6edf3; --muted:#8b949e; --muted2:#6e7681;
+      --blue:#58a6ff; --green:#3fb950; --orange:#d29922;
+      --purple:#bc8cff; --red:#f85149;
+    }
+    html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;}
+    code,pre,.mono{font-family:'SF Mono','Fira Code','Cascadia Code',monospace;}
+    #app{display:grid;grid-template-columns:280px 1fr;height:100vh;}
+
+    /* sidebar */
+    #sidebar{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+    #sb-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    #sb-body{flex:1;overflow-y:auto;}
+    #sb-body::-webkit-scrollbar{width:4px;}
+    #sb-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+    .sec-label{padding:12px 16px 6px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted2);}
+
+    /* ticket items */
+    .ticket-item{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;}
+    .ticket-item:hover{background:var(--surface2);}
+    .ticket-item.active{background:var(--surface2);border-left-color:var(--blue);}
+    .t-meta{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+    .t-key{font-size:11px;font-weight:700;color:var(--blue);font-family:monospace;}
+    .t-sum{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    /* badges */
+    .badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;}
+    .b-todo{background:#21262d;color:#8b949e;}
+    .b-prog{background:#b7791033;color:#d29922;}
+    .b-rev{background:#1f6feb33;color:#58a6ff;}
+    .b-done{background:#23863622;color:#3fb950;}
+    .b-run{background:#1f6feb33;color:#58a6ff;animation:blink 1.2s infinite;}
+    .b-fail{background:#da363333;color:#f85149;}
+
+    /* task items */
+    .task-item{padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;}
+    .task-item:hover{background:var(--surface2);}
+    .task-item.active{background:var(--surface2);border-left-color:var(--purple);}
+    .task-row{display:flex;align-items:center;gap:6px;}
+    .task-title{font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;}
+
+    /* main */
+    #main{display:flex;flex-direction:column;overflow:hidden;}
+    #m-header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:52px;}
+    #m-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+    /* progress bar */
+    #pbar-wrap{height:2px;background:var(--border);flex-shrink:0;}
+    #pbar{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));width:0;transition:width .5s;}
+
+    /* welcome */
+    #welcome{flex:1;display:flex;align-items:center;justify-content:center;}
+    .wlc{text-align:center;}
+    .wlc .emoji{font-size:56px;margin-bottom:12px;}
+    .wlc h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+    .wlc p{color:var(--muted);font-size:13px;max-width:380px;line-height:1.6;}
+
+    /* ticket detail */
+    #ticket-detail{flex:1;overflow-y:auto;padding:24px;display:none;}
+    #ticket-detail::-webkit-scrollbar{width:4px;}
+    #ticket-detail::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+    .td-key{font-size:12px;font-weight:700;color:var(--blue);font-family:monospace;margin-bottom:6px;}
+    .td-title{font-size:22px;font-weight:700;line-height:1.3;margin-bottom:12px;}
+    .td-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    .td-desc{color:var(--muted);font-size:13px;line-height:1.7;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px;white-space:pre-wrap;}
+    .run-btn{display:inline-flex;align-items:center;gap:8px;background:#238636;color:white;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+    .run-btn:hover{background:#2ea043;}
+
+    /* trace */
+    #agent-trace{flex:1;overflow:hidden;display:none;flex-direction:column;}
+    #trace-hdr{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    #trace-body{flex:1;overflow-y:auto;padding:16px 20px;}
+    #trace-body::-webkit-scrollbar{width:4px;}
+    #trace-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+    /* thinking */
+    #thinking{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;}
+    #thinking .dots{display:flex;gap:4px;}
+    #thinking .d{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:bounce 1.2s infinite;}
+    #thinking .d:nth-child(2){animation-delay:.2s;}
+    #thinking .d:nth-child(3){animation-delay:.4s;}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+    /* event cards */
+    .ev{margin-bottom:10px;border-radius:8px;border:1px solid var(--border);overflow:hidden;animation:slideIn .2s ease;}
+    @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .ev-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;}
+    .ev-icon{font-size:14px;flex-shrink:0;}
+    .ev-type{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+    .ev-sub{font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .ev-tog{color:var(--muted2);font-size:11px;margin-left:auto;}
+    .ev-body{padding:10px 12px;border-top:1px solid var(--border);display:none;}
+    .ev-body.open{display:block;}
+    .ev-start{background:#1f6feb0d;border-color:#1f6feb44;}
+    .ev-start .ev-type{color:var(--blue);}
+    .ev-thinking{background:var(--surface);}
+    .ev-thinking .ev-type{color:var(--muted);}
+    .ev-tool_call{background:#b7791011;border-color:#b7791044;}
+    .ev-tool_call .ev-type{color:var(--orange);}
+    .ev-tool_result{background:var(--surface);}
+    .ev-tool_result .ev-type{color:var(--muted2);}
+    .ev-complete{background:#23863611;border-color:#23863644;}
+    .ev-complete .ev-type{color:var(--green);}
+    .ev-error{background:#da363311;border-color:#da363344;}
+    .ev-error .ev-type{color:var(--red);}
+    pre.epre{white-space:pre-wrap;word-break:break-word;font-size:11.5px;line-height:1.6;color:var(--muted);}
+
+    /* diff */
+    .diff{font-family:monospace;font-size:11.5px;line-height:1.6;border-radius:6px;overflow:hidden;}
+    .dl{padding:1px 8px;white-space:pre-wrap;word-break:break-word;}
+    .dl.add{background:#23863622;color:#3fb950;}
+    .dl.del{background:#da363322;color:#f85149;}
+    .dl.ctx{color:var(--muted2);}
+
+    /* commit card */
+    .cmt-card{background:var(--surface);border:1px solid var(--green);border-radius:8px;padding:12px 16px;margin-top:4px;}
+    .cmt-lbl{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:6px;}
+    .cmt-msg{font-family:monospace;font-size:13px;color:var(--text);}
+    .cmt-branch{font-family:monospace;font-size:11px;color:var(--blue);margin-top:4px;}
+
+    /* jira sync */
+    .jira-sync{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+    .jsync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+
+    /* modal */
+    #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center;}
+    #modal.open{display:flex;}
+    .mbox{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:24px;width:500px;max-width:95vw;}
+    .mlbl{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block;}
+    .minput{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;}
+    .minput:focus{border-color:var(--blue);}
+    textarea.minput{resize:vertical;min-height:90px;font-family:inherit;}
+    .mactions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
+    .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+    .btn-p{background:#238636;color:white;}
+    .btn-p:hover{background:#2ea043;}
+    .btn-g{background:transparent;color:var(--muted);}
+    .btn-g:hover{color:var(--text);background:var(--surface2);}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
   </style>
 </head>
-<body class="flex h-screen overflow-hidden">
-
-<!-- ── Sidebar ─────────────────────────────────────────────────────────────── -->
-<aside class="w-80 flex-shrink-0 border-r border-[#21262d] flex flex-col">
-
-  <!-- Header -->
-  <div class="p-4 border-b border-[#21262d]">
-    <div class="flex items-center gap-2 mb-3">
-      <span class="text-2xl">🪄</span>
-      <span class="text-lg font-bold text-white">Geppetto</span>
+<body>
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div id="sb-header">
+      <span style="font-size:22px;">🪄</span>
+      <span style="font-weight:700;font-size:16px;">Geppetto</span>
+      <span id="model-tag" style="margin-left:auto;font-size:10px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 7px;border-radius:999px;">Gemini 2.5 Pro</span>
     </div>
-    <button id="newTaskBtn"
-      class="w-full bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors">
-      + New Task
-    </button>
-  </div>
+    <div id="sb-body">
+      <div class="sec-label">Jira · SCRUM</div>
+      <div id="jira-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">Loading…</div></div>
+      <div class="sec-label" style="margin-top:8px;">Agent Tasks</div>
+      <div id="task-list"><div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tasks yet</div></div>
+    </div>
+  </aside>
 
-  <!-- Task list -->
-  <div id="taskList" class="flex-1 overflow-y-auto scrollbar p-2 space-y-1">
-    <p class="text-[#8b949e] text-xs px-2 py-4 text-center">No tasks yet</p>
-  </div>
+  <!-- MAIN -->
+  <div id="main">
+    <div id="pbar-wrap"><div id="pbar"></div></div>
+    <div id="m-header">
+      <span id="hd-icon" style="font-size:18px;display:none;"></span>
+      <div style="flex:1;min-width:0;">
+        <div id="hd-key" style="font-size:11px;font-family:monospace;color:var(--blue);display:none;"></div>
+        <div id="hd-title" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">Select a Jira ticket to get started</div>
+      </div>
+      <div id="hd-actions" style="display:flex;gap:8px;flex-shrink:0;"></div>
+    </div>
+    <div id="m-body">
+      <div id="welcome"><div class="wlc">
+        <div class="emoji">🪄</div>
+        <h2>Geppetto is ready</h2>
+        <p>Select a Jira ticket from the sidebar. The agent will search your codebase with RAG, write the code, commit with conventional format, and update Jira.</p>
+      </div></div>
 
-  <!-- Footer -->
-  <div class="p-3 border-t border-[#21262d] text-[#8b949e] text-xs">
-    curl -X POST localhost:8000/tasks -H "Content-Type: application/json"
-  </div>
-</aside>
+      <div id="ticket-detail">
+        <div class="td-key" id="td-key"></div>
+        <div class="td-title" id="td-title"></div>
+        <div class="td-meta" id="td-meta"></div>
+        <div class="td-desc" id="td-desc"></div>
+        <button class="run-btn" onclick="openModal()">🚀 Run Agent</button>
+      </div>
 
-<!-- ── Main area ────────────────────────────────────────────────────────────── -->
-<main class="flex-1 flex flex-col overflow-hidden">
-
-  <!-- Task header -->
-  <div id="taskHeader" class="p-4 border-b border-[#21262d] hidden">
-    <div class="flex items-start justify-between">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span id="taskJira" class="text-xs bg-[#1f6feb22] text-[#58a6ff] px-2 py-0.5 rounded font-semibold hidden"></span>
-          <span id="taskStatus" class="text-xs px-2 py-0.5 rounded font-semibold"></span>
+      <div id="agent-trace">
+        <div id="trace-hdr">
+          <span id="tr-icon" style="font-size:16px;"></span>
+          <div style="flex:1;">
+            <div id="tr-title" style="font-weight:600;font-size:13px;"></div>
+            <div id="tr-sub" style="font-size:11px;color:var(--muted);"></div>
+          </div>
+          <div id="tr-jira" class="jira-sync" style="display:none;"><span class="jsync-dot"></span>Jira updated</div>
         </div>
-        <h1 id="taskTitle" class="text-white text-lg font-semibold"></h1>
-        <p id="taskDesc" class="text-[#8b949e] text-sm mt-1"></p>
+        <div id="trace-body">
+          <div id="thinking"><div class="dots"><div class="d"></div><div class="d"></div><div class="d"></div></div><span style="font-size:12px;color:var(--muted);">Agent is thinking…</span></div>
+          <div id="events"></div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Welcome screen -->
-  <div id="welcome" class="flex-1 flex items-center justify-center">
-    <div class="text-center">
-      <div class="text-6xl mb-4">🪄</div>
-      <h2 class="text-white text-xl font-semibold mb-2">Geppetto is ready</h2>
-      <p class="text-[#8b949e] text-sm mb-6">Create a task to watch the agent work</p>
-      <code class="text-xs bg-[#161b22] border border-[#30363d] rounded px-3 py-2 text-[#79c0ff]">
-        curl -X POST localhost:8000/tasks \<br>
-        &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
-        &nbsp;&nbsp;-d '{"title":"...","description":"...","jira_id":"DEV-123"}'
-      </code>
-    </div>
-  </div>
-
-  <!-- Agent trace -->
-  <div id="traceContainer" class="flex-1 overflow-y-auto scrollbar p-4 space-y-3 hidden">
-  </div>
-</main>
-
-<!-- ── New Task Modal ───────────────────────────────────────────────────────── -->
-<div id="modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-  <div class="bg-[#161b22] border border-[#30363d] rounded-lg w-[540px] p-6">
-    <h2 class="text-white font-semibold text-lg mb-4">New Task</h2>
-    <div class="space-y-3">
-      <div>
-        <label class="text-[#8b949e] text-xs mb-1 block">JIRA ID (optional)</label>
-        <input id="mJira" placeholder="DEV-1234"
-          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff]" />
-      </div>
-      <div>
-        <label class="text-[#8b949e] text-xs mb-1 block">TITLE *</label>
-        <input id="mTitle" placeholder="Add loading spinner to SupplierTable"
-          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff]" />
-      </div>
-      <div>
-        <label class="text-[#8b949e] text-xs mb-1 block">DESCRIPTION *</label>
-        <textarea id="mDesc" rows="4" placeholder="When the table is fetching data, show a loading spinner instead of an empty table. Use the existing Spinner component if available."
-          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff] resize-none"></textarea>
-      </div>
-    </div>
-    <div class="flex gap-2 mt-4 justify-end">
-      <button id="modalCancel" class="text-[#8b949e] hover:text-white text-sm px-4 py-2 rounded transition-colors">Cancel</button>
-      <button id="modalSubmit" class="bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold px-4 py-2 rounded transition-colors">
-        Run Agent
-      </button>
+<!-- MODAL -->
+<div id="modal">
+  <div class="mbox">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Run Agent</div>
+    <label class="mlbl">Jira Ticket</label>
+    <input class="minput mono" id="m-jira" readonly style="color:var(--blue);" />
+    <label class="mlbl">Title</label>
+    <input class="minput" id="m-title" placeholder="Short task title" />
+    <label class="mlbl">Description / Extra Instructions</label>
+    <textarea class="minput" id="m-desc" placeholder="Any extra context for the agent…"></textarea>
+    <div class="mactions">
+      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" id="m-submit" onclick="submitTask()">🚀 Run Agent</button>
     </div>
   </div>
 </div>
 
 <script>
-const API = '';
-let selectedTask = null;
-let eventSource = null;
+let selTicket=null, selTask=null, es=null, ptimer=null, prog=0;
 
-// ── Status helpers ────────────────────────────────────────────────────────────
+loadJira(); loadTasks();
+setInterval(loadTasks,4000);
 
-const STATUS_STYLES = {
-  pending:   'bg-[#6e768133] text-[#8b949e]',
-  running:   'bg-[#1f6feb33] text-[#58a6ff] pulse',
-  completed: 'bg-[#23863633] text-[#3fb950]',
-  failed:    'bg-[#da363333] text-[#f85149]',
-};
-
-function statusBadge(status) {
-  return `<span class="text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[status] || ''}">${status}</span>`;
+/* ── Jira ── */
+async function loadJira(){
+  try{ const t=await api('/jira/issues'); renderJira(t); }
+  catch(e){ id('jira-list').innerHTML='<div style="padding:12px 16px;color:var(--red);font-size:12px;">Jira unavailable</div>'; }
 }
-
-// ── Task list ─────────────────────────────────────────────────────────────────
-
-async function loadTasks() {
-  const res = await fetch(`${API}/tasks`);
-  const tasks = await res.json();
-  renderTaskList(tasks);
-  if (selectedTask) {
-    const updated = tasks.find(t => t.id === selectedTask.id);
-    if (updated) updateTaskHeader(updated);
-  }
-}
-
-function renderTaskList(tasks) {
-  const el = document.getElementById('taskList');
-  if (!tasks.length) {
-    el.innerHTML = '<p class="text-[#8b949e] text-xs px-2 py-4 text-center">No tasks yet</p>';
-    return;
-  }
-  el.innerHTML = tasks.map(t => `
-    <div onclick="selectTask('${t.id}')"
-      class="task-item cursor-pointer rounded-md px-3 py-2 hover:bg-[#161b22] transition-colors ${selectedTask?.id === t.id ? 'bg-[#161b22] border border-[#30363d]' : ''}"
-      data-id="${t.id}">
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-[10px] ${STATUS_STYLES[t.status]} px-1.5 py-0.5 rounded ${t.status === 'running' ? 'pulse' : ''}">${t.status}</span>
-        ${t.jira_id ? `<span class="text-[10px] text-[#58a6ff]">${t.jira_id}</span>` : ''}
+function renderJira(tickets){
+  const el=id('jira-list');
+  if(!tickets.length){el.innerHTML='<div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tickets</div>';return;}
+  el.innerHTML=tickets.map(t=>`
+    <div class="ticket-item ${selTicket?.key===t.key?'active':''}" data-key="${t.key}" onclick='selectTicket(${JSON.stringify(t)})'>
+      <div class="t-meta">
+        <span class="t-key">${t.key}</span>
+        <span class="badge ${sbCls(t.status_key)}">${t.status}</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted2);">${tIcon(t.type)}</span>
       </div>
-      <p class="text-white text-xs font-medium truncate">${t.title}</p>
-      <p class="text-[#8b949e] text-[11px] mt-0.5">${new Date(t.created_at).toLocaleTimeString()}</p>
-    </div>
-  `).join('');
+      <div class="t-sum">${esc(t.summary)}</div>
+    </div>`).join('');
+}
+function selectTicket(t){
+  selTicket=t;
+  showView('detail');
+  id('td-key').textContent=t.key;
+  id('td-title').textContent=t.summary;
+  id('td-meta').innerHTML=`<span class="badge ${sbCls(t.status_key)}">${t.status}</span><span class="badge b-todo">${t.type}</span>`;
+  const d=id('td-desc');
+  d.textContent=t.description||'No description provided.';
+  d.style.fontStyle=t.description?'normal':'italic';
+  id('hd-key').textContent=t.key; id('hd-key').style.display='block';
+  id('hd-title').textContent=t.summary; id('hd-title').style.color='var(--text)';
+  id('hd-icon').textContent=tIcon(t.type); id('hd-icon').style.display='inline';
+  id('hd-actions').innerHTML=`<button class="btn btn-p" onclick="openModal()" style="font-size:12px;padding:6px 14px;">🚀 Run Agent</button>`;
+  document.querySelectorAll('.ticket-item').forEach(el=>el.classList.toggle('active',el.dataset.key===t.key));
 }
 
-// ── Task detail ───────────────────────────────────────────────────────────────
-
-async function selectTask(taskId) {
-  const res = await fetch(`${API}/tasks/${taskId}`);
-  const task = await res.json();
-  selectedTask = task;
-
-  document.getElementById('welcome').classList.add('hidden');
-  document.getElementById('taskHeader').classList.remove('hidden');
-  document.getElementById('traceContainer').classList.remove('hidden');
-
-  updateTaskHeader(task);
-  renderTrace(task.events);
-  subscribeToTask(taskId);
-  loadTasks(); // refresh sidebar selection
-}
-
-function updateTaskHeader(task) {
-  document.getElementById('taskTitle').textContent = task.title;
-  document.getElementById('taskDesc').textContent = task.description;
-
-  const jiraEl = document.getElementById('taskJira');
-  if (task.jira_id) {
-    jiraEl.textContent = task.jira_id;
-    jiraEl.classList.remove('hidden');
-  }
-
-  const statusEl = document.getElementById('taskStatus');
-  statusEl.textContent = task.status;
-  statusEl.className = `text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[task.status] || ''} ${task.status === 'running' ? 'pulse' : ''}`;
-}
-
-// ── Trace rendering ───────────────────────────────────────────────────────────
-
-const EVENT_ICONS = {
-  start:       '▶',
-  thinking:    '💭',
-  tool_call:   '⚡',
-  tool_result: '↩',
-  complete:    '✅',
-  error:       '❌',
-  ping:        null,
-};
-
-const EVENT_COLORS = {
-  start:       'border-[#58a6ff] bg-[#1f6feb11]',
-  thinking:    'border-[#8b949e] bg-[#21262d]',
-  tool_call:   'border-[#d29922] bg-[#b7791033]',
-  tool_result: 'border-[#30363d] bg-[#161b22]',
-  complete:    'border-[#3fb950] bg-[#23863622]',
-  error:       'border-[#f85149] bg-[#da363322]',
-};
-
-function renderEvent(ev) {
-  if (ev.type === 'ping') return null;
-  const icon = EVENT_ICONS[ev.type] || '•';
-  const color = EVENT_COLORS[ev.type] || 'border-[#30363d] bg-[#161b22]';
-
-  let body = '';
-  if (ev.type === 'thinking') {
-    body = `<pre class="text-[#e6edf3] text-xs leading-relaxed">${escHtml(ev.text)}</pre>`;
-  } else if (ev.type === 'tool_call') {
-    body = `
-      <div class="text-[#d29922] text-xs font-semibold mb-1">${ev.tool}</div>
-      <pre class="text-[#8b949e] text-xs">${escHtml(JSON.stringify(ev.input, null, 2))}</pre>`;
-  } else if (ev.type === 'tool_result') {
-    const truncated = ev.result.length > 800 ? ev.result.slice(0, 800) + '\n…(truncated)' : ev.result;
-    body = `
-      <div class="text-[#8b949e] text-xs font-semibold mb-1">${ev.tool} result</div>
-      <pre class="text-[#adbac7] text-xs">${escHtml(truncated)}</pre>`;
-  } else if (ev.type === 'complete' || ev.type === 'start') {
-    body = `<p class="text-xs">${escHtml(ev.message || '')}</p>`;
-  } else if (ev.type === 'error') {
-    body = `<p class="text-[#f85149] text-xs">${escHtml(ev.message || '')}</p>`;
-  }
-
-  const el = document.createElement('div');
-  el.className = `event-enter border-l-2 ${color} rounded-r-md px-3 py-2`;
-  el.innerHTML = `
-    <div class="flex items-center gap-2 mb-1">
-      <span class="text-base">${icon}</span>
-      <span class="text-[#8b949e] text-xs uppercase tracking-wide">${ev.type}</span>
-    </div>
-    ${body}
-  `;
-  return el;
-}
-
-function renderTrace(events) {
-  const container = document.getElementById('traceContainer');
-  container.innerHTML = '';
-  events.forEach(ev => {
-    const el = renderEvent(ev);
-    if (el) container.appendChild(el);
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-function appendEvent(ev) {
-  const container = document.getElementById('traceContainer');
-  const el = renderEvent(ev);
-  if (el) {
-    container.appendChild(el);
-    container.scrollTop = container.scrollHeight;
+/* ── Tasks ── */
+async function loadTasks(){
+  const tasks=await api('/tasks');
+  renderTasks(tasks);
+  if(selTask){
+    const u=tasks.find(t=>t.id===selTask.id);
+    if(u&&u.status!==selTask.status){selTask=u;updateTrHdr(u);}
   }
 }
+function renderTasks(tasks){
+  const el=id('task-list');
+  if(!tasks.length){el.innerHTML='<div style="padding:12px 16px;color:var(--muted);font-size:12px;">No tasks yet</div>';return;}
+  el.innerHTML=tasks.map(t=>`
+    <div class="task-item ${selTask?.id===t.id?'active':''}" data-id="${t.id}" onclick="selectTask('${t.id}')">
+      <div class="task-row">
+        ${t.jira_id?`<span style="font-size:10px;font-family:monospace;color:var(--blue);">${t.jira_id}</span>`:''}
+        <span class="badge ${tkBadge(t.status)}">${t.status}</span>
+      </div>
+      <div class="task-title">${esc(t.title)}</div>
+    </div>`).join('');
+}
+async function selectTask(taskId){
+  const task=await api(`/tasks/${taskId}`);
+  selTask=task;
+  showView('trace');
+  id('events').innerHTML='';
+  renderEvts(task.events);
+  updateTrHdr(task);
+  subscribe(taskId,task.events.length,task.status);
+  document.querySelectorAll('.task-item').forEach(el=>el.classList.toggle('active',el.dataset.id===taskId));
+}
 
-// ── SSE subscription ──────────────────────────────────────────────────────────
+/* ── Modal ── */
+function openModal(){
+  if(!selTicket)return;
+  id('m-jira').value=selTicket.key;
+  id('m-title').value=selTicket.summary;
+  id('m-desc').value=selTicket.description||'';
+  id('modal').classList.add('open');
+  setTimeout(()=>id('m-title').focus(),50);
+}
+function closeModal(){id('modal').classList.remove('open');}
+async function submitTask(){
+  const jira_id=id('m-jira').value.trim();
+  const title=id('m-title').value.trim();
+  const description=id('m-desc').value.trim();
+  if(!title)return;
+  const btn=id('m-submit'); btn.disabled=true; btn.textContent='Starting…';
+  const task=await api('/tasks','POST',{jira_id:jira_id||null,title,description});
+  closeModal(); btn.disabled=false; btn.textContent='🚀 Run Agent';
+  await loadTasks(); selectTask(task.id); loadJira();
+}
 
-function subscribeToTask(taskId) {
-  if (eventSource) eventSource.close();
-  eventSource = new EventSource(`${API}/tasks/${taskId}/stream`);
+/* ── Trace ── */
+function updateTrHdr(task){
+  const icons={pending:'⏳',running:'⚡',completed:'✅',failed:'❌'};
+  id('tr-icon').textContent=icons[task.status]||'•';
+  id('tr-title').textContent=task.title;
+  id('tr-sub').textContent=(task.jira_id?task.jira_id+' · ':'')+task.status+' · '+fmtT(task.created_at);
+  id('hd-key').textContent=task.jira_id||''; id('hd-key').style.display=task.jira_id?'block':'none';
+  id('hd-title').textContent=task.title; id('hd-title').style.color='var(--text)';
+  id('hd-icon').textContent=icons[task.status]||''; id('hd-icon').style.display='inline';
+  id('hd-actions').innerHTML='';
+  if(task.status==='completed'){id('tr-jira').style.display='flex';stopProg();setProg(100);}
+  else if(task.status==='running'){startProg();id('tr-jira').style.display='none';}
+}
 
-  let replayDone = false;
-  const existingCount = selectedTask?.events?.length || 0;
-  let seen = 0;
+function renderEvts(evts){evts.forEach(e=>appendEvt(e,false));}
+function appendEvt(ev,anim=true){
+  if(ev.type==='ping')return;
+  hideTh();
+  const c=id('events'), card=buildCard(ev,anim);
+  if(card){c.appendChild(card); id('trace-body').scrollTop=99999;}
+}
+function showTh(){id('thinking').style.display='flex'; id('trace-body').scrollTop=99999;}
+function hideTh(){id('thinking').style.display='none';}
 
-  eventSource.onmessage = (e) => {
-    const ev = JSON.parse(e.data);
-    if (ev.type === 'ping') return;
+function buildCard(ev,anim){
+  const MAP={
+    start:{icon:'▶',lbl:'Start',cls:'ev-start',open:true},
+    thinking:{icon:'💭',lbl:'Thinking',cls:'ev-thinking',open:false},
+    tool_call:{icon:'⚡',lbl:'Tool Call',cls:'ev-tool_call',open:true},
+    tool_result:{icon:'↩',lbl:'Result',cls:'ev-tool_result',open:false},
+    complete:{icon:'✅',lbl:'Complete',cls:'ev-complete',open:true},
+    error:{icon:'❌',lbl:'Error',cls:'ev-error',open:true},
+  };
+  const cfg=MAP[ev.type]; if(!cfg)return null;
+  const sub=getSub(ev), body=getBody(ev);
+  const d=document.createElement('div');
+  d.className=`ev ${cfg.cls}`;
+  if(!anim)d.style.animation='none';
+  d.innerHTML=`<div class="ev-hdr" onclick="toggleEv(this)">
+    <span class="ev-icon">${cfg.icon}</span>
+    <span class="ev-type">${cfg.lbl}</span>
+    ${sub?`<span class="ev-sub">${esc(sub)}</span>`:''}
+    <span class="ev-tog">${cfg.open?'▲':'▼'}</span>
+  </div>
+  <div class="ev-body ${cfg.open?'open':''}">${body}</div>`;
+  return d;
+}
+function toggleEv(h){
+  const b=h.nextElementSibling,t=h.querySelector('.ev-tog');
+  b.classList.toggle('open'); t.textContent=b.classList.contains('open')?'▲':'▼';
+}
+function getSub(ev){
+  if(ev.type==='tool_call') return ev.tool+(ev.input?.path?' · '+ev.input.path:ev.input?.query?' · "'+ev.input.query+'"':'');
+  if(ev.type==='tool_result') return ev.tool;
+  if(ev.type==='thinking') return ev.text?.split('\n')[0]?.slice(0,80)||'';
+  return ev.message||'';
+}
+function getBody(ev){
+  if(ev.type==='thinking') return `<pre class="epre">${esc(ev.text)}</pre>`;
+  if(ev.type==='tool_call'){
+    if(ev.tool==='edit_file'&&ev.input?.old_str&&ev.input?.new_str) return buildInlineDiff(ev.input.old_str,ev.input.new_str,ev.input.path);
+    if(ev.tool==='commit_changes'&&ev.input?.message) return `<div class="cmt-card"><div class="cmt-lbl">COMMIT · CONVENTIONAL FORMAT</div><div class="cmt-msg">${esc(ev.input.message)}</div></div>`;
+    if(ev.tool==='create_branch'&&ev.input?.branch_name) return `<div style="font-size:12px;color:var(--blue);font-family:monospace;padding:4px 0;">🌿 ${esc(ev.input.branch_name)}</div>`;
+    return `<pre class="epre">${esc(JSON.stringify(ev.input,null,2))}</pre>`;
+  }
+  if(ev.type==='tool_result'){
+    if(ev.tool==='git_diff') return buildGitDiff(ev.result);
+    const t=ev.result?.slice(0,1500)||'';
+    return `<pre class="epre">${esc(t)}${(ev.result?.length||0)>1500?'\n…truncated':''}</pre>`;
+  }
+  if(ev.type==='complete') return `<div style="color:var(--green);font-size:13px;font-weight:600;">${esc(ev.message)}</div>`;
+  if(ev.type==='error') return `<div style="color:var(--red);font-size:12px;">${esc(ev.message)}</div>`;
+  return `<pre class="epre">${esc(JSON.stringify(ev,null,2))}</pre>`;
+}
+function buildInlineDiff(o,n,path){
+  let h=`<div style="font-size:10px;color:var(--muted2);margin-bottom:4px;font-family:monospace;">${esc(path||'')}</div><div class="diff">`;
+  for(const l of o.split('\n')) h+=`<div class="dl del">- ${esc(l)}</div>`;
+  for(const l of n.split('\n')) h+=`<div class="dl add">+ ${esc(l)}</div>`;
+  return h+'</div>';
+}
+function buildGitDiff(txt){
+  if(!txt||txt==='No changes.') return `<pre class="epre">${esc(txt)}</pre>`;
+  let h='<div class="diff">';
+  for(const l of txt.split('\n').slice(0,80)){
+    if(l.startsWith('+')&&!l.startsWith('+++')) h+=`<div class="dl add">${esc(l)}</div>`;
+    else if(l.startsWith('-')&&!l.startsWith('---')) h+=`<div class="dl del">${esc(l)}</div>`;
+    else h+=`<div class="dl ctx">${esc(l)}</div>`;
+  }
+  return h+'</div>';
+}
 
-    seen++;
-    // Skip replayed events already rendered
-    if (seen <= existingCount) return;
-
-    appendEvent(ev);
-
-    if (ev.type === 'complete' || ev.type === 'error') {
-      eventSource.close();
-      loadTasks();
-      const statusEl = document.getElementById('taskStatus');
-      const status = ev.type === 'complete' ? 'completed' : 'failed';
-      statusEl.textContent = status;
-      statusEl.className = `text-xs px-2 py-0.5 rounded font-semibold ${STATUS_STYLES[status]}`;
+/* ── SSE ── */
+function subscribe(taskId,seen0,status){
+  if(es)es.close();
+  if(['completed','failed'].includes(status))return;
+  showTh(); es=new EventSource(`/tasks/${taskId}/stream`);
+  let seen=0;
+  es.onmessage=e=>{
+    const ev=JSON.parse(e.data); seen++;
+    if(seen<=seen0)return;
+    hideTh(); appendEvt(ev,true);
+    if(['tool_result'].includes(ev.type)) showTh();
+    if(['complete','error'].includes(ev.type)){
+      hideTh(); es.close(); stopProg(); setProg(100);
+      loadTasks(); loadJira();
+      const icons={complete:'✅',error:'❌'};
+      id('tr-icon').textContent=icons[ev.type]||'';
+      if(ev.type==='complete')id('tr-jira').style.display='flex';
     }
   };
-
-  eventSource.onerror = () => eventSource.close();
+  es.onerror=()=>{hideTh();es.close();};
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
-
-document.getElementById('newTaskBtn').onclick = () => {
-  document.getElementById('modal').classList.remove('hidden');
-  document.getElementById('mTitle').focus();
-};
-document.getElementById('modalCancel').onclick = () => {
-  document.getElementById('modal').classList.add('hidden');
-};
-
-document.getElementById('modalSubmit').onclick = async () => {
-  const title = document.getElementById('mTitle').value.trim();
-  const description = document.getElementById('mDesc').value.trim();
-  const jira_id = document.getElementById('mJira').value.trim() || null;
-
-  if (!title || !description) return;
-
-  document.getElementById('modal').classList.add('hidden');
-
-  const res = await fetch(`${API}/tasks`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description, jira_id }),
-  });
-  const task = await res.json();
-
-  document.getElementById('mTitle').value = '';
-  document.getElementById('mDesc').value = '';
-  document.getElementById('mJira').value = '';
-
-  await loadTasks();
-  selectTask(task.id);
-};
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+/* ── Views ── */
+function showView(n){
+  id('welcome').style.display=n==='welcome'?'flex':'none';
+  id('ticket-detail').style.display=n==='detail'?'block':'none';
+  id('agent-trace').style.display=n==='trace'?'flex':'none';
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+/* ── Progress ── */
+function setProg(p){id('pbar').style.width=p+'%';}
+function startProg(){prog=5;setProg(prog);ptimer=setInterval(()=>{if(prog<85){prog+=Math.random()*2.5;setProg(prog);}},1200);}
+function stopProg(){clearInterval(ptimer);}
 
-loadTasks();
-setInterval(loadTasks, 3000);
+/* ── Helpers ── */
+async function api(path,method='GET',body=null){
+  const o={method,headers:{'Content-Type':'application/json'}};
+  if(body)o.body=JSON.stringify(body);
+  const r=await fetch(path,o);
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+function id(x){return document.getElementById(x);}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sbCls(k){return{new:'b-todo',indeterminate:'b-prog',done:'b-done'}[k]??'b-todo';}
+function tkBadge(s){return{pending:'b-todo',running:'b-run',completed:'b-done',failed:'b-fail'}[s]??'b-todo';}
+function tIcon(t){return{Story:'📖',Feature:'✨',Bug:'🐛',Subtask:'🔧',Task:'📋'}[t]??'📌';}
+function fmtT(iso){return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 </script>
 </body>
 </html>

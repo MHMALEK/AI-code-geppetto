@@ -30,9 +30,21 @@ LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "")
 LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
+# ── Jira ──────────────────────────────────────────────────────────────────────
+JIRA_BASE_URL    = os.getenv("JIRA_BASE_URL", "")
+JIRA_EMAIL       = os.getenv("JIRA_EMAIL", "")
+JIRA_API_TOKEN   = os.getenv("JIRA_API_TOKEN", "")
+JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY", "SCRUM")
+
+# Transition IDs (fetched from the board — update if your board differs)
+JIRA_TRANSITION_IN_PROGRESS = "21"
+JIRA_TRANSITION_IN_REVIEW   = "31"
+JIRA_TRANSITION_DONE        = "41"
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
 SAMPLE_REPO_PATH = Path(os.getenv(
     "SAMPLE_REPO_PATH",
-    "/Users/mohammadhosseinmalek/tract-projects/tract-geppetto/sample-repo"
+    "/Users/mohammadhosseinmalek/tract-projects/code-geppetto/sample-repo"
 ))
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", "./data/chroma"))
 SQLITE_PATH = Path(os.getenv("SQLITE_PATH", "./data/tasks.db"))
