@@ -1,36 +1,48 @@
 """
 ChromaDB vector store wrapper.
+Embeddings via LiteLLM — defaults to Vertex AI text-embedding-004 (no OpenAI needed).
 
 Two-tier retrieval:
-  1. Semantic search  — embed query, find similar chunks (broad understanding)
-  2. Symbol lookup    — direct name/file match in metadata (precise targeting)
+  1. Semantic search  — embed query, find similar chunks
+  2. Symbol lookup    — direct name/file match in metadata
 """
 import chromadb
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-from config import CHROMA_PATH, OPENAI_API_KEY, EMBED_MODEL
+from chromadb import EmbeddingFunction, Embeddings
+from config import CHROMA_PATH, EMBED_MODEL
 from indexer.parser import CodeChunk
 
 COLLECTION = "codebase"
 
 
+class LiteLLMEmbeddingFunction(EmbeddingFunction):
+    """Thin ChromaDB adapter over LiteLLM — works with any embedding model."""
+
+    def __call__(self, input: list[str]) -> Embeddings:
+        import litellm
+        # Batch in groups of 20 to stay within Vertex AI request limits
+        all_embeddings = []
+        for i in range(0, len(input), 20):
+            batch = input[i:i + 20]
+            response = litellm.embedding(model=EMBED_MODEL, input=batch)
+            all_embeddings.extend([item["embedding"] for item in response.data])
+        return all_embeddings
+
+
 def _get_collection():
     client = chromadb.PersistentClient(path=str(CHROMA_PATH))
-    ef = OpenAIEmbeddingFunction(api_key=OPENAI_API_KEY, model_name=EMBED_MODEL)
     return client.get_or_create_collection(
         name=COLLECTION,
-        embedding_function=ef,
+        embedding_function=LiteLLMEmbeddingFunction(),
         metadata={"hnsw:space": "cosine"},
     )
 
 
-def add_chunks(chunks: list[CodeChunk], batch_size: int = 100):
+def add_chunks(chunks: list[CodeChunk], batch_size: int = 50):
     collection = _get_collection()
     total = len(chunks)
 
     for i in range(0, total, batch_size):
-        batch = chunks[i : i + batch_size]
-
-        # Deduplicate within batch (same id can appear from re-indexing)
+        batch = chunks[i:i + batch_size]
         seen: set[str] = set()
         ids, docs, metas = [], [], []
         for c in batch:
@@ -38,43 +50,33 @@ def add_chunks(chunks: list[CodeChunk], batch_size: int = 100):
             if uid not in seen:
                 seen.add(uid)
                 ids.append(uid)
-                docs.append(c.to_document())   # enriched text → better embeddings
+                docs.append(c.to_document())
                 metas.append(c.to_metadata())
-
         if ids:
             collection.upsert(ids=ids, documents=docs, metadatas=metas)
-
         print(f"  indexed {min(i + batch_size, total)}/{total}")
 
 
 def search(query: str, n_results: int = 8, chunk_type: str = None) -> list[dict]:
-    """Semantic similarity search."""
     collection = _get_collection()
     where = {"chunk_type": chunk_type} if chunk_type else None
-
     results = collection.query(
         query_texts=[query],
         n_results=min(n_results, collection.count() or 1),
         where=where,
         include=["documents", "metadatas", "distances"],
     )
-
-    hits = []
-    for doc, meta, dist in zip(
-        results["documents"][0],
-        results["metadatas"][0],
-        results["distances"][0],
-    ):
-        hits.append({
-            "content": doc,
-            "metadata": meta,
-            "score": round(1 - dist, 3),
-        })
-    return hits
+    return [
+        {"content": doc, "metadata": meta, "score": round(1 - dist, 3)}
+        for doc, meta, dist in zip(
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+        )
+    ]
 
 
 def lookup_symbol(name: str) -> list[dict]:
-    """Exact symbol name lookup — used when the task mentions a specific component/function."""
     collection = _get_collection()
     results = collection.get(
         where={"name": name},
