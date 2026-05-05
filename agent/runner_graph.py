@@ -11,12 +11,12 @@ Key differences from the for-loop in runner.py:
   • LangGraph can checkpoint/resume any state transition with zero extra code
 
 Graph shape:
-    [START] → call_model ──(tool_calls?)──→ run_tools ──┐
-                   ↑                                      │
-                   └──────────────────────────────────────┘
-                   │
-              (stop/error)
-                   ↓
+    [START] → call_model ──(tool_calls?)──→ run_tools → reflect ──┐
+                   ↑                                                │
+                   └────────────────────────────────────────────────┘
+                   │                                   (3 error rounds)
+              (stop/done)                                    ↓
+                   ↓                                       [END]
                 [END]
 
 Note: emit is stored in AgentState as Any.  LangGraph won't try to serialise
@@ -50,6 +50,7 @@ class AgentState(TypedDict):
     start_time: float
     step: int
     done: bool           # terminal flag to short-circuit routing
+    consecutive_errors: int  # rounds where every tool call failed; resets on success
 
 
 # ── Nodes ──────────────────────────────────────────────────────────────────────
@@ -58,10 +59,10 @@ def node_call_model(state: AgentState) -> dict:
     """Call the LLM.  Returns partial state update (only changed keys)."""
     emit = state["emit"]
 
-    if state["step"] >= 30:
+    if state["step"] >= 50:
         _emit_stats(emit, state["prompt_tokens"], state["completion_tokens"],
                     state["tool_call_count"], state["start_time"])
-        emit({"type": "error", "message": "Max steps (30) reached"})
+        emit({"type": "error", "message": "Max steps (50) reached"})
         return {"done": True}
 
     try:
@@ -160,9 +161,65 @@ def node_run_tools(state: AgentState) -> dict:
     }
 
 
+def node_reflect(state: AgentState) -> dict:
+    """Scan the latest tool results; inject a correction hint if errors are found.
+
+    Why this node exists:
+    - Without it, the agent silently loops after a failed tool call, often
+      repeating the same broken call forever until it hits the step limit.
+    - With it, errors are detected structurally (in the graph, not inside the
+      model node) and the agent is nudged to try something different.
+
+    Routing after this node:
+    - 3 consecutive error rounds → set done=True, which _route_after_reflect
+      sends to END.
+    - Otherwise → always back to call_model (unconditional or via the router).
+    """
+    emit = state["emit"]
+    messages = state["messages"]
+
+    # Collect the most recent batch of tool results (everything since the last
+    # assistant message — that's one "round" of tool calls).
+    tool_errors: list[str] = []
+    for msg in reversed(messages):
+        if msg.get("role") != "tool":
+            break
+        content = msg.get("content", "")
+        if content.startswith("Tool error:") or content.startswith("Unknown tool:"):
+            tool_errors.append(content)
+
+    if not tool_errors:
+        # Clean round — reset the error counter and continue without touching messages.
+        return {"consecutive_errors": 0}
+
+    new_count = state["consecutive_errors"] + 1
+    emit({"type": "reflection", "message": f"Tool errors detected (round {new_count})", "errors": tool_errors})
+
+    if new_count >= 3:
+        _emit_stats(emit, state["prompt_tokens"], state["completion_tokens"],
+                    state["tool_call_count"], state["start_time"])
+        emit({"type": "error", "message": "Agent stuck — 3 consecutive error rounds, aborting"})
+        return {"done": True, "consecutive_errors": new_count}
+
+    # Inject a user-turn hint so the model sees the failure explicitly and is
+    # pushed to try a different approach on the next call_model invocation.
+    hint = {
+        "role": "user",
+        "content": (
+            f"The previous tool call(s) returned errors: {'; '.join(tool_errors)}. "
+            "Please re-read the relevant file or try a different approach before continuing."
+        ),
+    }
+    return {
+        "messages": messages + [hint],
+        "consecutive_errors": new_count,
+    }
+
+
 # ── Routing ────────────────────────────────────────────────────────────────────
 
-def _route(state: AgentState) -> str:
+def _route_after_model(state: AgentState) -> str:
+    """After call_model: go to run_tools if there are tool calls, otherwise END."""
     if state["done"]:
         return END
     last = state["messages"][-1]
@@ -171,15 +228,24 @@ def _route(state: AgentState) -> str:
     return END
 
 
+def _route_after_reflect(state: AgentState) -> str:
+    """After reflect: abort if done (too many errors), otherwise back to call_model."""
+    if state["done"]:
+        return END
+    return "call_model"
+
+
 # ── Compiled graph (module-level singleton) ────────────────────────────────────
 
 def _build() -> Any:
     g = StateGraph(AgentState)
     g.add_node("call_model", node_call_model)
     g.add_node("run_tools",  node_run_tools)
+    g.add_node("reflect",    node_reflect)       # ← new node
     g.set_entry_point("call_model")
-    g.add_conditional_edges("call_model", _route, {"run_tools": "run_tools", END: END})
-    g.add_edge("run_tools", "call_model")
+    g.add_conditional_edges("call_model", _route_after_model, {"run_tools": "run_tools", END: END})
+    g.add_edge("run_tools", "reflect")           # ← was: run_tools → call_model
+    g.add_conditional_edges("reflect", _route_after_reflect, {"call_model": "call_model", END: END})
     return g.compile()
 
 
@@ -197,14 +263,15 @@ def run_agent_graph(task_id: str, task: str, emit: Callable[[dict], None]) -> No
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": task},
         ],
-        "task_id":          task_id,
-        "emit":             emit,
-        "prompt_tokens":    0,
+        "task_id":           task_id,
+        "emit":              emit,
+        "prompt_tokens":     0,
         "completion_tokens": 0,
-        "tool_call_count":  0,
-        "start_time":       time.time(),
-        "step":             0,
-        "done":             False,
+        "tool_call_count":   0,
+        "start_time":        time.time(),
+        "step":              0,
+        "done":              False,
+        "consecutive_errors": 0,
     }
 
     _graph.invoke(initial)

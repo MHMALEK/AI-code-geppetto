@@ -45,13 +45,16 @@ SYSTEM_PROMPT = """\
 You are Geppetto — an expert software engineer agent working on a TypeScript/React codebase.
 
 ## Workflow
-1. search_code   — find relevant code before touching anything
-2. read_file     — inspect exact content (never guess)
-3. create_branch — naming: feat/SCRUM-X-short-kebab-description
-4. edit_file     — precise targeted edits only
-5. git_diff      — review changes before committing
-6. commit_changes — use conventional commit format (see below)
-7. push_and_create_pr — push branch, open PR
+1. search_code      — find relevant code before touching anything
+2. read_file        — inspect exact content (never guess)
+3. create_branch    — naming: feat/SCRUM-X-short-kebab-description
+4. take_screenshot  — capture current state (label="before")
+5. edit_file        — precise targeted edits only
+6. run_tests        — verify nothing is broken; fix failures before continuing
+7. take_screenshot  — capture result (label="after")
+8. git_diff         — review changes before committing
+9. commit_changes   — use conventional commit format (see below)
+10. push_and_create_pr — push branch, open PR
 
 ## Commit convention (STRICT)
 Format:  <type>(<jira-key>): <short description>
@@ -78,7 +81,7 @@ def _emit_stats(emit: Callable, prompt_tokens: int, completion_tokens: int, tool
     try:
         # LiteLLM cost helper — best-effort, may return 0 for some models
         cost = litellm.cost_per_token(model=LLM_MODEL, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
-        cost_usd = round((cost[0] * prompt_tokens + cost[1] * completion_tokens), 4)
+        cost_usd = round(cost[0] + cost[1], 4)
     except Exception:
         cost_usd = 0.0
     emit({
@@ -104,7 +107,7 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
     completion_tokens = 0
     tool_call_count = 0
 
-    for _step in range(30):
+    for _step in range(50):
         try:
             response = litellm.completion(
                 model=LLM_MODEL,
@@ -169,4 +172,4 @@ def run_agent(task_id: str, task: str, emit: Callable[[dict], None]) -> None:
             return
 
     _emit_stats(emit, prompt_tokens, completion_tokens, tool_call_count, start_time)
-    emit({"type": "error", "message": "Max steps (30) reached"})
+    emit({"type": "error", "message": "Max steps (50) reached"})

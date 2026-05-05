@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.models import (
     TaskCreate, init_db,
@@ -15,6 +16,9 @@ from api.models import (
 from agent.runner import run_agent
 
 app = FastAPI(title="Geppetto")
+_screenshots = Path("data/screenshots")
+_screenshots.mkdir(parents=True, exist_ok=True)
+app.mount("/screenshots", StaticFiles(directory=str(_screenshots)), name="screenshots")
 init_db()
 
 

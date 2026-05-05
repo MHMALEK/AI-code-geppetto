@@ -5,8 +5,13 @@ Tools mirror what a senior engineer does when investigating a codebase:
 search semantically, read files, grep for patterns, edit precisely, then commit.
 """
 import subprocess
+import time
 from pathlib import Path
+from pathlib import Path as _Path
 from config import SAMPLE_REPO_PATH
+
+SCREENSHOTS_DIR = _Path("./data/screenshots")
+SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 REPO = Path(SAMPLE_REPO_PATH)
 
@@ -141,6 +146,43 @@ def push_and_create_pr(branch_name: str, title: str, body: str) -> str:
     return f"Pushed but PR creation failed: {r.stderr.strip()}"
 
 
+def take_screenshot(label: str = "screenshot") -> str:
+    """Capture the running app at localhost:5173 using Playwright."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return "Error: playwright not installed. Run: pip install playwright && playwright install chromium"
+
+    slug = label.replace(" ", "_").replace("/", "-")[:40]
+    filename = f"{slug}_{int(time.time())}.png"
+    filepath = SCREENSHOTS_DIR / filename
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1280, "height": 800})
+            page.goto("http://localhost:5173", wait_until="networkidle", timeout=15000)
+            page.screenshot(path=str(filepath))
+            browser.close()
+        return f"screenshot:/screenshots/{filename}"
+    except Exception as e:
+        return f"Screenshot failed: {e}"
+
+
+def run_tests() -> str:
+    """Run the test suite in the sample repo. Fix any failures before committing."""
+    r = subprocess.run(
+        ["npm", "test"],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    output = (r.stdout + r.stderr).strip()
+    status = "PASSED" if r.returncode == 0 else "FAILED"
+    return f"tests:{status}\n\n{output[:3000]}"
+
+
 # ── Claude tool schemas ───────────────────────────────────────────────────────
 
 TOOL_DEFINITIONS = [
@@ -262,6 +304,28 @@ TOOL_DEFINITIONS = [
             "required": ["branch_name", "title", "body"],
         },
     },
+    {
+        "name": "take_screenshot",
+        "description": (
+            "Take a screenshot of the running app at localhost:5173. "
+            "Call once before edits (label='before') and once after (label='after') to show visual diff."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "label": {"type": "string", "description": "Short label like 'before' or 'after_tooltip'"},
+            },
+            "required": ["label"],
+        },
+    },
+    {
+        "name": "run_tests",
+        "description": (
+            "Run the test suite (npm test) in the sample repo. "
+            "Always call this after editing and before committing. Only commit if tests pass."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
 ]
 
 TOOL_MAP = {
@@ -276,4 +340,6 @@ TOOL_MAP = {
     "create_branch": create_branch,
     "commit_changes": commit_changes,
     "push_and_create_pr": push_and_create_pr,
+    "take_screenshot": take_screenshot,
+    "run_tests": run_tests,
 }

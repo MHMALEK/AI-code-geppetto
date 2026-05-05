@@ -248,8 +248,31 @@
     .toast { background: var(--surface); border: 1px solid var(--border2); border-left-width: 3px; border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.5); transform: translateX(130%); transition: transform .35s cubic-bezier(.34,1.56,.64,1); pointer-events: all; font-family: 'Nunito', sans-serif; }
     .toast.show { transform: translateX(0); }
 
-    /* ── CONFETTI ── */
-    .confetti-piece { position: fixed; top: -20px; pointer-events: none; z-index: 100; animation: confetti-fall linear forwards; border-radius: 2px; }
+    /* ── TABS ── */
+    .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 5px 13px; font-size: 11px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s; font-family: inherit; letter-spacing: .3px; }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--blue); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-cnt { background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; font-size: 9px; margin-left: 3px; font-family: 'JetBrains Mono', monospace; vertical-align: middle; }
+
+    /* ── CHANGES PANEL ── */
+    #changes-panel { flex: 1; overflow-y: auto; padding: 14px 24px; display: none; }
+    #changes-panel::-webkit-scrollbar { width: 3px; }
+    #changes-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .chg-file { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; animation: slideIn .2s ease; }
+    .chg-file-hdr { padding: 8px 12px; background: var(--surface2); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--blue); display: flex; align-items: center; gap: 6px; }
+    .chg-new-badge { color: var(--green); font-size: 9px; background: #23863618; padding: 1px 6px; border-radius: 4px; border: 1px solid #23863633; }
+    .chg-milestone { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; font-size: 11px; display: flex; align-items: center; gap: 8px; animation: slideIn .2s ease; }
+    .chg-empty { padding: 56px; text-align: center; color: var(--muted2); font-size: 12px; }
+
+    /* ── SCREENSHOT ── */
+    .ev-screenshot { background: #1f6feb08; border-color: #1f6feb33; }
+    .ev-screenshot .ev-type { color: var(--blue); }
+    .screenshot-img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-top: 4px; }
+    /* ── TESTS ── */
+    .ev-test_pass { background: #3fb95008; border-color: #3fb95033; }
+    .ev-test_pass .ev-type { color: var(--green); }
+    .ev-test_fail { background: #f8514908; border-color: #f8514933; }
+    .ev-test_fail .ev-type { color: var(--red); }
 
     /* ── MANAGER BOT + ANIMATION OVERLAYS ── */
     #mgr-bot { position: absolute; bottom: 14px; left: 0; opacity: 0; pointer-events: none; z-index: 6; }
@@ -298,7 +321,6 @@
     @keyframes cursor-blink{ 0%,100%{opacity:1} 50%{opacity:0} }
     @keyframes pulse-dot   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6)} }
     @keyframes spark-float { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-36px) translateX(4px);opacity:0} }
-    @keyframes confetti-fall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 80%{opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
     @keyframes complete-burst { 0%{transform:scale(0);opacity:1} 100%{transform:scale(3);opacity:0} }
 
     /* idle robot */
@@ -830,6 +852,10 @@
             <div id="tr-title" style="font-weight:700;font-size:13px;"></div>
             <div id="tr-sub"   style="font-size:11px;color:var(--muted);"></div>
           </div>
+          <div id="tab-bar" style="display:none;gap:0;align-items:center;">
+            <button class="tab-btn active" id="tab-log"     onclick="switchTab('log')">Log</button>
+            <button class="tab-btn"        id="tab-changes" onclick="switchTab('changes')">Changes <span class="tab-cnt" id="change-count">0</span></button>
+          </div>
         </div>
 
         <!-- stats strip -->
@@ -867,6 +893,11 @@
           <div id="events"></div>
         </div>
 
+        <!-- changes panel -->
+        <div id="changes-panel">
+          <div class="chg-empty">No file changes yet</div>
+        </div>
+
       </div><!-- agent-trace -->
     </div><!-- m-body -->
   </div><!-- main -->
@@ -893,7 +924,7 @@
 </div>
 
 <script>
-let selTicket=null, selTask=null, es=null, ptimer=null, prog=0;
+let selTicket=null, selTask=null, es=null, ptimer=null, prog=0, changesData=[];
 loadJira(); loadTasks();
 setInterval(loadTasks, 4000);
 
@@ -902,12 +933,14 @@ const TOOL_WORKER = {
   search_code:'wg1', read_file:'wg1', lookup_symbol:'wg1',
   edit_file:'wg2', create_file:'wg2', write_file:'wg2',
   commit_changes:'wg3', push_and_create_pr:'wg3', create_branch:'wg3', git_diff:'wg3', git_status:'wg3',
+  take_screenshot:'wg2', run_tests:'wg2',
 };
 const TOOL_TEXT = {
   search_code:'searching…', read_file:'reading…', lookup_symbol:'looking up…',
   edit_file:'editing…', create_file:'creating…', write_file:'writing…',
   commit_changes:'committing…', push_and_create_pr:'pushing PR…',
   create_branch:'branching…', git_diff:'diffing…', git_status:'checking…',
+  take_screenshot:'screenshotting…', run_tests:'running tests…',
 };
 function setWorkerStatusText(wId, text) {
   const el = document.getElementById(wId + '-status');
@@ -928,6 +961,52 @@ function setWorkers(mode, active) {
       setWorkerStatusText(wid, 'idle');
     }
   });
+}
+
+/* ── Changes panel ── */
+function switchTab(tab) {
+  id('tab-log').classList.toggle('active', tab==='log');
+  id('tab-changes').classList.toggle('active', tab==='changes');
+  id('trace-body').style.display     = tab==='log'     ? 'block' : 'none';
+  id('changes-panel').style.display  = tab==='changes' ? 'block' : 'none';
+}
+function addToChanges(ev) {
+  if (ev.type !== 'tool_call') return;
+  const t = ev.tool, inp = ev.input || {};
+  if (t === 'edit_file'   && inp.path) changesData.push({type:'edit',   path:inp.path, old:inp.old_str||'', new:inp.new_str||''});
+  else if (t === 'create_file'  && inp.path) changesData.push({type:'create', path:inp.path, content:inp.content||''});
+  else if (t === 'create_branch'&& inp.branch_name) changesData.push({type:'branch', name:inp.branch_name});
+  else if (t === 'commit_changes' && inp.message)   changesData.push({type:'commit', message:inp.message});
+  else return;
+  renderChanges();
+}
+function renderChanges() {
+  const panel = id('changes-panel');
+  const fileChanges = changesData.filter(c=>c.type==='edit'||c.type==='create').length;
+  id('change-count').textContent = String(fileChanges);
+  if (!changesData.length) { panel.innerHTML='<div class="chg-empty">No file changes yet</div>'; return; }
+  let html = '';
+  for (const c of changesData) {
+    if (c.type === 'edit') {
+      let diff = '<div class="diff">';
+      for (const l of c.old.split('\n')) diff += `<div class="dl del">- ${esc(l)}</div>`;
+      for (const l of c.new.split('\n')) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      diff += '</div>';
+      html += `<div class="chg-file"><div class="chg-file-hdr">📝 ${esc(c.path)}</div>${diff}</div>`;
+    } else if (c.type === 'create') {
+      const lines = c.content.split('\n');
+      let diff = '<div class="diff">';
+      for (const l of lines.slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
+      if (lines.length > 60) diff += `<div class="dl ctx">  … ${lines.length-60} more lines</div>`;
+      diff += '</div>';
+      html += `<div class="chg-file"><div class="chg-file-hdr">✨ ${esc(c.path)} <span class="chg-new-badge">NEW</span></div>${diff}</div>`;
+    } else if (c.type === 'branch') {
+      html += `<div class="chg-milestone"><span style="color:var(--purple);">🌿</span><span style="font-family:'JetBrains Mono',monospace;color:var(--purple);">${esc(c.name)}</span></div>`;
+    } else if (c.type === 'commit') {
+      html += `<div class="chg-milestone"><span style="color:var(--green);">✅</span><span style="font-family:'JetBrains Mono',monospace;">${esc(c.message)}</span></div>`;
+    }
+  }
+  panel.innerHTML = html;
 }
 
 /* ── Jira ── */
@@ -992,6 +1071,10 @@ async function selectTask(taskId) {
   showView('trace');
   id('events').innerHTML = '';
   id('trace-stats').style.display = 'none';
+  changesData = [];
+  renderChanges();
+  id('tab-bar').style.display = 'flex';
+  switchTab('log');
   renderEvts(task.events);
   updateTrHdr(task);
   subscribe(taskId, task.events.length, task.status);
@@ -1050,6 +1133,24 @@ function appendEvt(ev,anim) {
   if (ev.type==='ping') return;
   if (ev.type==='stats') { updateStats(ev); return; }
   hideTh();
+  addToChanges(ev);
+  // Convert special tool_result values into typed events for richer rendering
+  if (ev.type === 'tool_result') {
+    const r = ev.result || '';
+    if (r.startsWith('screenshot:')) {
+      const url = r.slice('screenshot:'.length);
+      appendEvt({type:'screenshot', url, label: ev.tool}, anim);
+      return;
+    }
+    if (r.startsWith('tests:PASSED')) {
+      appendEvt({type:'test_pass', output: r.slice(r.indexOf('\n')+1)}, anim);
+      return;
+    }
+    if (r.startsWith('tests:FAILED')) {
+      appendEvt({type:'test_fail', output: r.slice(r.indexOf('\n')+1)}, anim);
+      return;
+    }
+  }
   const c=id('events'), card=buildCard(ev,anim);
   if (card) { c.appendChild(card); id('trace-body').scrollTop=99999; }
 }
@@ -1064,6 +1165,9 @@ function buildCard(ev, anim=true) {
     tool_result: {icon:'↩', lbl:'Result',   cls:'ev-tool_result',open:false},
     complete:    {icon:'✅',lbl:'Complete', cls:'ev-complete',   open:true},
     error:       {icon:'❌',lbl:'Error',    cls:'ev-error',      open:true},
+    screenshot: {icon:'📸', lbl:'Screenshot', cls:'ev-screenshot', open:true},
+    test_pass:  {icon:'✅', lbl:'Tests Passed', cls:'ev-test_pass', open:false},
+    test_fail:  {icon:'❌', lbl:'Tests Failed', cls:'ev-test_fail', open:true},
   };
   const cfg = MAP[ev.type]; if (!cfg) return null;
 
@@ -1111,6 +1215,9 @@ function getBody(ev) {
   }
   if (ev.type==='complete') return `<div style="color:var(--green);font-size:13px;font-weight:700;">${esc(ev.message)}</div>`;
   if (ev.type==='error')    return `<div style="color:var(--red);font-size:12px;">${esc(ev.message)}</div>`;
+  if (ev.type==='screenshot') return `<img class="screenshot-img" src="${esc(ev.url)}" alt="${esc(ev.label||'')}" loading="lazy"/>`;
+  if (ev.type==='test_pass')  return `<pre class="epre">${esc(ev.output||'')}</pre>`;
+  if (ev.type==='test_fail')  return `<pre class="epre" style="color:var(--red);">${esc(ev.output||'')}</pre>`;
   return `<pre class="epre">${esc(JSON.stringify(ev,null,2))}</pre>`;
 }
 function buildInlineDiff(o,n,path) {
@@ -1148,7 +1255,6 @@ function subscribe(taskId, seen0, status) {
       id('tr-icon').textContent = ev.type==='complete'?'✅':'❌';
       if (ev.type==='complete') {
         id('tr-jira').style.display='flex';
-        spawnConfetti();
         showToast('✅ Task completed successfully!', 'success');
       } else {
         showToast('❌ Task failed — check the trace', 'error');
@@ -1206,19 +1312,6 @@ function playTaskStartAnimation(ticketKey) {
   tl.to('#mgr-bot',   { x: -120, opacity: 0, duration: 0.35, ease: 'power2.in' }, '-=0.05');
 }
 
-/* ── Confetti ── */
-function spawnConfetti() {
-  const colors = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f85149'];
-  for (let i = 0; i < 55; i++) {
-    const el = document.createElement('div');
-    el.className = 'confetti-piece';
-    const size = 5 + Math.random() * 7;
-    el.style.cssText = `left:${10+Math.random()*80}%;background:${colors[i%5]};width:${size}px;height:${size}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.7}s;animation-duration:${1.4+Math.random()*.8}s;`;
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(), 2600);
-  }
-}
-
 /* ── Toast notifications ── */
 function showToast(msg, type='info') {
   const colors = {info:'var(--blue)', success:'var(--green)', error:'var(--red)'};
@@ -1236,6 +1329,7 @@ function showView(n) {
   id('welcome').style.display      = n==='welcome' ? 'flex'  : 'none';
   id('ticket-detail').style.display= n==='detail'  ? 'block' : 'none';
   id('agent-trace').style.display  = n==='trace'   ? 'flex'  : 'none';
+  if (n !== 'trace') id('tab-bar').style.display = 'none';
 }
 
 /* ── Progress ── */

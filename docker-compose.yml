@@ -1,0 +1,41 @@
+services:
+  geppetto:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      # Persist ChromaDB and SQLite between restarts without rebuilding.
+      - geppetto-data:/app/data
+      # Mount the target repo so the agent can read/write it at runtime.
+      - ${SAMPLE_REPO_PATH:-./sample-geppetto-repo}:/repo
+    environment:
+      SAMPLE_REPO_PATH: /repo
+    depends_on:
+      - n8n
+
+  sample-app:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    # Mount the repo live — Vite HMR picks up every agent edit instantly.
+    volumes:
+      - ${SAMPLE_REPO_PATH:-./sample-geppetto-repo}:/app
+    command: sh -c "npm install --silent && npm run dev"
+
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      # Auto-import the Geppetto workflow on first start.
+      - ./n8n:/home/node/.n8n/workflows:ro
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - WEBHOOK_URL=http://localhost:5678
+
+volumes:
+  geppetto-data:
+  n8n-data:

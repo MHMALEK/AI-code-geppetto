@@ -28,7 +28,18 @@ if [ ! -d "$CHROMA_DIR" ] || [ -z "$(ls -A "$CHROMA_DIR" 2>/dev/null)" ]; then
   python3 -m indexer.index
 fi
 
+SAMPLE_REPO="${SAMPLE_REPO_PATH:-$(pwd)/sample-geppetto-repo}"
+
+# Install sample app deps and start Vite dev server in background
+echo "Starting sample app (Vite)..."
+(cd "$SAMPLE_REPO" && npm install --silent && npm run dev) &
+VITE_PID=$!
+
+# Kill Vite when this script exits
+trap "kill $VITE_PID 2>/dev/null" EXIT
+
 echo ""
-echo "  Geppetto running at http://localhost:8000"
+echo "  Geppetto dashboard  →  http://localhost:8000"
+echo "  Sample app (demo)   →  http://localhost:5173"
 echo ""
 uvicorn api.main:app --reload --port 8000
