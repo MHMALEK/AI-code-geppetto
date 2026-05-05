@@ -990,11 +990,92 @@ function switchTab(tab) {
   id('review-panel').style.display  = tab==='review'  ? 'block' : 'none';
   if (tab==='review') renderReview();
 }
+function lcs(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => new Uint16Array(n+1));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  const ops = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { ops.push({t:'=', v:a[i-1]}); i--; j--; }
+    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { ops.push({t:'+', v:b[j-1]}); j--; }
+    else { ops.push({t:'-', v:a[i-1]}); i--; }
+  }
+  return ops.reverse();
+}
+function buildUnifiedDiff(oldText, newText, ctx=3) {
+  const a = oldText ? oldText.split('\n') : [];
+  const b = newText ? newText.split('\n') : [];
+  // cap size to avoid freeze on huge files
+  if (a.length > 400 || b.length > 400) {
+    let out = '<div class="diff">';
+    for (const l of a.slice(0,200)) out += `<div class="dl del">- ${esc(l)}</div>`;
+    for (const l of b.slice(0,200)) out += `<div class="dl add">+ ${esc(l)}</div>`;
+    return out + '</div>';
+  }
+  const ops = lcs(a, b);
+  // mark changed regions and collect context
+  const lines = []; // {t, v}
+  for (const op of ops) lines.push(op);
+  // find which indices are changed
+  const changed = new Set();
+  lines.forEach((l, i) => { if (l.t !== '=') changed.add(i); });
+  // build visible set with context
+  const visible = new Set();
+  changed.forEach(i => {
+    for (let k = Math.max(0,i-ctx); k <= Math.min(lines.length-1,i+ctx); k++) visible.add(k);
+  });
+  let html = '<div class="diff">';
+  let prev = -1;
+  for (const i of [...visible].sort((a,b)=>a-b)) {
+    if (prev !== -1 && i > prev + 1) html += `<div class="dl ctx">@@ … @@</div>`;
+    const l = lines[i];
+    if (l.t === '=') html += `<div class="dl ctx">  ${esc(l.v)}</div>`;
+    else if (l.t === '-') html += `<div class="dl del">- ${esc(l.v)}</div>`;
+    else html += `<div class="dl add">+ ${esc(l.v)}</div>`;
+    prev = i;
+  }
+  if (!visible.size) html += `<div class="dl ctx">  (no changes detected)</div>`;
+  return html + '</div>';
+}
+function renderPixelDiff(beforeUrl, afterUrl) {
+  const canvas = id('pixel-diff-canvas');
+  if (!canvas || !beforeUrl || !afterUrl) return;
+  const load = url => new Promise((res, rej) => {
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = () => res(img); img.onerror = rej; img.src = url;
+  });
+  Promise.all([load(beforeUrl), load(afterUrl)]).then(([i1, i2]) => {
+    const w = Math.max(i1.naturalWidth, i2.naturalWidth);
+    const h = Math.max(i1.naturalHeight, i2.naturalHeight);
+    const draw = img => { const c = document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0); return c.getContext('2d').getImageData(0,0,w,h).data; };
+    const d1 = draw(i1), d2 = draw(i2);
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const out = ctx.createImageData(w, h);
+    let diffCount = 0;
+    for (let i = 0; i < d1.length; i += 4) {
+      const delta = Math.abs(d1[i]-d2[i]) + Math.abs(d1[i+1]-d2[i+1]) + Math.abs(d1[i+2]-d2[i+2]);
+      if (delta > 20) {
+        out.data[i]=255; out.data[i+1]=80; out.data[i+2]=0; out.data[i+3]=220;
+        diffCount++;
+      } else {
+        out.data[i]=d2[i]*0.25; out.data[i+1]=d2[i+1]*0.25; out.data[i+2]=d2[i+2]*0.25; out.data[i+3]=200;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+    const pct = ((diffCount / (w*h)) * 100).toFixed(1);
+    const lbl = id('pixel-diff-lbl');
+    if (lbl) lbl.textContent = `${pct}% pixels changed`;
+  }).catch(() => {});
+}
 function renderReview() {
   const panel = id('review-panel');
   const before = screenshots.before, after = screenshots.after;
   const shotHTML = `
-    <div class="review-section-lbl">Visual diff</div>
+    <div class="review-section-lbl">Screenshots</div>
     <div class="review-shots">
       <div class="review-shot">
         <div class="review-shot-hdr before">◀ Before</div>
@@ -1004,21 +1085,22 @@ function renderReview() {
         <div class="review-shot-hdr after">After ▶</div>
         ${after  ? `<img src="${esc(after)}"  alt="after"/>` : '<div class="review-shot-empty">Not taken yet</div>'}
       </div>
-    </div>`;
+    </div>
+    ${before && after ? `
+    <div class="review-section-lbl" style="margin-top:16px;">Pixel diff <span id="pixel-diff-lbl" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--orange);margin-left:8px;"></span></div>
+    <div class="review-shot" style="margin-bottom:16px;">
+      <div class="review-shot-hdr" style="background:#ff500010;color:var(--orange);border-bottom:1px solid #ff500030;">🔬 Changed pixels highlighted</div>
+      <canvas id="pixel-diff-canvas" style="width:100%;display:block;background:#000;"></canvas>
+    </div>` : ''}`;
 
   const fileChanges = changesData.filter(c=>c.type==='edit'||c.type==='create');
   let diffHTML = '';
   if (fileChanges.length) {
     diffHTML = `<div class="review-section-lbl" style="margin-top:4px;">Code changes</div>`;
     for (const c of fileChanges) {
-      let diff = '<div class="diff">';
-      if (c.type === 'edit') {
-        for (const l of c.old.split('\n')) diff += `<div class="dl del">- ${esc(l)}</div>`;
-        for (const l of c.new.split('\n')) diff += `<div class="dl add">+ ${esc(l)}</div>`;
-      } else {
-        for (const l of (c.content||'').split('\n').slice(0,60)) diff += `<div class="dl add">+ ${esc(l)}</div>`;
-      }
-      diff += '</div>';
+      const diff = c.type === 'edit'
+        ? buildUnifiedDiff(c.old, c.new)
+        : buildUnifiedDiff('', c.content || '');
       const icon = c.type==='create' ? '✨' : '📝';
       diffHTML += `<div class="chg-file" style="margin-bottom:10px;"><div class="chg-file-hdr">${icon} ${esc(c.path)}</div>${diff}</div>`;
     }
@@ -1033,6 +1115,7 @@ function renderReview() {
 
   panel.innerHTML = shotHTML + diffHTML + mHTML ||
     '<div class="chg-empty">Nothing to review yet — run a task first.</div>';
+  if (before && after) renderPixelDiff(before, after);
 }
 
 function addToChanges(ev) {
