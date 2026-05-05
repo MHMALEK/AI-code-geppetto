@@ -57,5 +57,9 @@ SAMPLE_REPO_PATH = Path(os.getenv(
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", "./data/chroma"))
 SQLITE_PATH = Path(os.getenv("SQLITE_PATH", "./data/tasks.db"))
 
+# Browser URL for the API + dashboard (Telegram links, webhooks). No trailing slash.
+# Local: http://127.0.0.1:8000  ·  Fly: https://your-app.fly.dev
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+
 CHROMA_PATH.mkdir(parents=True, exist_ok=True)
 SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)

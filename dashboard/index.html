@@ -156,6 +156,10 @@
     }
     .split-title { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
     .split-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .split-list-header-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    }
+    .btn-ghost--sm { font-size: 11px; padding: 6px 10px; }
     .split-scroll { flex: 1; overflow-y: auto; padding: 10px 10px 16px; min-height: 0; }
     .split-scroll::-webkit-scrollbar { width: 3px; }
     .split-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -674,8 +678,8 @@
     .rtt tr:hover td { background: var(--surface2); cursor: pointer; }
 
     /* ── Modal ── */
-    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    #modal.open { display: flex; animation: fadeIn .15s ease; }
+    #modal, #modal-jcreate { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #modal.open, #modal-jcreate.open { display: flex; animation: fadeIn .15s ease; }
     .mbox { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-md); animation: scaleIn .2s cubic-bezier(.34,1.4,.64,1); }
     .mbox-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.2px; }
     .mform-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: block; }
@@ -842,9 +846,14 @@
     <div id="view-jira" class="split-view">
       <section class="split-list">
         <div class="split-list-header">
-          <div class="split-eyebrow">Jira</div>
-          <div class="split-title">Ticket Board</div>
-          <div class="split-sub">Choose a ticket to review or run with codeGeppetto.</div>
+          <div class="split-list-header-row">
+            <div>
+              <div class="split-eyebrow">Jira</div>
+              <div class="split-title">Ticket Board</div>
+            </div>
+            <button type="button" class="btn-ghost btn-ghost--sm" style="flex-shrink:0;" onclick="openJiraCreateModal()">+ New ticket</button>
+          </div>
+          <div class="split-sub">Create a ticket first, then select it and use Run Agent — same flow as Jira-first delivery.</div>
         </div>
         <div class="split-scroll" id="jira-list">
           <div style="padding:8px 6px;color:var(--muted2);font-size:12px;">Loading…</div>
@@ -1006,6 +1015,20 @@
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.267a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.267V3.732Z"/></svg>
         Run Agent
       </button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-jcreate">
+  <div class="mbox">
+    <div class="mbox-title">New Jira ticket</div>
+    <label class="mform-label">Summary</label>
+    <input class="mform-input" id="jc-summary" placeholder="Short title" autocomplete="off"/>
+    <label class="mform-label">Description (optional)</label>
+    <textarea class="mform-input" id="jc-desc" placeholder="Context, acceptance criteria…"></textarea>
+    <div class="mform-actions">
+      <button type="button" class="btn-ghost" onclick="closeJiraCreateModal()">Cancel</button>
+      <button type="button" class="btn-primary" id="jc-submit" onclick="submitJiraCreate()">Create ticket</button>
     </div>
   </div>
 </div>
@@ -1204,7 +1227,10 @@ async function loadTasks() {
       const u = tasks.find(t => t.id === selTask.id);
       if (u && u.status !== selTask.status) { selTask = u; updateTraceHeader(u); }
     }
-  } catch(e) {}
+    return tasks;
+  } catch(e) {
+    return [];
+  }
 }
 function renderTasks(tasks) {
   if (!tasks.length) { $('task-list').innerHTML = '<div style="padding:8px 6px;color:var(--muted2);font-size:12px;">No tasks yet</div>'; return; }
@@ -1243,6 +1269,46 @@ function openModal() {
   setTimeout(() => $('m-title').focus(), 50);
 }
 function closeModal() { $('modal').classList.remove('open'); }
+
+function openJiraCreateModal() {
+  $('jc-summary').value = '';
+  $('jc-desc').value = '';
+  $('modal-jcreate').classList.add('open');
+  setTimeout(() => $('jc-summary').focus(), 50);
+}
+function closeJiraCreateModal() {
+  $('modal-jcreate').classList.remove('open');
+}
+async function submitJiraCreate() {
+  const summary = $('jc-summary').value.trim();
+  if (!summary) { toast('Enter a summary'); return; }
+  const description = $('jc-desc').value.trim();
+  const btn = $('jc-submit');
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = 'Creating…';
+  try {
+    const r = await fetch('/jira/issues', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary, description }),
+    });
+    const issue = await r.json();
+    if (!r.ok) {
+      toast(typeof issue.detail === 'string' ? issue.detail : 'Could not create ticket');
+      return;
+    }
+    closeJiraCreateModal();
+    toast('Created ' + issue.key + ' — use Run Agent when ready');
+    setView('jira');
+    await loadJira();
+    selectTicket(issue);
+    showJiraPanel('detail');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prev;
+  }
+}
 async function submitTask() {
   const jira_id = $('m-jira').value.trim();
   const title   = $('m-title').value.trim();
@@ -2116,10 +2182,29 @@ async function loadStats() {
   } catch(e) {}
 }
 
+let tasksPollMs = 5000;
+function scheduleNextTasksPoll() {
+  setTimeout(async () => {
+    const tasks = await loadTasks();
+    const hot = tasks.some(t => t.status === 'running' || t.status === 'pending');
+    tasksPollMs = hot ? 1200 : 5000;
+    scheduleNextTasksPoll();
+  }, tasksPollMs);
+}
+
 /* ─── Init (must be last — all functions defined above) ─── */
 loadJira();
-loadTasks();
-setInterval(loadTasks, 5000);
+(async function dashboardBoot() {
+  const tasks = await loadTasks();
+  const tid = new URLSearchParams(location.search).get('task');
+  if (tid) {
+    setView('tasks');
+    await selectTask(tid);
+  }
+  const hot = tasks.some(t => t.status === 'running' || t.status === 'pending');
+  tasksPollMs = hot ? 1200 : 5000;
+  scheduleNextTasksPoll();
+})();
 initAskInput();
 initAskHistory();
 updateThemeBtn();

@@ -4,6 +4,7 @@ Agent tool implementations + Claude tool definitions.
 Tools mirror what a senior engineer does when investigating a codebase:
 search semantically, read files, grep for patterns, edit precisely, then commit.
 """
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -14,6 +15,19 @@ SCREENSHOTS_DIR = _Path("./data/screenshots")
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 REPO = Path(SAMPLE_REPO_PATH)
+
+
+def _gh_env() -> dict:
+    """
+    gh pr create uses GH_TOKEN for non-interactive auth.
+    Docker / .env often set GITHUB_TOKEN for git only; pass it through to gh.
+    """
+    env = os.environ.copy()
+    if env.get("GH_TOKEN"):
+        return env
+    if env.get("GITHUB_TOKEN"):
+        env["GH_TOKEN"] = env["GITHUB_TOKEN"]
+    return env
 
 
 def _git(args: list[str]) -> tuple[bool, str]:
@@ -154,6 +168,7 @@ def push_and_create_pr(branch_name: str, title: str, body: str) -> str:
     r = subprocess.run(
         ["gh", "pr", "create", "--title", title, "--body", body],
         cwd=str(REPO), capture_output=True, text=True, timeout=30,
+        env=_gh_env(),
     )
     if r.returncode == 0:
         return f"PR created: {r.stdout.strip()}"

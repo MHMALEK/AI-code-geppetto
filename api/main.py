@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import re
 import threading
 import time
@@ -12,13 +13,38 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.models import (
-    TaskCreate, init_db,
+    TaskCreate, JiraIssueCreate, init_db,
     create_task, get_task, list_tasks,
     update_status, append_event,
 )
 from agent.runner import run_agent
 
 app = FastAPI(title="Geppetto")
+log = logging.getLogger("geppetto.telegram")
+
+# Same Telegram update can be processed twice if webhook + long poll are both active,
+# or if multiple uvicorn workers each run a getUpdates loop — dedupe by update_id.
+_tg_seen_lock = threading.Lock()
+_tg_seen_order: list[int] = []
+_tg_seen_set: set[int] = set()
+_TG_SEEN_MAX = 3000
+
+
+def _telegram_should_process_update(update_id: int | None) -> bool:
+    if update_id is None:
+        return True
+    with _tg_seen_lock:
+        if update_id in _tg_seen_set:
+            log.debug("telegram duplicate update_id=%s skipped", update_id)
+            return False
+        _tg_seen_set.add(update_id)
+        _tg_seen_order.append(update_id)
+        while len(_tg_seen_order) > _TG_SEEN_MAX:
+            old = _tg_seen_order.pop(0)
+            _tg_seen_set.discard(old)
+        return True
+
+
 _screenshots = Path("data/screenshots")
 _screenshots.mkdir(parents=True, exist_ok=True)
 app.mount("/screenshots", StaticFiles(directory=str(_screenshots)), name="screenshots")
@@ -26,6 +52,14 @@ _assets = Path(__file__).parent.parent / "dashboard" / "assets"
 _assets.mkdir(parents=True, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(_assets)), name="assets")
 init_db()
+
+
+def dashboard_task_url(task_id: str) -> str:
+    """Deep-link to the dashboard trace for a task (running or finished)."""
+    from config import PUBLIC_BASE_URL
+
+    base = (PUBLIC_BASE_URL or "http://127.0.0.1:8000").rstrip("/")
+    return f"{base}/?task={task_id}"
 
 
 # ── Background agent runner ───────────────────────────────────────────────────
@@ -130,6 +164,23 @@ def jira_issue(key: str):
         raise HTTPException(502, f"Jira error: {e}")
 
 
+@app.post("/jira/issues", status_code=201)
+def jira_create_issue(data: JiraIssueCreate):
+    """Create a Jira ticket only. Start the agent with POST /tasks (jira_id + title + description) or the dashboard Run Agent."""
+    from api.jira import create_issue
+
+    if not data.summary.strip():
+        raise HTTPException(400, "summary is required")
+    try:
+        return create_issue(
+            data.summary.strip(),
+            data.description.strip(),
+            data.issue_type or "Task",
+        )
+    except Exception as e:
+        raise HTTPException(502, f"Jira error: {e}")
+
+
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
 @app.get("/stats")
@@ -181,6 +232,42 @@ def get_stats() -> dict[str, Any]:
     }
 
 
+def _strip_trailing_url_punctuation(url: str) -> str:
+    return url.rstrip(").,]}\"'")
+
+
+def _pr_url_from_push_tool_result(result: str | None) -> str | None:
+    """
+    Human-openable GitHub PR URL from push_and_create_pr output.
+
+    Success is "PR created: https://github.com/org/repo/pull/42". Failures often
+    mention https://api.github.com/graphql; a naive first-URL match surfaces a
+    bogus link in Telegram/Slack.
+    """
+    if not result:
+        return None
+    low = result.lower()
+    if "push failed" in low or "pr creation failed" in low:
+        return None
+    if "no remote configured" in low:
+        return None
+
+    m = re.search(r"PR created:\s*(https://\S+)", result)
+    if m:
+        return _strip_trailing_url_punctuation(m.group(1))
+
+    matches = list(
+        re.finditer(
+            r"https://github\.com/[^/\s)]+/[^/\s)]+/pull/\d+",
+            result,
+            re.IGNORECASE,
+        )
+    )
+    if matches:
+        return _strip_trailing_url_punctuation(matches[-1].group(0))
+    return None
+
+
 # ── Task summary (for n8n / external pollers) ─────────────────────────────────
 
 @app.get("/tasks/{task_id}/summary")
@@ -205,9 +292,9 @@ def task_summary(task_id: str) -> dict:
     for ev in task.events:
         t = ev.get("type")
         if t == "tool_result" and ev.get("tool") == "push_and_create_pr":
-            m = re.search(r"https?://\S+", ev.get("result", ""))
-            if m:
-                pr_url = m.group(0).rstrip(".")
+            u = _pr_url_from_push_tool_result(ev.get("result"))
+            if u:
+                pr_url = u
         if t == "tool_call" and ev.get("tool") == "create_branch":
             branch = ev.get("input", {}).get("branch_name")
         if t == "stats":
@@ -230,7 +317,7 @@ def task_summary(task_id: str) -> dict:
         "total_tokens":  total_tokens,
         "tool_calls":    tool_calls,
         "message":       complete_message,
-        "dashboard_url": "http://localhost:8000",
+        "dashboard_url": dashboard_task_url(task.id),
         "created_at":    task.created_at,
         "updated_at":    task.updated_at,
     }
@@ -304,9 +391,9 @@ def _run_and_notify_slack(task_id: str, description: str, response_url: str, tit
         cost_usd = duration_s = tool_calls = 0
         for ev in task.events:
             if ev.get("type") == "tool_result" and ev.get("tool") == "push_and_create_pr":
-                m = re.search(r"https?://\S+", ev.get("result", ""))
-                if m:
-                    pr_url = m.group(0).rstrip(".")
+                u = _pr_url_from_push_tool_result(ev.get("result"))
+                if u:
+                    pr_url = u
             if ev.get("type") == "stats":
                 cost_usd   = ev.get("cost_usd", 0.0)
                 duration_s = int(ev.get("duration_s", 0))
@@ -366,10 +453,22 @@ async def slack_slash_command(request: Request):
 
 TELEGRAM_HELP_TEXT = "\n".join([
     "codeGeppetto commands:",
-    "/task <description> - create and run a task",
-    "/jira <summary> - create a Jira issue and run it",
+    "/start — welcome + this list",
+    "/task <description> - run without a Jira ticket",
+    "/jcreate <summary> - create a Jira issue only; then use /from_jira",
+    "/from_jira <KEY> - run the agent on an existing issue (same flow as dashboard)",
+    "/jira <summary> - create issue + run in one step",
     "/status - show the last 5 tasks",
-    "/help - show this command list",
+    "/help - show command list",
+    "",
+    "Each run includes a dashboard link so you can watch the trace live (PR optional).",
+])
+
+TELEGRAM_START_TEXT = "\n".join([
+    "Welcome to codeGeppetto.",
+    "I run coding tasks against your linked repo.",
+    "",
+    TELEGRAM_HELP_TEXT,
 ])
 
 
@@ -377,16 +476,24 @@ def _telegram_send_message(chat_id: int | str, text: str) -> None:
     from config import TELEGRAM_BOT_TOKEN
 
     if not TELEGRAM_BOT_TOKEN:
+        log.warning("TELEGRAM_BOT_TOKEN missing — cannot send message")
         return
 
     try:
-        httpx.post(
+        r = httpx.post(
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
             json={"chat_id": chat_id, "text": text},
             timeout=10,
         )
-    except Exception:
-        pass
+        body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+        if not r.is_success or not body.get("ok", False):
+            log.warning(
+                "Telegram sendMessage failed: status=%s body=%s",
+                r.status_code,
+                body or r.text[:500],
+            )
+    except Exception as e:
+        log.exception("Telegram sendMessage error: %s", e)
 
 
 def _telegram_command(text: str) -> tuple[str, str]:
@@ -420,16 +527,17 @@ def _telegram_task_result(task_id: str, title: str) -> str:
     if not task:
         return f"❌ Task disappeared: {title}"
 
+    dash = dashboard_task_url(task_id)
     if task.status != "completed":
-        return f"❌ Geppetto hit an error on: {title}\nCheck the dashboard for details."
+        return f"❌ Geppetto hit an error on: {title}\n{dash}"
 
     pr_url = None
     cost_usd = duration_s = tool_calls = 0
     for ev in task.events:
         if ev.get("type") == "tool_result" and ev.get("tool") == "push_and_create_pr":
-            m = re.search(r"https?://\S+", ev.get("result", ""))
-            if m:
-                pr_url = m.group(0).rstrip(".")
+            u = _pr_url_from_push_tool_result(ev.get("result"))
+            if u:
+                pr_url = u
         if ev.get("type") == "stats":
             cost_usd = ev.get("cost_usd", 0.0)
             duration_s = int(ev.get("duration_s", 0))
@@ -443,7 +551,45 @@ def _telegram_task_result(task_id: str, title: str) -> str:
         lines.append(f"Jira: {task.jira_id}")
     if pr_url:
         lines.append(f"PR: {pr_url}")
+    lines.append(f"Dashboard: {dashboard_task_url(task_id)}")
     return "\n".join(lines)
+
+
+def _telegram_jira_issue_key_from_args(args: str) -> str | None:
+    """First token as Jira key, e.g. PROJ-123 or proj-42 → normalized."""
+    if not args:
+        return None
+    key = args.strip().split()[0].strip().upper()
+    if len(key) < 3 or "-" not in key:
+        return None
+    return key
+
+
+def _telegram_launch_jira_agent(
+    chat_id: int | str,
+    username: str,
+    *,
+    jira_key: str,
+    title: str,
+    description: str,
+) -> dict:
+    """Start background agent with Jira transitions (same contract as dashboard Run)."""
+    data = TaskCreate(title=title, description=description, jira_id=jira_key)
+    task = create_task(data)
+    full_desc = f"[{data.jira_id}] Task: {data.title}\n\n{data.description}"
+    threading.Thread(
+        target=_run_and_notify_telegram,
+        args=(task.id, full_desc, data.jira_id, chat_id, data.title),
+        daemon=True,
+    ).start()
+    _telegram_send_message(
+        chat_id,
+        "\n".join([
+            f"⏳ Running Geppetto on {jira_key}: {data.title}",
+            f"Watch live: {dashboard_task_url(task.id)}",
+        ]),
+    )
+    return {"ok": True, "task_id": task.id, "jira_id": jira_key}
 
 
 def _run_and_notify_telegram(
@@ -470,6 +616,10 @@ def process_telegram_message(message: dict) -> dict:
     user = message.get("from") or {}
     username = user.get("username") or user.get("first_name") or "unknown"
 
+    if command == "/start":
+        _telegram_send_message(chat_id, TELEGRAM_START_TEXT)
+        return {"ok": True}
+
     if command == "/help":
         _telegram_send_message(chat_id, TELEGRAM_HELP_TEXT)
         return {"ok": True}
@@ -494,8 +644,60 @@ def process_telegram_message(message: dict) -> dict:
             args=(task.id, full_desc, None, chat_id, data.title),
             daemon=True,
         ).start()
-        _telegram_send_message(chat_id, f"⏳ On it! Running Geppetto on: {data.title}")
+        _telegram_send_message(
+            chat_id,
+            "\n".join([
+                f"⏳ On it! Running Geppetto on: {data.title}",
+                f"Watch live: {dashboard_task_url(task.id)}",
+            ]),
+        )
         return {"ok": True, "task_id": task.id}
+
+    if command == "/jcreate":
+        if not args:
+            _telegram_send_message(chat_id, "Usage: /jcreate <summary>")
+            return {"ok": True}
+        try:
+            from api.jira import create_issue
+
+            issue = create_issue(args, description=f"Created from Telegram by @{username}.")
+        except Exception as e:
+            _telegram_send_message(chat_id, f"❌ Could not create Jira issue: {e}")
+            return {"ok": False}
+
+        _telegram_send_message(
+            chat_id,
+            "\n".join([
+                f"✅ Created {issue['key']}: {issue.get('summary') or args}",
+                f"When ready: /from_jira {issue['key']}",
+            ]),
+        )
+        return {"ok": True, "jira_id": issue["key"]}
+
+    if command == "/from_jira":
+        key = _telegram_jira_issue_key_from_args(args)
+        if not key:
+            _telegram_send_message(chat_id, "Usage: /from_jira PROJ-123")
+            return {"ok": True}
+        try:
+            from api.jira import get_issue
+
+            issue = get_issue(key)
+        except Exception as e:
+            _telegram_send_message(chat_id, f"❌ Could not load Jira issue {key}: {e}")
+            return {"ok": False}
+
+        body = (issue.get("description") or "").strip()
+        desc = f"Jira issue {issue['key']} picked up via Telegram by @{username}."
+        if body:
+            desc = f"{desc}\n\n{body}"
+        return _telegram_launch_jira_agent(
+            chat_id,
+            username,
+            jira_key=issue["key"],
+            title=issue.get("summary") or issue["key"],
+            description=desc,
+        )
 
     if command == "/jira":
         if not args:
@@ -513,20 +715,13 @@ def process_telegram_message(message: dict) -> dict:
             _telegram_send_message(chat_id, f"❌ Could not create Jira issue: {e}")
             return {"ok": False}
 
-        data = TaskCreate(
+        return _telegram_launch_jira_agent(
+            chat_id,
+            username,
+            jira_key=issue["key"],
             title=args,
             description=f"Telegram task for Jira issue {issue['key']} requested by @{username}",
-            jira_id=issue["key"],
         )
-        task = create_task(data)
-        full_desc = f"[{data.jira_id}] Task: {data.title}\n\n{data.description}"
-        threading.Thread(
-            target=_run_and_notify_telegram,
-            args=(task.id, full_desc, data.jira_id, chat_id, data.title),
-            daemon=True,
-        ).start()
-        _telegram_send_message(chat_id, f"⏳ Created {issue['key']} and started Geppetto: {data.title}")
-        return {"ok": True, "task_id": task.id, "jira_id": issue["key"]}
 
     _telegram_send_message(chat_id, TELEGRAM_HELP_TEXT)
     return {"ok": True}
@@ -550,19 +745,24 @@ def _telegram_poll_loop() -> None:
         try:
             r = httpx.get(
                 f"{base}/getUpdates",
-                params={"timeout": 45, "offset": offset, "allowed_updates": ["message"]},
+                params={"timeout": 45, "offset": offset},
                 timeout=50,
             )
             body = r.json()
             if not body.get("ok"):
+                desc = body.get("description") or body
+                log.warning("getUpdates not ok: %s", desc)
                 time.sleep(2)
                 continue
             for upd in body.get("result", []):
                 offset = upd["update_id"] + 1
+                if not _telegram_should_process_update(upd.get("update_id")):
+                    continue
                 msg = upd.get("message") or upd.get("edited_message")
                 if isinstance(msg, dict):
                     process_telegram_message(msg)
         except Exception:
+            log.exception("telegram poll loop error")
             time.sleep(3)
 
 
@@ -577,6 +777,8 @@ def _start_telegram_long_poll() -> None:
 @app.post("/telegram")
 async def telegram_webhook(request: Request):
     payload = await request.json()
+    if not _telegram_should_process_update(payload.get("update_id")):
+        return {"ok": True}
     message = payload.get("message") or payload.get("edited_message") or {}
     return process_telegram_message(message)
 

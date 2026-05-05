@@ -13,6 +13,14 @@ class TaskCreate(BaseModel):
     jira_id: Optional[str] = None
 
 
+class JiraIssueCreate(BaseModel):
+    """Create an issue in Jira (REST). Run the agent separately via POST /tasks or dashboard."""
+
+    summary: str
+    description: str = ""
+    issue_type: str = "Task"
+
+
 class Task(BaseModel):
     id: str
     title: str
