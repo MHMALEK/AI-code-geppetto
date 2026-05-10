@@ -62,8 +62,10 @@ def retrieve_for_ask(query: str, n_results: int = 8) -> tuple[str, list[dict]]:
     lines: list[str] = []
     for i, h in enumerate(hits[:10], 1):
         m = h["metadata"]
+        repo = m.get("repo", "")
         sources.append(
             {
+                "repo": repo,
                 "file_path": m.get("file_path", ""),
                 "start_line": m.get("start_line", 0),
                 "chunk_type": m.get("chunk_type", ""),
@@ -71,8 +73,9 @@ def retrieve_for_ask(query: str, n_results: int = 8) -> tuple[str, list[dict]]:
                 "score": h.get("score", 0.0),
             }
         )
+        repo_prefix = f"{repo}/" if repo else ""
         lines.append(
-            f"[{i}] {m['file_path']}:{m['start_line']}  "
+            f"[{i}] {repo_prefix}{m['file_path']}:{m['start_line']}  "
             f"({m['chunk_type']}: {m['name']})  score={h['score']}"
         )
         lines.append(h["content"][:600])

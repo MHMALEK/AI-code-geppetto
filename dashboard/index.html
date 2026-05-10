@@ -2052,11 +2052,14 @@ function formatAskSourcesHtml(model, sources) {
   const src = sources || [];
   const chips = src.length
     ? `<div class="ask-source-bar">${src.map(s => {
+        const repo = s.repo || '';
         const path = s.file_path || '';
         const line = s.start_line != null ? s.start_line : '';
         const name = s.name || s.chunk_type || '';
-        const title = `${path}:${line} ${name}`.trim();
-        return `<span class="ask-source-chip" title="${esc(title)}">${esc(path)}${line !== '' ? ':' + line : ''}</span>`;
+        const repoPrefix = repo ? `${repo}/` : '';
+        const title = `${repoPrefix}${path}:${line} ${name}`.trim();
+        const label = `${repoPrefix}${path}${line !== '' ? ':' + line : ''}`;
+        return `<span class="ask-source-chip" title="${esc(title)}">${esc(label)}</span>`;
       }).join('')}</div>`
     : '<div class="ask-source-bar"><span class="ask-source-chip">No chunks retrieved — empty index?</span></div>';
   return `

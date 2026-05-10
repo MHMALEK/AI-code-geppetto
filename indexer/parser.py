@@ -537,6 +537,19 @@ _IGNORED_DIRS = {
     ".vscode", ".gitlab", "htmlcov", "_build",
 }
 
+# Path fragments to skip — for boilerplate/scaffolding that's identical across
+# every repo and would otherwise dominate top-K with near-duplicates.
+# Tuple of POSIX path fragments matched as substrings against rel_path.
+_IGNORED_PATH_FRAGMENTS = (
+    ".specify/templates",       # spec-kit project templates (plan/spec/tasks/etc.)
+    ".github/ISSUE_TEMPLATE",
+    ".github/PULL_REQUEST_TEMPLATE",
+)
+
+
+def _path_excluded(rel_posix: str) -> bool:
+    return any(frag in rel_posix for frag in _IGNORED_PATH_FRAGMENTS)
+
 
 def parse_repo(repo_path: str, repo_name: str = "") -> list[CodeChunk]:
     """
@@ -552,11 +565,16 @@ def parse_repo(repo_path: str, repo_name: str = "") -> list[CodeChunk]:
     for root, dirs, files in os.walk(repo_path):
         dirs[:] = [d for d in dirs if d not in _IGNORED_DIRS]
         for file in files:
-            if Path(file).suffix.lower() in SUPPORTED_EXTS:
-                try:
-                    chunks = parse_file(os.path.join(root, file), repo_path, repo_name)
-                    all_chunks.extend(chunks)
-                except Exception as e:
-                    print(f"  [skip] {file}: {e}")
+            if Path(file).suffix.lower() not in SUPPORTED_EXTS:
+                continue
+            full = os.path.join(root, file)
+            rel_posix = Path(full).relative_to(repo_path).as_posix()
+            if _path_excluded(rel_posix):
+                continue
+            try:
+                chunks = parse_file(full, repo_path, repo_name)
+                all_chunks.extend(chunks)
+            except Exception as e:
+                print(f"  [skip] {file}: {e}")
 
     return all_chunks
