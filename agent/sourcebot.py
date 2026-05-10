@@ -228,10 +228,8 @@ async def stream_ask(question: str) -> AsyncIterator[dict]:
         yield {"type": "error", "error": "Sourcebot returned an empty answer."}
         return
 
-    # When we have structured output, the dashboard renders cards from the
-    # meta event — no need to also stream the raw markdown. When we don't,
-    # fall back to chunked streaming so the bubble still fills in.
-    if structured_obj is not None:
-        return
+    # Always stream the markdown answer as chunks. The dashboard renders it
+    # below the structured cards (when present) so the user gets both the
+    # at-a-glance TLDR and the full Sourcebot prose with inline citations.
     for piece in _chunkify(answer):
         yield {"type": "chunk", "text": piece}

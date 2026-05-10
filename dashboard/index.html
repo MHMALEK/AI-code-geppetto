@@ -647,6 +647,15 @@
     .ans-caveats { padding: 10px 14px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); }
     .ans-caveats ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.55; }
     .ans-caveats li { margin-bottom: 4px; }
+    .ans-divider { height: 1px; background: var(--border); margin: 18px 0 14px; }
+    .ans-prose { font-size: 13px; line-height: 1.6; }
+    .ans-prose p { margin: 0 0 10px; }
+    .ans-prose ul, .ans-prose ol { margin: 0 0 10px; padding-left: 22px; }
+    .ans-prose li { margin-bottom: 4px; }
+    .ans-prose code { font-family: 'DM Mono', monospace; font-size: 12px; padding: 1px 4px; background: var(--surface); border-radius: 3px; }
+    .ans-prose pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; overflow-x: auto; font-size: 12px; }
+    .ans-prose pre code { background: transparent; padding: 0; }
+    .ans-prose a { color: var(--accent); }
     .ask-messages { flex: 1; overflow-y: auto; padding: 0 32px 16px; min-height: 0; }
     .ask-messages::-webkit-scrollbar { width: 3px; }
     .ask-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -2211,12 +2220,16 @@ async function submitAsk() {
             lastModel = d.model || lastModel;
             lastSources = d.sources || [];
             trace.innerHTML = formatAskSourcesHtml(lastModel, lastSources);
-            // Structured response (pydantic-ai post-processed) — render cards
-            // immediately and skip raw chunk streaming. If absent, show the
-            // thinking spinner and let chunks fill in below.
+            // When structurer is enabled, render the cards now and leave a
+            // marker div for the streaming markdown to fill in below. When
+            // it's not, just show the spinner and let chunks replace it.
             if (d.structured) {
-              fullText = JSON.stringify(d.structured);
-              bubble.innerHTML = formatStructuredAnswerHtml(d.structured);
+              const cards = formatStructuredAnswerHtml(d.structured);
+              bubble.innerHTML =
+                cards +
+                '<div class="ans-divider"></div>' +
+                '<div class="ans-section-title">Full answer</div>' +
+                '<div class="ans-prose" id="ans-prose-target"></div>';
               started = true;
             } else {
               bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Streaming LLM answer…</div>`;
@@ -2227,7 +2240,14 @@ async function submitAsk() {
           if (piece) {
             if (!started) { bubble.innerHTML = ''; started = true; }
             fullText += piece;
-            bubble.innerHTML = renderMarkdown(fullText);
+            // If the structured cards already populated the bubble, route
+            // markdown into the dedicated prose target so cards stay put.
+            const target = bubble.querySelector('#ans-prose-target');
+            if (target) {
+              target.innerHTML = renderMarkdown(fullText);
+            } else {
+              bubble.innerHTML = renderMarkdown(fullText);
+            }
           }
         } catch(e) {}
       }
