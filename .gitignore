@@ -9,6 +9,7 @@ data/*.db
 data/screenshots/
 data/*.lock
 data/repos/
+data/sourcebot/
 .DS_Store
 
 # local dev docker overrides (contain host paths, not for version control)

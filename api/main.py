@@ -916,16 +916,47 @@ async def telegram_webhook(request: Request):
 
 @app.post("/ask")
 async def ask_code(request: Request):
-    """Answer a question about the codebase via RAG + LLM, streamed as SSE."""
+    """Answer a question about the codebase via RAG + LLM, streamed as SSE.
+
+    Routing:
+      USE_SOURCEBOT=true  → proxy to self-hosted Sourcebot (Phase A refactor)
+      otherwise           → in-process Chroma retrieval + LiteLLM completion
+    Sourcebot failures fall back to Chroma so the dashboard never goes dark."""
     data = await request.json()
     question = (data.get("question") or "").strip()
     if not question:
         raise HTTPException(400, "question required")
 
+    from agent import sourcebot as sourcebot_adapter
     from agent.tools import retrieve_for_ask
     from config import LLM_MODEL, VERTEXAI_PROJECT, VERTEXAI_LOCATION
     import litellm
 
+    # ── Sourcebot path ──────────────────────────────────────────────────────
+    if sourcebot_adapter.is_enabled():
+        try:
+            sb_iter = sourcebot_adapter.stream_ask(question)
+            # Pull the first event eagerly so we can fall back if Sourcebot
+            # is unreachable, before we've started writing the SSE response.
+            first_event = await sb_iter.__anext__()
+
+            async def stream_sourcebot():
+                yield f"data: {json.dumps(first_event)}\n\n"
+                async for ev in sb_iter:
+                    yield f"data: {json.dumps(ev)}\n\n"
+                yield "data: [DONE]\n\n"
+
+            return StreamingResponse(
+                stream_sourcebot(),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
+        except sourcebot_adapter.SourcebotUnavailable as e:
+            print(f"[ask] Sourcebot unreachable, falling back to Chroma: {e}")
+        except StopAsyncIteration:
+            print("[ask] Sourcebot returned empty stream, falling back to Chroma")
+
+    # ── Chroma fallback (original path) ─────────────────────────────────────
     context, sources = retrieve_for_ask(question, n_results=6)
 
     messages = [

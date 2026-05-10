@@ -1,0 +1,40 @@
+# Sourcebot — self-hosted code search & AI Q&A. Phase A of the refactor.
+#
+# Brings up Sourcebot pointed at the same data/repos/ tree the indexer used.
+# Run with:    docker compose -f docker-compose.sourcebot.yml up -d
+# Stop with:   docker compose -f docker-compose.sourcebot.yml down
+#
+# Geppetto's /ask will call http://127.0.0.1:3001/api/ask when USE_SOURCEBOT=true.
+#
+# LLM credentials — pick ONE:
+#   - Easiest:   set GEMINI_API_KEY in .env (free tier from aistudio.google.com)
+#   - Vertex:    requires service account JSON or gcloud ADC volume-mounted in;
+#                see https://docs.sourcebot.dev for the language-model config.
+#
+# Repo data — Sourcebot only indexes git repos that have a remote.origin.url
+# set in their .git/config. Our scripts/clone_repos.py clones via git clone
+# so this is satisfied by default.
+
+services:
+  sourcebot:
+    image: ghcr.io/sourcebot-dev/sourcebot:latest
+    container_name: sourcebot
+    restart: unless-stopped
+    # Map host 3001 → container 3000 to avoid conflict with Sentinel-style
+    # services that often default to 3000.
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      # LLM key — Sourcebot reads this to power Ask. Override in .env.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Optional: pin a model. Leave unset to use Sourcebot's default.
+      # SOURCEBOT_LANGUAGE_MODEL_NAME: gemini-2.5-flash
+    volumes:
+      # Read-only mount of our cloned tract repos. file:///repos/* in the
+      # config below globs every cloned repo here.
+      - ./data/repos:/repos:ro
+      # Sourcebot writes its index, sqlite, and zoekt cache here. Keep
+      # outside data/repos so it doesn't get scanned.
+      - ./data/sourcebot:/data
+      # Connection config — what to index.
+      - ./sourcebot-config.json:/data/config.json:ro
