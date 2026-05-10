@@ -919,9 +919,14 @@ async def ask_code(request: Request):
     """Answer a question about the codebase via RAG + LLM, streamed as SSE.
 
     Routing:
-      USE_SOURCEBOT=true  → proxy to self-hosted Sourcebot (Phase A refactor)
-      otherwise           → in-process Chroma retrieval + LiteLLM completion
-    Sourcebot failures fall back to Chroma so the dashboard never goes dark."""
+      USE_SOURCEBOT=true  → proxy to self-hosted Sourcebot. Failures surface
+                            to the user as SSE error events — no silent
+                            Chroma fallback (those answers came from indexed
+                            spec markdown, not the actual code, and produced
+                            contradictory results).
+      USE_SOURCEBOT unset → in-process Chroma retrieval + LiteLLM completion.
+                            Kept around for users who haven't adopted Sourcebot
+                            yet; dropped once the team is fully on Sourcebot."""
     data = await request.json()
     question = (data.get("question") or "").strip()
     if not question:
@@ -934,29 +939,51 @@ async def ask_code(request: Request):
 
     # ── Sourcebot path ──────────────────────────────────────────────────────
     if sourcebot_adapter.is_enabled():
+        sb_iter = sourcebot_adapter.stream_ask(question)
         try:
-            sb_iter = sourcebot_adapter.stream_ask(question)
-            # Pull the first event eagerly so we can fall back if Sourcebot
-            # is unreachable, before we've started writing the SSE response.
+            # Pull the first event eagerly so connection/auth failures surface
+            # before we open the SSE response — gives a clean error shape.
             first_event = await sb_iter.__anext__()
+        except sourcebot_adapter.SourcebotUnavailable as e:
+            err = f"Sourcebot unavailable: {e}"
+            print(f"[ask] {err}")
 
-            async def stream_sourcebot():
-                yield f"data: {json.dumps(first_event)}\n\n"
-                async for ev in sb_iter:
-                    yield f"data: {json.dumps(ev)}\n\n"
+            async def stream_error():
+                yield f"data: {json.dumps({'type': 'meta', 'model': 'sourcebot', 'sources': []})}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'error': err})}\n\n"
                 yield "data: [DONE]\n\n"
-
             return StreamingResponse(
-                stream_sourcebot(),
+                stream_error(),
                 media_type="text/event-stream",
                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
             )
-        except sourcebot_adapter.SourcebotUnavailable as e:
-            print(f"[ask] Sourcebot unreachable, falling back to Chroma: {e}")
         except StopAsyncIteration:
-            print("[ask] Sourcebot returned empty stream, falling back to Chroma")
+            err = "Sourcebot returned an empty response"
+            print(f"[ask] {err}")
 
-    # ── Chroma fallback (original path) ─────────────────────────────────────
+            async def stream_empty():
+                yield f"data: {json.dumps({'type': 'meta', 'model': 'sourcebot', 'sources': []})}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'error': err})}\n\n"
+                yield "data: [DONE]\n\n"
+            return StreamingResponse(
+                stream_empty(),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
+
+        async def stream_sourcebot():
+            yield f"data: {json.dumps(first_event)}\n\n"
+            async for ev in sb_iter:
+                yield f"data: {json.dumps(ev)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            stream_sourcebot(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    # ── Chroma path (only when USE_SOURCEBOT is unset) ──────────────────────
     context, sources = retrieve_for_ask(question, n_results=6)
 
     messages = [
