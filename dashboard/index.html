@@ -612,6 +612,41 @@
       background: var(--surface); border: 1px solid var(--border); color: var(--accent); max-width: 100%;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+
+    /* Structured-answer cards (rendered when /ask returns a CodeAnswer) */
+    .ans-summary {
+      font-size: 14px; line-height: 1.55; padding: 12px 14px; border-radius: 6px;
+      background: var(--surface); border-left: 3px solid var(--accent); margin-bottom: 14px;
+    }
+    .ans-section { margin-bottom: 14px; }
+    .ans-section:last-child { margin-bottom: 0; }
+    .ans-section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .ans-files { list-style: none; padding: 0; margin: 0; }
+    .ans-files li {
+      display: flex; align-items: baseline; gap: 8px; padding: 6px 0;
+      font-size: 13px; border-bottom: 1px solid var(--border);
+    }
+    .ans-files li:last-child { border-bottom: none; }
+    .ans-files li code {
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent);
+      background: transparent; padding: 0;
+    }
+    .ans-files li a { text-decoration: none; }
+    .ans-files li a:hover code { text-decoration: underline; }
+    .ans-file-repo {
+      font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 6px; border-radius: 3px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+      flex-shrink: 0;
+    }
+    .ans-file-role { color: var(--muted2, var(--muted)); font-size: 12px; flex: 1; }
+    .ans-steps { padding-left: 22px; margin: 0; font-size: 13px; line-height: 1.6; }
+    .ans-steps li { margin-bottom: 4px; }
+    .ans-caveats { padding: 10px 14px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); }
+    .ans-caveats ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.55; }
+    .ans-caveats li { margin-bottom: 4px; }
     .ask-messages { flex: 1; overflow-y: auto; padding: 0 32px 16px; min-height: 0; }
     .ask-messages::-webkit-scrollbar { width: 3px; }
     .ask-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -2048,6 +2083,48 @@ function initAskInput() {
   });
 }
 
+function formatStructuredAnswerHtml(s) {
+  // Renders a CodeAnswer (summary, key_files, steps, caveats) as discrete
+  // cards. All fields are optional — empty arrays/strings collapse cleanly.
+  const parts = [];
+  if (s.summary) {
+    parts.push(`<div class="ans-summary">${esc(s.summary)}</div>`);
+  }
+  if (s.key_files && s.key_files.length) {
+    const items = s.key_files.map(f => {
+      const lineRange = f.end_line && f.end_line !== f.start_line
+        ? `${f.start_line}-${f.end_line}` : (f.start_line ? `${f.start_line}` : '');
+      const pathLabel = lineRange ? `${f.path}:${lineRange}` : f.path;
+      const linkOpen  = f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">` : '<span>';
+      const linkClose = f.url ? '</a>' : '</span>';
+      const repoBadge = f.repo
+        ? `<span class="ans-file-repo">${esc(f.repo.split('/').slice(-2).join('/'))}</span>`
+        : '';
+      const role = f.role ? `<span class="ans-file-role">${esc(f.role)}</span>` : '';
+      return `<li>${repoBadge}${linkOpen}<code>${esc(pathLabel)}</code>${linkClose}${role}</li>`;
+    }).join('');
+    parts.push(
+      `<div class="ans-section"><div class="ans-section-title">Key files</div>` +
+      `<ul class="ans-files">${items}</ul></div>`
+    );
+  }
+  if (s.steps && s.steps.length) {
+    const items = s.steps.map(st => `<li>${esc(st)}</li>`).join('');
+    parts.push(
+      `<div class="ans-section"><div class="ans-section-title">Flow</div>` +
+      `<ol class="ans-steps">${items}</ol></div>`
+    );
+  }
+  if (s.caveats && s.caveats.length) {
+    const items = s.caveats.map(c => `<li>${esc(c)}</li>`).join('');
+    parts.push(
+      `<div class="ans-section ans-caveats"><div class="ans-section-title">Caveats</div>` +
+      `<ul>${items}</ul></div>`
+    );
+  }
+  return parts.length ? parts.join('') : '<span style="color:var(--muted)">(empty structured answer)</span>';
+}
+
 function formatAskSourcesHtml(model, sources) {
   const src = sources || [];
   const chips = src.length
@@ -2134,7 +2211,16 @@ async function submitAsk() {
             lastModel = d.model || lastModel;
             lastSources = d.sources || [];
             trace.innerHTML = formatAskSourcesHtml(lastModel, lastSources);
-            bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Streaming LLM answer…</div>`;
+            // Structured response (pydantic-ai post-processed) — render cards
+            // immediately and skip raw chunk streaming. If absent, show the
+            // thinking spinner and let chunks fill in below.
+            if (d.structured) {
+              fullText = JSON.stringify(d.structured);
+              bubble.innerHTML = formatStructuredAnswerHtml(d.structured);
+              started = true;
+            } else {
+              bubble.innerHTML = `<div class="msg-thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Streaming LLM answer…</div>`;
+            }
             continue;
           }
           const piece = d.text || '';

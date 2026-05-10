@@ -179,11 +179,32 @@ async def stream_ask(question: str) -> AsyncIterator[dict]:
 
     sources = _extract_citations(answer, chat_url)
 
-    yield {"type": "meta", "model": model_label, "sources": sources, "chatUrl": chat_url}
+    # Optionally distill the markdown into a structured CodeAnswer object so
+    # the dashboard can render summary/key_files/steps/caveats as cards. Falls
+    # back to raw chunked markdown if the structurer is disabled or errors.
+    from agent import structurer
+    structured_obj = None
+    if structurer.is_enabled() and answer:
+        structured_obj = await structurer.structure(question, answer)
+
+    meta_event: dict = {
+        "type": "meta",
+        "model": model_label,
+        "sources": sources,
+        "chatUrl": chat_url,
+    }
+    if structured_obj is not None:
+        meta_event["structured"] = structured_obj.model_dump()
+    yield meta_event
 
     if not answer:
         yield {"type": "error", "error": "Sourcebot returned an empty answer."}
         return
 
+    # When we have structured output, the dashboard renders cards from the
+    # meta event — no need to also stream the raw markdown. When we don't,
+    # fall back to chunked streaming so the bubble still fills in.
+    if structured_obj is not None:
+        return
     for piece in _chunkify(answer):
         yield {"type": "chunk", "text": piece}
