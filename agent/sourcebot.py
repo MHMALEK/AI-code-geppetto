@@ -139,12 +139,28 @@ async def stream_ask(question: str) -> AsyncIterator[dict]:
         raise SourcebotUnavailable("USE_SOURCEBOT is not enabled")
 
     payload: dict[str, object] = {"query": question}
-    model = os.getenv("SOURCEBOT_MODEL")
-    if model:
-        payload["languageModel"] = {
-            "provider": os.getenv("SOURCEBOT_PROVIDER", "google-generative-ai"),
-            "model": model,
-        }
+    # Note: don't send `languageModel` here. Sourcebot's matching key is
+    # `${provider}-${model}-${displayName}` (see features/chat/utils.ts) and
+    # rejects requests that omit displayName as "not configured", even when
+    # provider+model match. Easiest is to let Sourcebot default to the first
+    # entry in sourcebot-config.json's `models` array — make Pro first there
+    # to use Pro. If you ever need explicit selection, send all three fields:
+    #   {"provider": "google-generative-ai", "model": "gemini-2.5-pro",
+    #    "displayName": "Gemini 2.5 Pro"}
+
+    # Explicitly scope to every known repo. Without this, Sourcebot's agent
+    # picks a single repo on its own — and on multi-repo questions like
+    # "what character validation rules apply to Farm Name?" it routinely
+    # picks the wrong one and then reports "no rules found."
+    try:
+        from repos import all_sourcebot_repo_names
+        repos = all_sourcebot_repo_names()
+        if repos:
+            payload["repos"] = repos
+    except Exception:
+        # Repo registry not loadable from this context — fall back to the
+        # agent's default behavior rather than failing the request.
+        pass
 
     url = _base_url() + "/api/chat/blocking"
 
