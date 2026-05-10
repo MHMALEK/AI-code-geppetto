@@ -32,7 +32,8 @@ TELEGRAM_POLLING = os.getenv("TELEGRAM_POLLING", "").lower() in ("1", "true", "y
 TELEGRAM_VOICE_MAX_SECONDS = int(os.getenv("TELEGRAM_VOICE_MAX_SECONDS", "300"))
 
 # ── Embeddings ────────────────────────────────────────────────────────────────
-EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
+# Default to Vertex AI (matches .env.template). For OpenAI use text-embedding-3-small.
+EMBED_MODEL = os.getenv("EMBED_MODEL", "vertex_ai/text-embedding-004")
 
 # ── Langfuse observability (optional — leave blank to disable) ────────────────
 LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY", "")
@@ -59,6 +60,11 @@ SAMPLE_REPO_PATH = Path(os.getenv(
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", "./data/chroma"))
 SQLITE_PATH = Path(os.getenv("SQLITE_PATH", "./data/tasks.db"))
 
+# ── Multi-repo registry ───────────────────────────────────────────────────────
+# Where clone_repos.py drops working trees; indexer walks each one. Repo metadata
+# (name/url/languages) lives in repos.py — edit there to add or change repos.
+REPOS_DIR = Path(os.getenv("REPOS_DIR", "./data/repos"))
+
 # Agent screenshots (take_screenshot) — must match FastAPI StaticFiles mount (not process cwd).
 REPO_ROOT = Path(__file__).resolve().parent
 SCREENSHOTS_DIR = REPO_ROOT / "data" / "screenshots"
@@ -73,3 +79,4 @@ SCREENSHOT_APP_URL = os.getenv("SCREENSHOT_APP_URL", "http://127.0.0.1:5173").rs
 CHROMA_PATH.mkdir(parents=True, exist_ok=True)
 SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
 SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+REPOS_DIR.mkdir(parents=True, exist_ok=True)

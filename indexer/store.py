@@ -5,6 +5,8 @@ Embeddings via LiteLLM — defaults to Vertex AI text-embedding-004 (no OpenAI n
 Two-tier retrieval:
   1. Semantic search  — embed query, find similar chunks
   2. Symbol lookup    — direct name/file match in metadata
+
+Multi-repo: every chunk carries `repo` in metadata; pass repo= to scope a search.
 """
 import chromadb
 from chromadb import EmbeddingFunction, Embeddings
@@ -57,9 +59,31 @@ def add_chunks(chunks: list[CodeChunk], batch_size: int = 50):
         print(f"  indexed {min(i + batch_size, total)}/{total}")
 
 
-def search(query: str, n_results: int = 8, chunk_type: str = None) -> list[dict]:
+def _build_where(chunk_type: str | None, repo: str | None) -> dict | None:
+    """Chroma `where` accepts a single equality dict or {'$and': [...]}.
+
+    Returning None when no filters are set lets Chroma skip filtering entirely.
+    """
+    clauses: list[dict] = []
+    if chunk_type:
+        clauses.append({"chunk_type": chunk_type})
+    if repo:
+        clauses.append({"repo": repo})
+    if not clauses:
+        return None
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$and": clauses}
+
+
+def search(
+    query: str,
+    n_results: int = 8,
+    chunk_type: str | None = None,
+    repo: str | None = None,
+) -> list[dict]:
     collection = _get_collection()
-    where = {"chunk_type": chunk_type} if chunk_type else None
+    where = _build_where(chunk_type, repo)
     results = collection.query(
         query_texts=[query],
         n_results=min(n_results, collection.count() or 1),
@@ -76,10 +100,13 @@ def search(query: str, n_results: int = 8, chunk_type: str = None) -> list[dict]
     ]
 
 
-def lookup_symbol(name: str) -> list[dict]:
+def lookup_symbol(name: str, repo: str | None = None) -> list[dict]:
     collection = _get_collection()
+    where = {"name": name}
+    if repo:
+        where = {"$and": [where, {"repo": repo}]}
     results = collection.get(
-        where={"name": name},
+        where=where,
         include=["documents", "metadatas"],
     )
     return [
@@ -88,5 +115,25 @@ def lookup_symbol(name: str) -> list[dict]:
     ]
 
 
+def delete_repo(repo: str) -> int:
+    """Remove every chunk tagged with this repo. Returns count deleted."""
+    collection = _get_collection()
+    existing = collection.get(where={"repo": repo}, include=[])
+    ids = existing.get("ids", [])
+    if ids:
+        collection.delete(ids=ids)
+    return len(ids)
+
+
 def stats() -> dict:
-    return {"total_chunks": _get_collection().count()}
+    """Total chunk count plus per-repo breakdown."""
+    collection = _get_collection()
+    total = collection.count()
+    # Pull metadata for everything (cheap — no embeddings, no documents).
+    by_repo: dict[str, int] = {}
+    if total:
+        all_meta = collection.get(include=["metadatas"]).get("metadatas") or []
+        for m in all_meta:
+            r = (m or {}).get("repo") or "<untagged>"
+            by_repo[r] = by_repo.get(r, 0) + 1
+    return {"total_chunks": total, "by_repo": by_repo}

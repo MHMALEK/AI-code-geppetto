@@ -4,20 +4,33 @@ AST-based code parser using tree-sitter.
 Chunks at semantic boundaries (functions, classes, hooks, components, interfaces)
 rather than naive character count. Each chunk carries full context metadata so
 the LLM knows exactly where it is in the codebase.
+
+Languages: TypeScript/TSX/JS/JSX (tree-sitter-typescript) and Python (tree-sitter-python).
+Each chunk is tagged with its source `repo` so cross-repo retrieval is unambiguous.
 """
 import os
+import re
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
+import tree_sitter_python as tspy
 import tree_sitter_typescript as tsts
 from tree_sitter import Language, Parser, Node
 
 TS_LANGUAGE = Language(tsts.language_typescript())
 TSX_LANGUAGE = Language(tsts.language_tsx())
+PY_LANGUAGE = Language(tspy.language())
 
 _ts_parser = Parser(TS_LANGUAGE)
 _tsx_parser = Parser(TSX_LANGUAGE)
+_py_parser = Parser(PY_LANGUAGE)
+
+TS_EXTS = {".ts", ".tsx", ".js", ".jsx"}
+PY_EXTS = {".py"}
+DOC_EXTS = {".md", ".mdx", ".markdown"}
+CODE_EXTS = TS_EXTS | PY_EXTS
+SUPPORTED_EXTS = CODE_EXTS | DOC_EXTS
 
 
 @dataclass
@@ -26,15 +39,17 @@ class CodeChunk:
     file_path: str          # relative to repo root
     chunk_type: str         # function | component | hook | class | method | interface | type
     name: str
+    repo: str = ""          # repo name from repos.py (empty for legacy single-repo indexes)
     parent_class: Optional[str] = None
     signature: Optional[str] = None
     start_line: int = 0
     end_line: int = 0
     imports: list[str] = field(default_factory=list)
+    language: str = ""      # "typescript" | "python"
 
     @property
     def id(self) -> str:
-        parts = [self.file_path]
+        parts = [self.repo, self.file_path]
         if self.parent_class:
             parts.append(self.parent_class)
         parts.append(self.name)
@@ -42,6 +57,8 @@ class CodeChunk:
 
     def to_metadata(self) -> dict:
         return {
+            "repo": self.repo,
+            "language": self.language,
             "file_path": self.file_path,
             "chunk_type": self.chunk_type,
             "name": self.name,
@@ -53,7 +70,10 @@ class CodeChunk:
     def to_document(self) -> str:
         """Rich text representation fed to the embedding model.
         Prepending metadata makes semantic search significantly more accurate."""
-        header = f"// File: {self.file_path} | Type: {self.chunk_type} | Name: {self.name}"
+        header = (
+            f"// Repo: {self.repo} | File: {self.file_path} | "
+            f"Type: {self.chunk_type} | Name: {self.name}"
+        )
         if self.parent_class:
             header += f" | Class: {self.parent_class}"
         if self.imports:
@@ -72,7 +92,9 @@ def _child_text(node: Node, child_type: str, source: bytes) -> Optional[str]:
     return None
 
 
-def _extract_imports(root: Node, source: bytes) -> list[str]:
+# ── TypeScript / JavaScript ──────────────────────────────────────────────────
+
+def _extract_imports_ts(root: Node, source: bytes) -> list[str]:
     return [
         _text(child, source)
         for child in root.children
@@ -80,7 +102,7 @@ def _extract_imports(root: Node, source: bytes) -> list[str]:
     ]
 
 
-def _infer_type(name: str, node_type: str) -> str:
+def _infer_type_ts(name: str, node_type: str) -> str:
     if node_type == "interface_declaration":
         return "interface"
     if node_type == "type_alias_declaration":
@@ -94,7 +116,7 @@ def _infer_type(name: str, node_type: str) -> str:
     return "function"
 
 
-def _signature(node: Node, source: bytes) -> str:
+def _signature_ts(node: Node, source: bytes) -> str:
     text = _text(node, source)
     lines = text.split("\n")
     sig = []
@@ -105,34 +127,35 @@ def _signature(node: Node, source: bytes) -> str:
     return "\n".join(sig)[:300]
 
 
-def _traverse(
+def _traverse_ts(
     node: Node,
     source: bytes,
     chunks: list,
     file_path: str,
     imports: list[str],
+    repo: str,
     parent_class: Optional[str] = None,
 ):
     t = node.type
 
-    # ── Named function declaration ────────────────────────────────────────────
     if t in ("function_declaration", "generator_function_declaration"):
         name = _child_text(node, "identifier", source)
         if name:
             chunks.append(CodeChunk(
                 content=_text(node, source),
                 file_path=file_path,
-                chunk_type=_infer_type(name, t),
+                chunk_type=_infer_type_ts(name, t),
                 name=name,
+                repo=repo,
                 parent_class=parent_class,
-                signature=_signature(node, source),
+                signature=_signature_ts(node, source),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 imports=imports,
+                language="typescript",
             ))
-        return  # don't recurse — nested functions get their own pass via export_statement
+        return
 
-    # ── Class ─────────────────────────────────────────────────────────────────
     if t == "class_declaration":
         class_name = None
         for child in node.children:
@@ -146,16 +169,17 @@ def _traverse(
                 file_path=file_path,
                 chunk_type="class",
                 name=class_name,
+                repo=repo,
                 parent_class=parent_class,
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 imports=imports,
+                language="typescript",
             ))
             for child in node.children:
-                _traverse(child, source, chunks, file_path, imports, parent_class=class_name)
+                _traverse_ts(child, source, chunks, file_path, imports, repo, parent_class=class_name)
         return
 
-    # ── Class method ──────────────────────────────────────────────────────────
     if t == "method_definition":
         name = _child_text(node, "property_identifier", source)
         if name and parent_class:
@@ -164,15 +188,16 @@ def _traverse(
                 file_path=file_path,
                 chunk_type="method",
                 name=name,
+                repo=repo,
                 parent_class=parent_class,
-                signature=_signature(node, source),
+                signature=_signature_ts(node, source),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 imports=imports,
+                language="typescript",
             ))
         return
 
-    # ── const Foo = () => {} / const Foo = function() {} ─────────────────────
     if t == "lexical_declaration":
         for declarator in node.children:
             if declarator.type != "variable_declarator":
@@ -189,17 +214,18 @@ def _traverse(
                 chunks.append(CodeChunk(
                     content=_text(node, source),
                     file_path=file_path,
-                    chunk_type=_infer_type(name, "function_declaration"),
+                    chunk_type=_infer_type_ts(name, "function_declaration"),
                     name=name,
+                    repo=repo,
                     parent_class=parent_class,
                     signature=_text(node, source).split("\n")[0][:300],
                     start_line=node.start_point[0] + 1,
                     end_line=node.end_point[0] + 1,
                     imports=imports,
+                    language="typescript",
                 ))
         return
 
-    # ── Interface / Type alias ────────────────────────────────────────────────
     if t in ("interface_declaration", "type_alias_declaration"):
         name = None
         for child in node.children:
@@ -210,58 +236,325 @@ def _traverse(
             chunks.append(CodeChunk(
                 content=_text(node, source),
                 file_path=file_path,
-                chunk_type=_infer_type(name, t),
+                chunk_type=_infer_type_ts(name, t),
                 name=name,
+                repo=repo,
                 parent_class=parent_class,
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 imports=imports,
+                language="typescript",
             ))
         return
 
-    # ── export statement — unwrap and recurse ─────────────────────────────────
     if t == "export_statement":
         for child in node.children:
-            _traverse(child, source, chunks, file_path, imports, parent_class)
+            _traverse_ts(child, source, chunks, file_path, imports, repo, parent_class)
         return
 
-    # ── default: recurse ──────────────────────────────────────────────────────
     for child in node.children:
-        _traverse(child, source, chunks, file_path, imports, parent_class)
+        _traverse_ts(child, source, chunks, file_path, imports, repo, parent_class)
 
 
-def parse_file(file_path: str, repo_root: str) -> list[CodeChunk]:
+# ── Python ──────────────────────────────────────────────────────────────────
+
+def _extract_imports_py(root: Node, source: bytes) -> list[str]:
+    out: list[str] = []
+    for child in root.children:
+        if child.type in ("import_statement", "import_from_statement"):
+            out.append(_text(child, source))
+    return out
+
+
+def _py_def_name(node: Node, source: bytes) -> Optional[str]:
+    """Return the identifier name of a function_definition or class_definition."""
+    name_node = node.child_by_field_name("name")
+    return _text(name_node, source) if name_node else None
+
+
+def _py_signature(node: Node, source: bytes) -> str:
+    """First line of `def …(…):` up to and including the colon."""
+    text = _text(node, source)
+    first_line = text.split("\n", 1)[0]
+    return first_line[:300]
+
+
+def _traverse_py(
+    node: Node,
+    source: bytes,
+    chunks: list,
+    file_path: str,
+    imports: list[str],
+    repo: str,
+    parent_class: Optional[str] = None,
+):
+    t = node.type
+
+    # `decorated_definition` wraps a function/class with @decorators — unwrap and continue.
+    if t == "decorated_definition":
+        # The actual definition is the last child (function_definition or class_definition)
+        for child in node.children:
+            if child.type in ("function_definition", "class_definition"):
+                _traverse_py(child, source, chunks, file_path, imports, repo, parent_class)
+        return
+
+    if t == "function_definition":
+        name = _py_def_name(node, source)
+        if name:
+            chunk_type = "method" if parent_class else "function"
+            chunks.append(CodeChunk(
+                content=_text(node, source)[:3000],
+                file_path=file_path,
+                chunk_type=chunk_type,
+                name=name,
+                repo=repo,
+                parent_class=parent_class,
+                signature=_py_signature(node, source),
+                start_line=node.start_point[0] + 1,
+                end_line=node.end_point[0] + 1,
+                imports=imports,
+                language="python",
+            ))
+        return  # don't descend into function bodies
+
+    if t == "class_definition":
+        name = _py_def_name(node, source)
+        if name:
+            chunks.append(CodeChunk(
+                content=_text(node, source)[:3000],
+                file_path=file_path,
+                chunk_type="class",
+                name=name,
+                repo=repo,
+                parent_class=parent_class,
+                start_line=node.start_point[0] + 1,
+                end_line=node.end_point[0] + 1,
+                imports=imports,
+                language="python",
+            ))
+            # Walk class body for methods.
+            body = node.child_by_field_name("body")
+            if body:
+                for child in body.children:
+                    _traverse_py(child, source, chunks, file_path, imports, repo, parent_class=name)
+        return
+
+    for child in node.children:
+        _traverse_py(child, source, chunks, file_path, imports, repo, parent_class)
+
+
+# ── File-level chunks ────────────────────────────────────────────────────────
+# A "file" chunk is a synthetic per-file overview: the file head (imports,
+# module docstring, top constants) plus a manifest of every symbol the
+# semantic chunker found below. It gives the retriever something to match for
+# "what does X module do" / "where is auth handled" — queries that don't name a
+# specific function and previously had no good chunk to land on.
+
+def _file_head(source_text: str, max_lines: int = 60, max_chars: int = 1500) -> str:
+    """First N lines of the file, capped by char count.
+    Captures shebang, module docstring, imports, top-level constants — enough
+    for the embedding model to recognize the file's purpose."""
+    out: list[str] = []
+    used = 0
+    for line in source_text.split("\n")[:max_lines]:
+        used += len(line) + 1
+        if used > max_chars:
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
+def _symbol_manifest(symbol_chunks: list["CodeChunk"]) -> str:
+    if not symbol_chunks:
+        return "Symbols: (none)"
+    rows = ["Symbols:"]
+    for c in symbol_chunks:
+        if c.chunk_type == "file":
+            continue
+        prefix = f"{c.parent_class}." if c.parent_class else ""
+        sig = (c.signature or "").split("\n", 1)[0].strip()
+        # If we have a usable signature, show it; else just the name.
+        if sig and sig != c.name:
+            rows.append(f"  [{c.chunk_type}] {prefix}{c.name}  L{c.start_line}  {sig[:120]}")
+        else:
+            rows.append(f"  [{c.chunk_type}] {prefix}{c.name}  L{c.start_line}")
+    return "\n".join(rows)
+
+
+def _make_file_chunk(
+    rel_path: str,
+    source_text: str,
+    repo_name: str,
+    language: str,
+    symbol_chunks: list["CodeChunk"],
+    imports: list[str],
+) -> "CodeChunk":
+    head = _file_head(source_text)
+    manifest = _symbol_manifest(symbol_chunks)
+    content = f"{head}\n\n---\n{manifest}"
+    return CodeChunk(
+        content=content[:4000],
+        file_path=rel_path,
+        chunk_type="file",
+        # Use the basename so lookup_symbol("jira.py") finds it; semantic
+        # search reads the full content.
+        name=Path(rel_path).name,
+        repo=repo_name,
+        signature=None,
+        start_line=1,
+        end_line=len(source_text.split("\n")),
+        imports=imports,
+        language=language,
+    )
+
+
+# ── Markdown ─────────────────────────────────────────────────────────────────
+# Split markdown by heading. Each section becomes one chunk so the retriever
+# can land on a specific section ("# Authentication") rather than a whole doc.
+
+_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+
+
+def _split_markdown_sections(text: str) -> list[tuple[str, str, int]]:
+    """Return list of (heading, body, start_line).
+    A leading body before the first heading is grouped under "Introduction".
+    Headings inside fenced code blocks are ignored."""
+    sections: list[tuple[str, list[str], int]] = []
+    in_fence = False
+    current_heading = "Introduction"
+    current_lines: list[str] = []
+    current_start = 1
+
+    for i, line in enumerate(text.split("\n"), 1):
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            current_lines.append(line)
+            continue
+
+        m = _HEADING_RE.match(line) if not in_fence else None
+        if m:
+            if current_lines:
+                sections.append((current_heading, current_lines, current_start))
+            current_heading = m.group(2).strip()
+            current_lines = []
+            current_start = i
+        else:
+            current_lines.append(line)
+
+    if current_lines:
+        sections.append((current_heading, current_lines, current_start))
+
+    out: list[tuple[str, str, int]] = []
+    for heading, body_lines, start in sections:
+        body = "\n".join(body_lines).strip()
+        if body:
+            out.append((heading, body, start))
+    return out
+
+
+def _parse_markdown(rel_path: str, text: str, repo_name: str) -> list["CodeChunk"]:
+    sections = _split_markdown_sections(text)
+    if not sections and text.strip():
+        # File with no headings — emit one chunk for the whole file.
+        return [CodeChunk(
+            content=text[:2500],
+            file_path=rel_path,
+            chunk_type="doc",
+            name=Path(rel_path).name,
+            repo=repo_name,
+            start_line=1,
+            end_line=len(text.split("\n")),
+            language="markdown",
+        )]
+
+    chunks: list[CodeChunk] = []
+    for heading, body, start_line in sections:
+        content = f"# {heading}\n\n{body}"[:2500]
+        chunks.append(CodeChunk(
+            content=content,
+            file_path=rel_path,
+            chunk_type="doc",
+            name=heading[:120],
+            repo=repo_name,
+            start_line=start_line,
+            end_line=start_line + body.count("\n"),
+            language="markdown",
+        ))
+    return chunks
+
+
+# ── Public API ──────────────────────────────────────────────────────────────
+
+def parse_file(file_path: str, repo_root: str, repo_name: str = "") -> list[CodeChunk]:
     path = Path(file_path)
     ext = path.suffix.lower()
-    if ext not in (".ts", ".tsx", ".js", ".jsx"):
+    if ext not in SUPPORTED_EXTS:
         return []
-
-    source = path.read_bytes()
-    parser = _tsx_parser if ext in (".tsx", ".jsx") else _ts_parser
-    tree = parser.parse(source)
 
     try:
         rel_path = str(path.relative_to(repo_root))
     except ValueError:
         rel_path = str(path)
 
-    imports = _extract_imports(tree.root_node, source)
+    # ── Markdown: heading-split chunks, no AST ──
+    if ext in DOC_EXTS:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception as e:
+            print(f"  [skip] {rel_path}: {e}")
+            return []
+        return _parse_markdown(rel_path, text, repo_name)
+
+    # ── Code: AST-based symbol chunks + a synthetic file chunk ──
+    source = path.read_bytes()
+    source_text = source.decode("utf-8", errors="replace")
     chunks: list[CodeChunk] = []
-    _traverse(tree.root_node, source, chunks, rel_path, imports)
-    return chunks
+
+    if ext in TS_EXTS:
+        parser = _tsx_parser if ext in (".tsx", ".jsx") else _ts_parser
+        tree = parser.parse(source)
+        imports = _extract_imports_ts(tree.root_node, source)
+        _traverse_ts(tree.root_node, source, chunks, rel_path, imports, repo_name)
+        language = "typescript"
+    else:  # PY_EXTS
+        tree = _py_parser.parse(source)
+        imports = _extract_imports_py(tree.root_node, source)
+        _traverse_py(tree.root_node, source, chunks, rel_path, imports, repo_name)
+        language = "python"
+
+    # Prepend the file-level overview chunk. Even files with zero symbols
+    # (e.g. config modules, __init__.py) get one — that's the whole point.
+    file_chunk = _make_file_chunk(rel_path, source_text, repo_name, language, chunks, imports)
+    return [file_chunk] + chunks
 
 
-def parse_repo(repo_path: str) -> list[CodeChunk]:
+# Common dirs to ignore — language-agnostic. Add more as we encounter them.
+_IGNORED_DIRS = {
+    "node_modules", ".git", "dist", "build", "coverage", "__pycache__",
+    ".next", ".cache", ".venv", "venv", "env", ".tox", ".mypy_cache",
+    ".pytest_cache", ".ruff_cache", "site-packages", "target", ".idea",
+    ".vscode", ".gitlab", "htmlcov", "_build",
+}
+
+
+def parse_repo(repo_path: str, repo_name: str = "") -> list[CodeChunk]:
+    """
+    Walk repo_path, parse every supported file, return tagged chunks.
+
+    `repo_name` ends up in chunk.repo / chunk.id / chunk.metadata. Pass the
+    name from repos.py — empty string is allowed for backward compat but
+    breaks multi-repo retrieval.
+    """
     repo_path = str(Path(repo_path).resolve())
-    _ignored = {"node_modules", ".git", "dist", "build", "coverage", "__pycache__", ".next", ".cache"}
     all_chunks: list[CodeChunk] = []
 
     for root, dirs, files in os.walk(repo_path):
-        dirs[:] = [d for d in dirs if d not in _ignored]
+        dirs[:] = [d for d in dirs if d not in _IGNORED_DIRS]
         for file in files:
-            if Path(file).suffix.lower() in (".ts", ".tsx", ".js", ".jsx"):
+            if Path(file).suffix.lower() in SUPPORTED_EXTS:
                 try:
-                    chunks = parse_file(os.path.join(root, file), repo_path)
+                    chunks = parse_file(os.path.join(root, file), repo_path, repo_name)
                     all_chunks.extend(chunks)
                 except Exception as e:
                     print(f"  [skip] {file}: {e}")
