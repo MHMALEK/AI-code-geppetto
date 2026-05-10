@@ -63,27 +63,49 @@ def is_enabled() -> bool:
 _PROMPT = """You restructure developer questions for a code-search agent.
 
 The agent searches across multiple repos in a polyglot monorepo:
-- frontend  — React/TypeScript app (UI labels, form validation, Zod schemas)
-- api       — FastAPI/Python backend (Pydantic models, validators, decorators, regex patterns)
+- frontend  — React/TypeScript app (UI labels, form validation, Zod schemas,
+              react-router routes, navigation/sidebar config)
+- api       — FastAPI/Python backend (Pydantic models, validators, decorators,
+              regex patterns, role checkers, route protection)
 - data      — Airflow/Python pipelines (DAGs, custom operators)
 - data-cloud-functions — GCP Cloud Functions (Python)
 
-Common pitfalls the agent stumbles on:
-- UI labels (e.g. "Farm Name") often map to different internal names
-  (node_name, nodeName, farm_name, etc.). Validation usually lives on the
-  internal name, not the label.
-- Validation rules tend to be regex constants named *_PATTERN, validator
-  functions named verify_/check_/validate_*, or Pydantic Field constraints.
-- Auth/authz usually involves Keycloak, OIDC, JWT, JWKS — search for those.
-- Multi-repo answers often need both client-side rules (frontend) and
-  server-side rules (api).
+Common pitfalls the agent stumbles on (your `question` field should pre-empt
+them):
 
-Produce a CuratedQuery with three short fields. Keep each field 1-3
-sentences max. Do not invent specific file paths or function names — your
-job is to suggest *kinds* of things to search for, not specific results.
+1. UI labels vs internal names — "Farm Name" → node_name/nodeName, "Reference
+   ID" → external_id/referenceId. Validation/permissions usually live on the
+   internal name.
+2. Validation lives in many places: regex *_PATTERN constants, verify_/
+   check_/validate_* functions, Pydantic Field constraints, Zod schemas.
+3. Auth/authz: Keycloak + OIDC + JWT + JWKS on backend; role-gated routes/
+   nav/sidebar on frontend. Both usually matter.
+4. **Permission/access questions almost always need multi-layer coverage:**
+   route guards, navigation visibility, sidebar config, AND backend
+   permission checks. A "yes/no" answer without naming all layers is
+   incomplete.
+5. Multi-repo answers usually need both client (frontend) and server (api).
+
+Produce a CuratedQuery whose `question` field is **explicit, multi-aspect, and
+demanding**. Tell the agent to:
+
+- Give a direct answer first.
+- Enumerate every enforcement/definition layer that matters (don't stop at
+  the first one found).
+- Note related-but-distinct concepts that could confuse the reader (e.g.
+  "Master Data section under Data Manager is separate from the primary
+  Settings area").
+- Call out caveats, edge cases, and discrepancies between layers (e.g.
+  "frontend hides the link, but the backend API still allows the request").
+
+Keep `context` and `observed` short (1-2 sentences each). The `question`
+field can be 3-6 sentences listing what the answer should cover.
+
+Do not invent specific file paths or function names — your job is to suggest
+*kinds* of things to look for and *aspects* the answer must cover.
 
 If the question is already specific (names a concrete function or file), keep
-the curation light — just restate the question slightly more precisely."""
+the curation light — just restate it more precisely."""
 
 
 async def curate(raw_question: str) -> Optional[CuratedQuery]:

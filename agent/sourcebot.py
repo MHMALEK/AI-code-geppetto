@@ -175,7 +175,10 @@ async def stream_ask(question: str) -> AsyncIterator[dict]:
 
     url = _base_url() + "/api/chat/blocking"
 
-    timeout = httpx.Timeout(connect=5.0, read=180.0, write=10.0, pool=5.0)
+    # Pro answering a multi-aspect curated question (route + nav + sidebar +
+    # backend) routinely runs 200-400s. Set a generous read timeout so we
+    # don't fall back to Chroma mid-investigation.
+    timeout = httpx.Timeout(connect=5.0, read=600.0, write=10.0, pool=5.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
             resp = await client.post(url, headers=_headers(), json=payload)
