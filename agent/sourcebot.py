@@ -138,7 +138,18 @@ async def stream_ask(question: str) -> AsyncIterator[dict]:
     if not is_enabled():
         raise SourcebotUnavailable("USE_SOURCEBOT is not enabled")
 
-    payload: dict[str, object] = {"query": question}
+    # Optionally restructure the question into Context/Observed/Question form
+    # before sending. Bridges UI-flavored phrasing ("Farm Name") to backend
+    # naming ("node_name") so the agent looks at the right files.
+    from agent import curator
+    curated_query = None
+    effective_question = question
+    if curator.is_enabled():
+        curated_query = await curator.curate(question)
+        if curated_query is not None:
+            effective_question = curated_query.to_query()
+
+    payload: dict[str, object] = {"query": effective_question}
     # Note: don't send `languageModel` here. Sourcebot's matching key is
     # `${provider}-${model}-${displayName}` (see features/chat/utils.ts) and
     # rejects requests that omit displayName as "not configured", even when
