@@ -25,6 +25,9 @@ services:
     ports:
       - "127.0.0.1:3001:3000"
     environment:
+      # Path inside the container where Sourcebot reads its connection config.
+      # Must match the volume mount target below.
+      CONFIG_PATH: /data/config.json
       # LLM key — Sourcebot reads this to power Ask. Override in .env.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       # Optional: pin a model. Leave unset to use Sourcebot's default.
