@@ -32,6 +32,11 @@ services:
       # the OAuth/auth flow. Without it, links use container-internal :3000
       # which 404s from the host browser.
       AUTH_URL: ${SOURCEBOT_PUBLIC_URL:-http://127.0.0.1:3001}
+      # Allow programmatic API calls (e.g. Geppetto's /ask proxy) without a
+      # signed-in user. Without this, /api/chat/blocking returns 401 from any
+      # backend that doesn't carry a session cookie. Single-tenant local-only
+      # setup, so anonymous is fine.
+      FORCE_ENABLE_ANONYMOUS_ACCESS: "true"
       # LLM key — Sourcebot reads this to power Ask. Override in .env.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     volumes:
