@@ -2226,15 +2226,67 @@ function initAskHistory() {
 }
 
 function renderMarkdown(text) {
-  // Minimal markdown: code blocks, inline code, bold, line breaks
-  return text
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>')
-    .replace(/^/, '<p>').replace(/$/, '</p>');
+  // Light markdown: protect code, then handle links / lists / formatting / paragraphs.
+  // Not a full parser — but handles what Sourcebot's Ask answers actually emit.
+
+  // 1. Stash fenced code blocks first so we don't process markdown inside them.
+  const codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, _lang, body) => {
+    codeBlocks.push(body);
+    return ` CODEBLOCK${codeBlocks.length - 1} `;
+  });
+
+  // 2. HTML-escape everything else.
+  text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // 3. Inline code (backticks) and bold.
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // 4. Links — [label](url) → <a target="_blank" rel="noopener">.
+  //    Restrict url char class so trailing punctuation doesn't get swallowed.
+  text = text.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  // 5. Group consecutive bullet lines (`- ` or `* `) into <ul>.
+  //    This deliberately ignores indentation depth — Sourcebot output is flat.
+  const lines = text.split('\n');
+  const out = [];
+  let bullets = [];
+  const flushBullets = () => {
+    if (bullets.length) {
+      out.push('<ul>' + bullets.map(b => `<li>${b}</li>`).join('') + '</ul>');
+      bullets = [];
+    }
+  };
+  for (const line of lines) {
+    const m = /^\s*[-*]\s+(.*)$/.exec(line);
+    if (m) bullets.push(m[1]);
+    else { flushBullets(); out.push(line); }
+  }
+  flushBullets();
+  text = out.join('\n');
+
+  // 6. Paragraphs from remaining blank-line gaps; single newlines → <br>.
+  //    Don't wrap lines that are already block elements.
+  const blocks = text.split(/\n\n+/).map(block => {
+    const stripped = block.trim();
+    if (!stripped) return '';
+    if (/^<(ul|ol|pre|h[1-6]|p|div)/.test(stripped)) return stripped;
+    return `<p>${stripped.replace(/\n/g, '<br>')}</p>`;
+  });
+  text = blocks.join('');
+
+  // 7. Restore stashed code blocks.
+  text = text.replace(/ CODEBLOCK(\d+) /g, (_, i) => {
+    const body = codeBlocks[Number(i)]
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre><code>${body}</code></pre>`;
+  });
+
+  return text;
 }
 
 /* ─── Analytics ─── */

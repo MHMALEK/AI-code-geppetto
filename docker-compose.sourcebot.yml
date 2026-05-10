@@ -28,10 +28,12 @@ services:
       # Path inside the container where Sourcebot reads its connection config.
       # Must match the volume mount target below.
       CONFIG_PATH: /data/config.json
+      # External URL — Sourcebot embeds this in citation links, chatUrls, and
+      # the OAuth/auth flow. Without it, links use container-internal :3000
+      # which 404s from the host browser.
+      AUTH_URL: ${SOURCEBOT_PUBLIC_URL:-http://127.0.0.1:3001}
       # LLM key — Sourcebot reads this to power Ask. Override in .env.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      # Optional: pin a model. Leave unset to use Sourcebot's default.
-      # SOURCEBOT_LANGUAGE_MODEL_NAME: gemini-2.5-flash
     volumes:
       # Read-only mount of our cloned tract repos. file:///repos/* in the
       # config below globs every cloned repo here.
